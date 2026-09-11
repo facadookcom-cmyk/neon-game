@@ -1,5 +1,5 @@
 // ============================================
-// Neon Prediction - Complete Script (Final)
+// Neon Prediction - Complete Script (v8)
 // ============================================
 
 const SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -304,7 +304,7 @@ async function cleanMyRooms() {
   try { await db.from('room_players').delete().eq('user_id', App.user.id); } catch (e) {}
 }
 
-// ==================== اختيار الفئة ====================
+// ==================== اختيار الفئة (v8 - محسّن) ====================
 async function selectCategory(category) {
   if (App.room.status === 'waiting' || App.room.status === 'playing') {
     return showToast('أنت في غرفة بالفعل', 'error');
@@ -314,7 +314,9 @@ async function selectCategory(category) {
     return showToast(`رصيدك غير كافٍ (تحتاج ${CONFIG.ENTRY_FEE + CONFIG.COMMISSION})`, 'error');
   }
 
+  // امسح أي انضمام سابق
   await cleanMyRooms();
+  
   const cat = CATEGORIES[category];
   App.room = { id: null, category, players: [], status: 'waiting', correctChoice: null };
   App.gameStarted = false;
@@ -322,33 +324,64 @@ async function selectCategory(category) {
 
   try {
     if (db) {
+      // 1) ابحث عن غرفة waiting بنفس الفئة
       const { data: rooms } = await db.from('rooms')
-        .select('id')
+        .select('id, created_at')
         .eq('category', category)
         .eq('status', 'waiting')
-        .order('created_at', { ascending: true })
-        .limit(1);
+        .order('created_at', { ascending: true });
 
-      let roomId;
+      let roomId = null;
+
+      // 2) اتأكد إن الغرفة فيها أقل من 5 لاعبين
       if (rooms && rooms.length > 0) {
-        roomId = rooms[0].id;
-      } else {
+        for (const room of rooms) {
+          const { count } = await db.from('room_players')
+            .select('*', { count: 'exact', head: true })
+            .eq('room_id', room.id);
+          
+          if (count < 5) {
+            roomId = room.id;
+            console.log(`✅ انضممت لغرفة موجودة: ${roomId} (فيها ${count} لاعبين)`);
+            break;
+          }
+        }
+      }
+
+      // 3) لو مفيش غرفة متاحة، اعمل غرفة جديدة
+      if (!roomId) {
         const { data: newRoom, error } = await db.from('rooms')
           .insert([{ category, status: 'waiting', max_players: 5 }])
           .select('id').single();
         if (error) throw error;
         roomId = newRoom.id;
+        console.log(`✅ أنشأت غرفة جديدة: ${roomId}`);
       }
 
       App.room.id = roomId;
-      await db.from('room_players').insert([{ room_id: roomId, user_id: App.user.id }]);
+
+      // 4) ضيف اللاعب للغرفة
+      const { error: joinErr } = await db.from('room_players')
+        .insert([{ room_id: roomId, user_id: App.user.id }]);
+
+      if (joinErr && joinErr.code !== '23505') {
+        console.error('Join error:', joinErr);
+        throw joinErr;
+      }
+
+      // 5) اشترك في Realtime
       subscribeToRoom(roomId);
+      
+      // 6) حمّل اللاعبين
       await loadRoomPlayers(roomId);
+      
+      console.log('✅ الغرفة:', roomId, 'اللاعبين:', App.room.players.length);
     } else {
       App.room.id = 'local_' + Date.now();
       App.room.players = [{ username: App.user.username, avatar: App.user.avatar_url }];
     }
   } catch (e) {
+    console.error('selectCategory error:', e);
     return showToast('حدث خطأ، حاول تاني', 'error');
   }
 
@@ -359,6 +392,7 @@ async function selectCategory(category) {
   showToast(`انضممت لغرفة ${cat.name}`, 'success');
 }
 
+// ==================== تحميل اللاعبين ====================
 async function loadRoomPlayers(roomId) {
   if (!db || App.isLeaving) return;
   try {
@@ -371,33 +405,74 @@ async function loadRoomPlayers(roomId) {
       avatar: p.users?.avatar_url || ''
     }));
 
+    console.log(`📊 عدد اللاعبين في الغرفة: ${App.room.players.length}`);
     updateWaitingUI();
 
+    // لو الغرفة اكتملت (5 لاعبين)، ابدأ اللعبة
     if (players && players.length >= 5 && !App.gameStarted && App.room.status === 'waiting') {
       App.gameStarted = true;
       App.room.status = 'playing';
+      console.log('🔥 الغرفة اكتملت! ابدأ اللعبة...');
       setTimeout(startGame, 500);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('loadRoomPlayers error:', e);
+  }
 }
 
+// ==================== الاشتراك في Realtime ====================
 function subscribeToRoom(roomId) {
   if (!db) return;
-  if (App.realtimeChannel) db.removeChannel(App.realtimeChannel);
+  if (App.realtimeChannel) {
+    try { db.removeChannel(App.realtimeChannel); } catch (e) {}
+  }
+  
+  console.log('📡 الاشتراك في الغرفة:', roomId);
+  
   App.realtimeChannel = db.channel('room_' + roomId + '_' + Date.now())
     .on('postgres_changes', {
-      event: '*', schema: 'public', table: 'room_players',
+      event: 'INSERT',
+      schema: 'public',
+      table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, () => loadRoomPlayers(roomId))
-    .subscribe();
+    }, (payload) => {
+      console.log('➕ لاعب جديد دخل:', payload);
+      loadRoomPlayers(roomId);
+    })
+    .on('postgres_changes', {
+      event: 'DELETE',
+      schema: 'public',
+      table: 'room_players',
+      filter: `room_id=eq.${roomId}`
+    }, (payload) => {
+      console.log('➖ لاعب خرج:', payload);
+      loadRoomPlayers(roomId);
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'room_players',
+      filter: `room_id=eq.${roomId}`
+    }, (payload) => {
+      console.log('🔄 تحديث اللاعب:', payload);
+      loadRoomPlayers(roomId);
+    })
+    .subscribe((status) => {
+      console.log('📡 حالة الاشتراك:', status);
+    });
 }
 
 function updateWaitingUI() {
   const count = App.room.players.length;
   const countEl = document.getElementById('playersCount');
   if (countEl) countEl.textContent = count;
+  
   const hint = document.getElementById('waitingHint');
-  if (hint) hint.textContent = count < 5 ? `في انتظار ${5 - count} لاعبين...` : 'الغرفة اكتملت! استعد';
+  if (hint) {
+    hint.textContent = count < 5 
+      ? `في انتظار ${5 - count} لاعبين...` 
+      : 'الغرفة اكتملت! استعد';
+  }
 
   for (let i = 1; i <= 5; i++) {
     const slot = document.getElementById('slot' + i);
