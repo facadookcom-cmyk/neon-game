@@ -51,7 +51,6 @@ body {
   50% { box-shadow: 0 0 22px rgba(220, 80, 80, 0.32); }
 }
 
-/* Login */
 .login-container {
   min-height: 100vh;
   display: flex;
@@ -92,7 +91,6 @@ body {
 }
 .input-group input::placeholder { color: #7a5a5a; }
 
-/* Buttons */
 .btn-neon {
   width: 100%;
   max-width: 340px;
@@ -141,7 +139,6 @@ body {
 .small-text { color: var(--text-secondary); font-size: 13px; text-align: center; }
 .small-text strong { color: #f0a0a0; font-weight: 800; }
 
-/* Welcome + Prize Table */
 .welcome-ad {
   position: fixed;
   inset: 0;
@@ -214,7 +211,6 @@ body {
   margin-top: 8px;
 }
 
-/* Header */
 .game-header {
   position: sticky;
   top: 0;
@@ -258,7 +254,6 @@ body {
 .online-dot { width: 6px; height: 6px; border-radius: 50%; background: #e85a5a; animation: pulse 1.5s infinite; }
 .points-badge { background: rgba(220, 70, 70, 0.12); border-color: #e85a5a; color: #f0c0c0; }
 
-/* Content */
 .game-content { padding: 18px 14px 22px; max-width: 560px; margin: 0 auto; }
 .section-title { font-size: 21px; font-weight: 900; text-align: center; margin-bottom: 8px; color: #f5f0f0; }
 .category-hint {
@@ -273,7 +268,56 @@ body {
   border-radius: 11px;
 }
 
-/* Categories */
+/* ==================== غرفة خاصة ==================== */
+.room-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.btn-room-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px;
+  background: linear-gradient(135deg, rgba(220, 70, 70, 0.1), rgba(180, 50, 50, 0.05));
+  border: 1.5px solid rgba(220, 80, 80, 0.35);
+  border-radius: 12px;
+  color: #f0a0a0;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-room-action:active {
+  transform: scale(0.97);
+  border-color: #e85a5a;
+  box-shadow: 0 0 15px rgba(220, 70, 70, 0.3);
+}
+
+.room-action-icon {
+  font-size: 24px;
+}
+
+.room-code-display {
+  margin: 20px 0;
+  padding: 20px;
+  background: linear-gradient(135deg, #e85a5a, #c43a3a);
+  border-radius: 15px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 8px;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(220, 70, 70, 0.5);
+  user-select: all;
+}
+
 .categories-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .category-card {
   background: var(--card);
@@ -300,7 +344,6 @@ body {
 .category-card h3 { font-size: 16px; font-weight: 900; margin-bottom: 3px; color: #f5f0f0; }
 .category-card p { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
 
-/* Waiting */
 .waiting-container {
   background: var(--card);
   border: 1.5px solid var(--border);
@@ -330,7 +373,6 @@ body {
 .waiting-text { font-size: 18px; font-weight: 900; margin-bottom: 6px; color: #f5f0f0; }
 .waiting-hint { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
 
-/* Game */
 .timer-display {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   margin-bottom: 16px;
@@ -383,7 +425,6 @@ body {
 .choice-btn.selected .choice-num { background: #fff; color: #c43a3a; border-color: #fff; }
 .choice-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Result */
 .result-container {
   background: var(--card);
   border: 1.5px solid var(--border);
@@ -415,7 +456,6 @@ body {
   border: 1.5px solid #8a3030;
 }
 
-/* Bottom Nav */
 .bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
@@ -449,7 +489,6 @@ body {
 }
 .nav-icon { font-size: 22px; filter: drop-shadow(0 0 5px rgba(220, 70, 70, 0.3)); }
 
-/* Modals */
 .modal {
   display: none;
   position: fixed; inset: 0;
@@ -477,7 +516,6 @@ body {
   background: none; border: none; cursor: pointer; font-weight: 700;
 }
 
-/* Store */
 .packages-list { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
 .package-item {
   display: flex; align-items: center; gap: 12px;
@@ -500,7 +538,6 @@ body {
 .pkg-points { font-size: 15px; font-weight: 900; color: #f5f0f0; }
 .pkg-price { font-size: 13px; color: #f0a0a0; font-weight: 700; }
 
-/* Payment */
 .payment-info { margin: 16px 0; }
 .payment-instructions {
   margin: 16px 0;
@@ -524,7 +561,6 @@ body {
   box-shadow: 0 0 14px rgba(220, 70, 70, 0.35);
 }
 
-/* Profile */
 .profile-info { text-align: center; margin: 14px 0; }
 .profile-avatar-big {
   position: relative;
@@ -582,7 +618,6 @@ body {
   font-size: 13px;
 }
 
-/* Toasts */
 .toast, .coin-toast {
   position: fixed;
   left: 50%;
