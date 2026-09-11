@@ -1,8 +1,8 @@
 // ============================================
-// Neon Prediction - Complete Script (v9)
+// Neon Prediction - Complete Script (v10)
 // ============================================
 
-// ==================== عرض الأخطاء على الشاشة ====================
+// ==================== عرض الأخطاء ====================
 window.addEventListener('error', (e) => {
     console.error('❌ خطأ:', e.message, 'في', e.filename, 'سطر', e.lineno);
     if (typeof showToast === 'function') {
@@ -70,7 +70,7 @@ const CATEGORIES = Object.freeze({
 
 const App = {
   user: { id: null, username: '', phone: '', avatar_url: '', purchased: 0, earned: 0, level: 1, games_played: 0, shared: false, claimedPrizes: [] },
-  room: { id: null, category: null, players: [], status: 'idle', correctChoice: null },
+  room: { id: null, category: null, players: [], status: 'idle', correctChoice: null, code: null },
   myChoice: null,
   timerInterval: null,
   timeLeft: 10,
@@ -187,6 +187,7 @@ function startTriangleBackground() {
   draw();
 }
 
+// ==================== تسجيل الدخول ====================
 async function login() {
   const name = document.getElementById('usernameInput')?.value.trim() || '';
   const phone = document.getElementById('phoneInput')?.value.trim() || '';
@@ -316,10 +317,185 @@ async function cleanMyRooms() {
   try { await db.from('room_players').delete().eq('user_id', App.user.id); } catch (e) {}
 }
 
-// ==================== اختيار الفئة (v9) ====================
-async function selectCategory(category) {
-  console.log('🎯 اختيار الفئة:', category);
+// ==================== توليد كود الغرفة ====================
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
 
+// ==================== إنشاء غرفة خاصة ====================
+async function createPrivateRoom() {
+  if (App.room.status === 'waiting' || App.room.status === 'playing') {
+    return showToast('أنت في غرفة بالفعل', 'error');
+  }
+  
+  const total = App.user.purchased + App.user.earned;
+  if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) {
+    return showToast(`رصيدك غير كافٍ (تحتاج ${CONFIG.ENTRY_FEE + CONFIG.COMMISSION})`, 'error');
+  }
+
+  await cleanMyRooms();
+  
+  if (!db) {
+    return showToast('Supabase غير متصل', 'error');
+  }
+
+  try {
+    let code = generateRoomCode();
+    let attempts = 0;
+    
+    while (attempts < 5) {
+      const { data: existing } = await db.from('rooms')
+        .select('id')
+        .eq('code', code)
+        .maybeSingle();
+      
+      if (!existing) break;
+      code = generateRoomCode();
+      attempts++;
+    }
+
+    const { data: newRoom, error } = await db.from('rooms')
+      .insert([{
+        category: 'football',
+        status: 'waiting',
+        max_players: 5,
+        code: code,
+        is_private: true
+      }])
+      .select('id').single();
+
+    if (error) throw error;
+
+    App.room = {
+      id: newRoom.id,
+      category: 'football',
+      players: [],
+      status: 'waiting',
+      correctChoice: null,
+      code: code
+    };
+    App.gameStarted = false;
+    App.isLeaving = false;
+
+    await db.from('room_players').insert([{
+      room_id: newRoom.id,
+      user_id: App.user.id
+    }]);
+
+    document.getElementById('roomCodeDisplay').textContent = code;
+    document.getElementById('roomCodeModal').classList.add('active');
+
+    subscribeToRoom(newRoom.id);
+    await loadRoomPlayers(newRoom.id);
+
+  } catch (e) {
+    console.error('createPrivateRoom error:', e);
+    showToast('حدث خطأ: ' + (e.message || 'حاول تاني'), 'error');
+  }
+}
+
+// ==================== نسخ كود الغرفة ====================
+function copyRoomCode() {
+  const code = document.getElementById('roomCodeDisplay').textContent;
+  if (!code || code === '------') return;
+  
+  const text = `🎮 العب معايا Neon Prediction!\n\n🔒 كود الغرفة: ${code}\n\nادخل الموقع: https://neon-game-seven.vercel.app\nواختار "الانضمام بكود" واكتب: ${code}`;
+  
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✅ تم نسخ الكود! ابعته لأصدقائك', 'success');
+  }).catch(() => {
+    showToast('❌ فشل النسخ، انسخه يدوياً: ' + code, 'error');
+  });
+}
+
+// ==================== فتح نافذة الانضمام ====================
+function openJoinModal() {
+  if (App.room.status === 'waiting' || App.room.status === 'playing') {
+    return showToast('أنت في غرفة بالفعل', 'error');
+  }
+  document.getElementById('joinCodeInput').value = '';
+  document.getElementById('joinRoomModal').classList.add('active');
+}
+
+// ==================== الانضمام بكود ====================
+async function joinRoomByCode() {
+  const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+  
+  if (code.length !== 6) {
+    return showToast('الكود لازم يكون 6 حروف', 'error');
+  }
+
+  if (!db) {
+    return showToast('Supabase غير متصل', 'error');
+  }
+
+  const total = App.user.purchased + App.user.earned;
+  if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) {
+    return showToast(`رصيدك غير كافٍ (تحتاج ${CONFIG.ENTRY_FEE + CONFIG.COMMISSION})`, 'error');
+  }
+
+  await cleanMyRooms();
+
+  try {
+    const { data: room, error } = await db.from('rooms')
+      .select('*')
+      .eq('code', code)
+      .eq('status', 'waiting')
+      .maybeSingle();
+
+    if (error) throw error;
+    
+    if (!room) {
+      return showToast('❌ الكود غير صحيح أو الغرفة مقفلة', 'error');
+    }
+
+    const { count } = await db.from('room_players')
+      .select('*', { count: 'exact', head: true })
+      .eq('room_id', room.id);
+
+    if (count >= 5) {
+      return showToast('❌ الغرفة ممتلئة', 'error');
+    }
+
+    const { error: joinErr } = await db.from('room_players')
+      .insert([{ room_id: room.id, user_id: App.user.id }]);
+
+    if (joinErr && joinErr.code !== '23505') throw joinErr;
+
+    App.room = {
+      id: room.id,
+      category: room.category || 'football',
+      players: [],
+      status: 'waiting',
+      correctChoice: null,
+      code: code
+    };
+    App.gameStarted = false;
+    App.isLeaving = false;
+
+    closeModal('joinRoomModal');
+    subscribeToRoom(room.id);
+    await loadRoomPlayers(room.id);
+
+    const titleEl = document.getElementById('waitingTitle');
+    if (titleEl) titleEl.textContent = `غرفة ${code}`;
+    updateWaitingUI();
+    showView('waitingView');
+    showToast('✅ انضممت للغرفة!', 'success');
+
+  } catch (e) {
+    console.error('joinRoomByCode error:', e);
+    showToast('حدث خطأ: ' + (e.message || 'حاول تاني'), 'error');
+  }
+}
+
+// ==================== اختيار الفئة العادي ====================
+async function selectCategory(category) {
   if (App.room.status === 'waiting' || App.room.status === 'playing') {
     return showToast('أنت في غرفة بالفعل', 'error');
   }
@@ -329,99 +505,63 @@ async function selectCategory(category) {
     return showToast(`رصيدك غير كافٍ (تحتاج ${CONFIG.ENTRY_FEE + CONFIG.COMMISSION})`, 'error');
   }
 
-  // امسح أي انضمام سابق
   await cleanMyRooms();
   
   const cat = CATEGORIES[category];
-  App.room = { id: null, category, players: [], status: 'waiting', correctChoice: null };
+  App.room = { id: null, category, players: [], status: 'waiting', correctChoice: null, code: null };
   App.gameStarted = false;
   App.isLeaving = false;
 
   try {
     if (db) {
-      console.log('🔍 البحث عن غرفة waiting...');
-      
-      // 1) ابحث عن غرفة waiting بنفس الفئة
       const { data: rooms, error: roomsError } = await db.from('rooms')
         .select('id, created_at')
         .eq('category', category)
         .eq('status', 'waiting')
+        .or('is_private.is.null,is_private.eq.false')
         .order('created_at', { ascending: true });
 
-      if (roomsError) {
-        console.error('❌ خطأ في البحث عن الغرف:', roomsError);
-        throw roomsError;
-      }
-
-      console.log('📋 الغرف المتاحة:', rooms?.length || 0);
+      if (roomsError) throw roomsError;
 
       let roomId = null;
 
-      // 2) اتأكد إن الغرفة فيها أقل من 5 لاعبين
       if (rooms && rooms.length > 0) {
         for (const room of rooms) {
-          const { count, error: countErr } = await db.from('room_players')
+          const { count } = await db.from('room_players')
             .select('*', { count: 'exact', head: true })
             .eq('room_id', room.id);
           
-          if (countErr) {
-            console.error('❌ خطأ في العد:', countErr);
-            continue;
-          }
-          
-          console.log(`   غرفة ${room.id.substring(0, 8)}: ${count} لاعبين`);
-          
           if (count < 5) {
             roomId = room.id;
-            console.log(`✅ انضممت لغرفة موجودة: ${roomId}`);
             break;
           }
         }
       }
 
-      // 3) لو مفيش غرفة متاحة، اعمل غرفة جديدة
       if (!roomId) {
-        console.log('🆕 إنشاء غرفة جديدة...');
         const { data: newRoom, error: createErr } = await db.from('rooms')
-          .insert([{ category, status: 'waiting', max_players: 5 }])
+          .insert([{ category, status: 'waiting', max_players: 5, is_private: false }])
           .select('id').single();
-        
-        if (createErr) {
-          console.error('❌ خطأ في إنشاء الغرفة:', createErr);
-          throw createErr;
-        }
-        
+        if (createErr) throw createErr;
         roomId = newRoom.id;
-        console.log(`✅ أنشأت غرفة جديدة: ${roomId}`);
       }
 
       App.room.id = roomId;
 
-      // 4) ضيف اللاعب للغرفة
-      console.log('➕ إضافة اللاعب للغرفة...');
       const { error: joinErr } = await db.from('room_players')
         .insert([{ room_id: roomId, user_id: App.user.id }]);
 
-      if (joinErr && joinErr.code !== '23505') {
-        console.error('❌ خطأ في الانضمام:', joinErr);
-        throw joinErr;
-      }
-      console.log('✅ تم الانضمام');
+      if (joinErr && joinErr.code !== '23505') throw joinErr;
 
-      // 5) اشترك في Realtime
       subscribeToRoom(roomId);
-      
-      // 6) حمّل اللاعبين
       await loadRoomPlayers(roomId);
-      
-      console.log('✅ الغرفة:', roomId, 'عدد اللاعبين:', App.room.players.length);
     } else {
       App.room.id = 'local_' + Date.now();
       App.room.players = [{ username: App.user.username, avatar: App.user.avatar_url }];
     }
   } catch (e) {
-    console.error('❌ selectCategory error:', e);
-    return showToast('حدث خطأ: ' + (e.message || 'حاول تاني'), 'error');
+    console.error('selectCategory error:', e);
+    return showToast('حدث خطأ، حاول تاني', 'error');
   }
 
   const titleEl = document.getElementById('waitingTitle');
@@ -431,44 +571,35 @@ async function selectCategory(category) {
   showToast(`انضممت لغرفة ${cat.name}`, 'success');
 }
 
+// ==================== تحميل اللاعبين ====================
 async function loadRoomPlayers(roomId) {
   if (!db || App.isLeaving) return;
   try {
-    const { data: players, error } = await db.from('room_players')
+    const { data: players } = await db.from('room_players')
       .select('user_id, users(username, avatar_url)')
       .eq('room_id', roomId);
-
-    if (error) {
-      console.error('❌ خطأ في تحميل اللاعبين:', error);
-      return;
-    }
 
     App.room.players = (players || []).map(p => ({
       username: p.users?.username || 'لاعب',
       avatar: p.users?.avatar_url || ''
     }));
 
-    console.log(`📊 عدد اللاعبين في الغرفة: ${App.room.players.length}`);
     updateWaitingUI();
 
     if (players && players.length >= 5 && !App.gameStarted && App.room.status === 'waiting') {
       App.gameStarted = true;
       App.room.status = 'playing';
-      console.log('🔥 الغرفة اكتملت! ابدأ اللعبة...');
       setTimeout(startGame, 500);
     }
-  } catch (e) {
-    console.error('loadRoomPlayers error:', e);
-  }
+  } catch (e) {}
 }
 
+// ==================== الاشتراك في Realtime ====================
 function subscribeToRoom(roomId) {
   if (!db) return;
   if (App.realtimeChannel) {
     try { db.removeChannel(App.realtimeChannel); } catch (e) {}
   }
-  
-  console.log('📡 الاشتراك في الغرفة:', roomId);
   
   App.realtimeChannel = db.channel('room_' + roomId + '_' + Date.now())
     .on('postgres_changes', {
@@ -476,31 +607,20 @@ function subscribeToRoom(roomId) {
       schema: 'public',
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, (payload) => {
-      console.log('➕ لاعب جديد دخل');
-      loadRoomPlayers(roomId);
-    })
+    }, () => loadRoomPlayers(roomId))
     .on('postgres_changes', {
       event: 'DELETE',
       schema: 'public',
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, () => {
-      console.log('➖ لاعب خرج');
-      loadRoomPlayers(roomId);
-    })
+    }, () => loadRoomPlayers(roomId))
     .on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public',
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, () => {
-      console.log('🔄 تحديث اللاعب');
-      loadRoomPlayers(roomId);
-    })
-    .subscribe((status) => {
-      console.log('📡 حالة الاشتراك:', status);
-    });
+    }, () => loadRoomPlayers(roomId))
+    .subscribe();
 }
 
 function updateWaitingUI() {
@@ -536,11 +656,12 @@ function updateWaitingUI() {
   }
 }
 
+// ==================== بدء اللعبة ====================
 function startGame() {
   App.room.status = 'playing';
   App.myChoice = null;
   App.room.correctChoice = Math.floor(Math.random() * 5) + 1;
-  const cat = CATEGORIES[App.room.category];
+  const cat = CATEGORIES[App.room.category] || CATEGORIES.football;
   const grid = document.getElementById('choicesGrid');
   if (!grid) return;
   grid.innerHTML = '';
@@ -604,7 +725,8 @@ function stopTimer() {
 async function showResult() {
   App.room.status = 'finished';
   const correct = App.room.correctChoice;
-  const choices = CATEGORIES[App.room.category].choices;
+  const cat = CATEGORIES[App.room.category] || CATEGORIES.football;
+  const choices = cat.choices;
   const correctName = choices[correct - 1];
   const myName = App.myChoice ? choices[App.myChoice - 1] : 'لم تختر';
   const won = App.myChoice === correct;
@@ -703,9 +825,7 @@ async function sendTelegram(message) {
         text: message
       })
     });
-  } catch (e) {
-    console.error('Telegram error:', e);
-  }
+  } catch (e) {}
 }
 
 async function playAgain() {
@@ -719,7 +839,7 @@ async function playAgain() {
     try { db.removeChannel(App.realtimeChannel); } catch (e) {}
     App.realtimeChannel = null;
   }
-  App.room = { id: null, category: null, players: [], status: 'idle', correctChoice: null };
+  App.room = { id: null, category: null, players: [], status: 'idle', correctChoice: null, code: null };
   App.myChoice = null;
   App.gameStarted = false;
   setTimeout(() => {
