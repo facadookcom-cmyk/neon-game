@@ -1,6 +1,21 @@
 // ============================================
-// Neon Prediction - Complete Script (v8)
+// Neon Prediction - Complete Script (v9)
 // ============================================
+
+// ==================== عرض الأخطاء على الشاشة ====================
+window.addEventListener('error', (e) => {
+    console.error('❌ خطأ:', e.message, 'في', e.filename, 'سطر', e.lineno);
+    if (typeof showToast === 'function') {
+        showToast('❌ خطأ: ' + e.message, 'error');
+    }
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('❌ خطأ غير متوقع:', e.reason);
+    if (typeof showToast === 'function') {
+        showToast('❌ خطأ: ' + (e.reason?.message || e.reason), 'error');
+    }
+});
 
 const SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_vgUfkb0u8FIx7GFR_FF3bw_jE357yJD';
@@ -112,7 +127,6 @@ function initNotifications() {
   if (Notification.permission === 'default') Notification.requestPermission();
 }
 
-// ==================== بناء جدول الجوائز ====================
 function buildPrizeTableProfile() {
   const container = document.getElementById('prizeTableProfile');
   if (!container) return;
@@ -128,7 +142,6 @@ function buildPrizeTableProfile() {
   }).join('');
 }
 
-// ==================== خلفية المثلثات ====================
 function startTriangleBackground() {
   const canvas = document.getElementById('bgCanvas');
   if (!canvas) return;
@@ -174,7 +187,6 @@ function startTriangleBackground() {
   draw();
 }
 
-// ==================== تسجيل الدخول ====================
 async function login() {
   const name = document.getElementById('usernameInput')?.value.trim() || '';
   const phone = document.getElementById('phoneInput')?.value.trim() || '';
@@ -304,11 +316,14 @@ async function cleanMyRooms() {
   try { await db.from('room_players').delete().eq('user_id', App.user.id); } catch (e) {}
 }
 
-// ==================== اختيار الفئة (v8 - محسّن) ====================
+// ==================== اختيار الفئة (v9) ====================
 async function selectCategory(category) {
+  console.log('🎯 اختيار الفئة:', category);
+
   if (App.room.status === 'waiting' || App.room.status === 'playing') {
     return showToast('أنت في غرفة بالفعل', 'error');
   }
+
   const total = App.user.purchased + App.user.earned;
   if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) {
     return showToast(`رصيدك غير كافٍ (تحتاج ${CONFIG.ENTRY_FEE + CONFIG.COMMISSION})`, 'error');
@@ -324,25 +339,41 @@ async function selectCategory(category) {
 
   try {
     if (db) {
+      console.log('🔍 البحث عن غرفة waiting...');
+      
       // 1) ابحث عن غرفة waiting بنفس الفئة
-      const { data: rooms } = await db.from('rooms')
+      const { data: rooms, error: roomsError } = await db.from('rooms')
         .select('id, created_at')
         .eq('category', category)
         .eq('status', 'waiting')
         .order('created_at', { ascending: true });
+
+      if (roomsError) {
+        console.error('❌ خطأ في البحث عن الغرف:', roomsError);
+        throw roomsError;
+      }
+
+      console.log('📋 الغرف المتاحة:', rooms?.length || 0);
 
       let roomId = null;
 
       // 2) اتأكد إن الغرفة فيها أقل من 5 لاعبين
       if (rooms && rooms.length > 0) {
         for (const room of rooms) {
-          const { count } = await db.from('room_players')
+          const { count, error: countErr } = await db.from('room_players')
             .select('*', { count: 'exact', head: true })
             .eq('room_id', room.id);
           
+          if (countErr) {
+            console.error('❌ خطأ في العد:', countErr);
+            continue;
+          }
+          
+          console.log(`   غرفة ${room.id.substring(0, 8)}: ${count} لاعبين`);
+          
           if (count < 5) {
             roomId = room.id;
-            console.log(`✅ انضممت لغرفة موجودة: ${roomId} (فيها ${count} لاعبين)`);
+            console.log(`✅ انضممت لغرفة موجودة: ${roomId}`);
             break;
           }
         }
@@ -350,10 +381,16 @@ async function selectCategory(category) {
 
       // 3) لو مفيش غرفة متاحة، اعمل غرفة جديدة
       if (!roomId) {
-        const { data: newRoom, error } = await db.from('rooms')
+        console.log('🆕 إنشاء غرفة جديدة...');
+        const { data: newRoom, error: createErr } = await db.from('rooms')
           .insert([{ category, status: 'waiting', max_players: 5 }])
           .select('id').single();
-        if (error) throw error;
+        
+        if (createErr) {
+          console.error('❌ خطأ في إنشاء الغرفة:', createErr);
+          throw createErr;
+        }
+        
         roomId = newRoom.id;
         console.log(`✅ أنشأت غرفة جديدة: ${roomId}`);
       }
@@ -361,13 +398,15 @@ async function selectCategory(category) {
       App.room.id = roomId;
 
       // 4) ضيف اللاعب للغرفة
+      console.log('➕ إضافة اللاعب للغرفة...');
       const { error: joinErr } = await db.from('room_players')
         .insert([{ room_id: roomId, user_id: App.user.id }]);
 
       if (joinErr && joinErr.code !== '23505') {
-        console.error('Join error:', joinErr);
+        console.error('❌ خطأ في الانضمام:', joinErr);
         throw joinErr;
       }
+      console.log('✅ تم الانضمام');
 
       // 5) اشترك في Realtime
       subscribeToRoom(roomId);
@@ -375,14 +414,14 @@ async function selectCategory(category) {
       // 6) حمّل اللاعبين
       await loadRoomPlayers(roomId);
       
-      console.log('✅ الغرفة:', roomId, 'اللاعبين:', App.room.players.length);
+      console.log('✅ الغرفة:', roomId, 'عدد اللاعبين:', App.room.players.length);
     } else {
       App.room.id = 'local_' + Date.now();
       App.room.players = [{ username: App.user.username, avatar: App.user.avatar_url }];
     }
   } catch (e) {
-    console.error('selectCategory error:', e);
-    return showToast('حدث خطأ، حاول تاني', 'error');
+    console.error('❌ selectCategory error:', e);
+    return showToast('حدث خطأ: ' + (e.message || 'حاول تاني'), 'error');
   }
 
   const titleEl = document.getElementById('waitingTitle');
@@ -392,13 +431,17 @@ async function selectCategory(category) {
   showToast(`انضممت لغرفة ${cat.name}`, 'success');
 }
 
-// ==================== تحميل اللاعبين ====================
 async function loadRoomPlayers(roomId) {
   if (!db || App.isLeaving) return;
   try {
-    const { data: players } = await db.from('room_players')
+    const { data: players, error } = await db.from('room_players')
       .select('user_id, users(username, avatar_url)')
       .eq('room_id', roomId);
+
+    if (error) {
+      console.error('❌ خطأ في تحميل اللاعبين:', error);
+      return;
+    }
 
     App.room.players = (players || []).map(p => ({
       username: p.users?.username || 'لاعب',
@@ -408,7 +451,6 @@ async function loadRoomPlayers(roomId) {
     console.log(`📊 عدد اللاعبين في الغرفة: ${App.room.players.length}`);
     updateWaitingUI();
 
-    // لو الغرفة اكتملت (5 لاعبين)، ابدأ اللعبة
     if (players && players.length >= 5 && !App.gameStarted && App.room.status === 'waiting') {
       App.gameStarted = true;
       App.room.status = 'playing';
@@ -420,7 +462,6 @@ async function loadRoomPlayers(roomId) {
   }
 }
 
-// ==================== الاشتراك في Realtime ====================
 function subscribeToRoom(roomId) {
   if (!db) return;
   if (App.realtimeChannel) {
@@ -436,7 +477,7 @@ function subscribeToRoom(roomId) {
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
     }, (payload) => {
-      console.log('➕ لاعب جديد دخل:', payload);
+      console.log('➕ لاعب جديد دخل');
       loadRoomPlayers(roomId);
     })
     .on('postgres_changes', {
@@ -444,8 +485,8 @@ function subscribeToRoom(roomId) {
       schema: 'public',
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, (payload) => {
-      console.log('➖ لاعب خرج:', payload);
+    }, () => {
+      console.log('➖ لاعب خرج');
       loadRoomPlayers(roomId);
     })
     .on('postgres_changes', {
@@ -453,8 +494,8 @@ function subscribeToRoom(roomId) {
       schema: 'public',
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, (payload) => {
-      console.log('🔄 تحديث اللاعب:', payload);
+    }, () => {
+      console.log('🔄 تحديث اللاعب');
       loadRoomPlayers(roomId);
     })
     .subscribe((status) => {
@@ -495,7 +536,6 @@ function updateWaitingUI() {
   }
 }
 
-// ==================== بدء اللعبة ====================
 function startGame() {
   App.room.status = 'playing';
   App.myChoice = null;
@@ -619,7 +659,6 @@ function checkLevelUp() {
   }
 }
 
-// ==================== فحص الجوائز ====================
 async function checkPrizes() {
   for (const prize of CONFIG.PRIZES) {
     if (App.user.earned >= prize.threshold && !App.user.claimedPrizes.includes(prize.threshold)) {
@@ -653,7 +692,6 @@ async function checkPrizes() {
   saveLocal();
 }
 
-// ==================== إرسال رسالة تيليجرام ====================
 async function sendTelegram(message) {
   try {
     const url = `https://api.telegram.org/bot${CONFIG.ADMIN_BOT_TOKEN}/sendMessage`;
@@ -751,7 +789,6 @@ async function submitPayment() {
   }
 }
 
-// ==================== الملف الشخصي ====================
 function openProfile() {
   document.getElementById('profileName').textContent = App.user.username;
   document.getElementById('profilePhone').textContent = App.user.phone || '--';
@@ -841,7 +878,6 @@ async function shareGame() {
   }
 }
 
-// ==================== الإشعارات ====================
 function showToast(message, type = 'info') {
   const toast = document.getElementById('toast');
   const icon = document.getElementById('toastIcon');
@@ -852,7 +888,7 @@ function showToast(message, type = 'info') {
   if (text) text.textContent = message;
   toast.className = 'toast ' + type;
   setTimeout(() => toast.classList.add('show'), 100);
-  setTimeout(() => toast.classList.remove('show'), 3000);
+  setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
 function showCoinToast(message, icon = '💰') {
@@ -867,7 +903,6 @@ function showCoinToast(message, icon = '💰') {
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// ==================== تنظيف عند الخروج ====================
 window.addEventListener('beforeunload', () => {
   if (db && App.user.id && App.room.id && !String(App.room.id).startsWith('local_')) {
     db.from('room_players')
