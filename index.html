@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0c0a0a">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Neon Prediction</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,6 +96,17 @@
         <div class="home-hero">
           <h2 class="section-title">اختر تحديك</h2>
           <p class="category-hint">اختار نفس الفئة مع اللاعبين عشان تدخلوا غرفة واحدة</p>
+          
+          <div class="room-actions">
+            <button class="btn-room-action" onclick="createPrivateRoom()">
+              <span class="room-action-icon">🔒</span>
+              <span>إنشاء غرفة خاصة</span>
+            </button>
+            <button class="btn-room-action" onclick="openJoinModal()">
+              <span class="room-action-icon">🔑</span>
+              <span>الانضمام بكود</span>
+            </button>
+          </div>
         </div>
         <div class="categories-grid">
           <button class="category-card" onclick="selectCategory('football')">
@@ -249,9 +258,7 @@
         <div class="prize-section">
           <h4>🏆 جدول الجوائز الكامل</h4>
           <p class="prize-desc">كل ما توصل لنقاط مكتسبة معينة، تكسب الجائزة</p>
-          <div class="prize-table small" id="prizeTableProfile">
-            <!-- هيتم توليدها بـ JS -->
-          </div>
+          <div class="prize-table small" id="prizeTableProfile"></div>
         </div>
 
         <div class="stat-row share-row" id="shareRow">
@@ -259,6 +266,31 @@
           <span id="profileReferral">اضغط هنا</span>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- نافذة عرض كود الغرفة -->
+  <div id="roomCodeModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('roomCodeModal')">&times;</button>
+      <h2 class="neon-title">🔒 غرفة خاصة</h2>
+      <p class="small-text">ابعت الكود ده لأصدقائك عشان يدخلوا معاك:</p>
+      <div class="room-code-display" id="roomCodeDisplay">------</div>
+      <button class="btn-neon" onclick="copyRoomCode()">📋 نسخ الكود</button>
+      <button class="btn-cancel" onclick="closeModal('roomCodeModal')">إغلاق</button>
+    </div>
+  </div>
+
+  <!-- نافذة الانضمام بكود -->
+  <div id="joinRoomModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('joinRoomModal')">&times;</button>
+      <h2 class="neon-title">🔑 الانضمام بكود</h2>
+      <p class="small-text">اكتب الكود اللي وصلك من صاحب الغرفة:</p>
+      <div class="input-group">
+        <input type="text" id="joinCodeInput" placeholder="ABC123" maxlength="6" style="text-align: center; font-size: 22px; letter-spacing: 4px; font-family: 'Orbitron', sans-serif; text-transform: uppercase;">
+      </div>
+      <button class="btn-neon" onclick="joinRoomByCode()">✅ انضمام</button>
     </div>
   </div>
 
