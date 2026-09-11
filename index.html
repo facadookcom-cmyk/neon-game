@@ -74,6 +74,7 @@
             <!-- اختيار الفئة -->
             <div id="categoryView" class="view active">
                 <h2 class="section-title">🎯 اختر نوع التحدي</h2>
+                <p class="category-hint">💡 لازم كل اللاعبين يختاروا نفس الفئة عشان يتقابلوا!</p>
                 <div class="categories-grid">
                     <div class="category-card" onclick="selectCategory('football')">
                         <div class="category-icon">⚽</div>
@@ -103,13 +104,14 @@
                 <h2 class="section-title">⏳ في انتظار اللاعبين...</h2>
                 <div class="waiting-container">
                     <div class="players-circle">
-                        <div class="player-slot filled">👑</div>
+                        <div class="player-slot" id="slot1">👤</div>
                         <div class="player-slot" id="slot2"></div>
                         <div class="player-slot" id="slot3"></div>
                         <div class="player-slot" id="slot4"></div>
                         <div class="player-slot" id="slot5"></div>
                     </div>
-                    <p class="waiting-text"><span id="playersCount">1</span>/5 لاعبين</p>
+                    <p class="waiting-text"><span id="playersCount">0</span>/5 لاعبين</p>
+                    <p class="waiting-hint" id="waitingHint">في انتظار انضمام لاعبين آخرين...</p>
                 </div>
                 <button class="btn-cancel" onclick="leaveRoom()">❌ مغادرة</button>
             </div>
@@ -279,4 +281,4 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
 </body>
-    </html>
+</html>
