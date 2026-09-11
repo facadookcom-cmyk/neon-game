@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم الأدمن</title>
+    <link rel="stylesheet" href="admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- شاشة تسجيل الدخول -->
+    <div id="loginScreen" class="screen active">
+        <div class="login-box">
+            <h1>🔐 لوحة التحكم</h1>
+            <p>ادخل كلمة السر للوصول</p>
+            <input type="password" id="passwordInput" placeholder="كلمة السر" onkeypress="if(event.key==='Enter') loginAdmin()">
+            <button onclick="loginAdmin()">دخول</button>
+        </div>
+    </div>
+
+    <!-- لوحة التحكم -->
+    <div id="dashboard" class="screen">
+        <header class="admin-header">
+            <h1>🎛️ لوحة تحكم الأدمن</h1>
+            <div class="header-actions">
+                <span id="adminName">👤 الأدمن</span>
+                <button class="btn-logout" onclick="logoutAdmin()">خروج</button>
+            </div>
+        </header>
+
+        <nav class="admin-tabs">
+            <button class="tab-btn active" onclick="showTab('usersTab')">👥 المستخدمين</button>
+            <button class="tab-btn" onclick="showTab('requestsTab')">🛒 طلبات الشراء</button>
+            <button class="tab-btn" onclick="showTab('statsTab')">📊 إحصائيات</button>
+        </nav>
+
+        <!-- تاب المستخدمين -->
+        <div id="usersTab" class="tab-content active">
+            <div class="search-box">
+                <input type="text" id="searchUsers" placeholder="🔍 ابحث عن مستخدم..." oninput="filterUsers()">
+                <button onclick="loadUsers()">🔄 تحديث</button>
+            </div>
+            <div id="usersList" class="users-list">
+                <p class="loading">جاري التحميل...</p>
+            </div>
+        </div>
+
+        <!-- تاب طلبات الشراء -->
+        <div id="requestsTab" class="tab-content">
+            <button onclick="loadRequests()" class="btn-refresh">🔄 تحديث الطلبات</button>
+            <div id="requestsList" class="requests-list">
+                <p class="loading">جاري التحميل...</p>
+            </div>
+        </div>
+
+        <!-- تاب الإحصائيات -->
+        <div id="statsTab" class="tab-content">
+            <button onclick="loadStats()" class="btn-refresh">🔄 تحديث الإحصائيات</button>
+            <div id="statsBox" class="stats-box">
+                <p class="loading">جاري التحميل...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة نقاط -->
+    <div id="pointsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('pointsModal')">&times;</span>
+            <h2>💰 إدارة نقاط المستخدم</h2>
+            <div class="user-info-box">
+                <p><strong>👤 الاسم:</strong> <span id="modalUsername">--</span></p>
+                <p><strong>📱 التليفون:</strong> <span id="modalPhone">--</span></p>
+                <p><strong>💎 النقاط الحالية:</strong> <span id="modalCurrentPoints">0</span></p>
+            </div>
+            <div class="input-group">
+                <label>💎 عدد النقاط</label>
+                <input type="number" id="pointsAmount" placeholder="مثلاً: 100" min="1">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-add" onclick="addPoints()">➕ إضافة</button>
+                <button class="btn-remove" onclick="removePoints()">➖ خصم</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- الإشعارات -->
+    <div id="adminToast" class="admin-toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
