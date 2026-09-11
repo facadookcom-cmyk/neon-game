@@ -1,5 +1,5 @@
 // ============================================
-// Neon Prediction - Complete Script (v10)
+// Neon Prediction - Complete Script (v11)
 // ============================================
 
 // ==================== عرض الأخطاء ====================
@@ -317,7 +317,6 @@ async function cleanMyRooms() {
   try { await db.from('room_players').delete().eq('user_id', App.user.id); } catch (e) {}
 }
 
-// ==================== توليد كود الغرفة ====================
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -399,7 +398,6 @@ async function createPrivateRoom() {
   }
 }
 
-// ==================== نسخ كود الغرفة ====================
 function copyRoomCode() {
   const code = document.getElementById('roomCodeDisplay').textContent;
   if (!code || code === '------') return;
@@ -413,7 +411,6 @@ function copyRoomCode() {
   });
 }
 
-// ==================== فتح نافذة الانضمام ====================
 function openJoinModal() {
   if (App.room.status === 'waiting' || App.room.status === 'playing') {
     return showToast('أنت في غرفة بالفعل', 'error');
@@ -422,7 +419,6 @@ function openJoinModal() {
   document.getElementById('joinRoomModal').classList.add('active');
 }
 
-// ==================== الانضمام بكود ====================
 async function joinRoomByCode() {
   const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
   
@@ -571,27 +567,66 @@ async function selectCategory(category) {
   showToast(`انضممت لغرفة ${cat.name}`, 'success');
 }
 
-// ==================== تحميل اللاعبين ====================
+// ==================== تحميل اللاعبين (v11 - محسّن) ====================
 async function loadRoomPlayers(roomId) {
   if (!db || App.isLeaving) return;
+  
+  console.log('🔄 تحميل اللاعبين للغرفة:', roomId);
+  
   try {
-    const { data: players } = await db.from('room_players')
-      .select('user_id, users(username, avatar_url)')
+    // 1) هات اللاعبين من room_players
+    const { data: players, error } = await db.from('room_players')
+      .select('user_id, choice, result')
       .eq('room_id', roomId);
 
-    App.room.players = (players || []).map(p => ({
-      username: p.users?.username || 'لاعب',
-      avatar: p.users?.avatar_url || ''
-    }));
+    if (error) {
+      console.error('❌ خطأ في تحميل اللاعبين:', error);
+      return;
+    }
 
+    console.log('📊 عدد اللاعبين في room_players:', players?.length || 0);
+
+    if (!players || players.length === 0) {
+      App.room.players = [];
+      updateWaitingUI();
+      return;
+    }
+
+    // 2) هات بيانات المستخدمين بشكل منفصل
+    const userIds = players.map(p => p.user_id);
+    const { data: users, error: usersErr } = await db.from('users')
+      .select('id, username, avatar_url')
+      .in('id', userIds);
+
+    if (usersErr) {
+      console.error('❌ خطأ في تحميل المستخدمين:', usersErr);
+    }
+
+    // 3) ادمج البيانات
+    App.room.players = players.map(p => {
+      const user = users?.find(u => u.id === p.user_id);
+      return {
+        user_id: p.user_id,
+        username: user?.username || 'لاعب',
+        avatar: user?.avatar_url || '',
+        choice: p.choice
+      };
+    });
+
+    console.log('✅ عدد اللاعبين:', App.room.players.length, App.room.players);
+    
     updateWaitingUI();
 
-    if (players && players.length >= 5 && !App.gameStarted && App.room.status === 'waiting') {
+    // 4) لو الغرفة اكتملت، ابدأ اللعبة
+    if (App.room.players.length >= 5 && !App.gameStarted && App.room.status === 'waiting') {
       App.gameStarted = true;
       App.room.status = 'playing';
-      setTimeout(startGame, 500);
+      console.log('🔥 الغرفة اكتملت! ابدأ اللعبة...');
+      setTimeout(startGame, 800);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('❌ loadRoomPlayers error:', e);
+  }
 }
 
 // ==================== الاشتراك في Realtime ====================
@@ -601,28 +636,42 @@ function subscribeToRoom(roomId) {
     try { db.removeChannel(App.realtimeChannel); } catch (e) {}
   }
   
+  console.log('📡 الاشتراك في الغرفة:', roomId);
+  
   App.realtimeChannel = db.channel('room_' + roomId + '_' + Date.now())
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, () => loadRoomPlayers(roomId))
+    }, (payload) => {
+      console.log('➕ لاعب جديد دخل');
+      loadRoomPlayers(roomId);
+    })
     .on('postgres_changes', {
       event: 'DELETE',
       schema: 'public',
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, () => loadRoomPlayers(roomId))
+    }, () => {
+      console.log('➖ لاعب خرج');
+      loadRoomPlayers(roomId);
+    })
     .on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public',
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, () => loadRoomPlayers(roomId))
-    .subscribe();
+    }, () => {
+      console.log('🔄 تحديث اللاعب');
+      loadRoomPlayers(roomId);
+    })
+    .subscribe((status) => {
+      console.log('📡 حالة الاشتراك:', status);
+    });
 }
 
+// ==================== تحديث واجهة الانتظار (v11) ====================
 function updateWaitingUI() {
   const count = App.room.players.length;
   const countEl = document.getElementById('playersCount');
@@ -635,10 +684,13 @@ function updateWaitingUI() {
       : 'الغرفة اكتملت! استعد';
   }
 
+  console.log('🎨 تحديث الواجهة:', count, 'لاعبين');
+
   for (let i = 1; i <= 5; i++) {
     const slot = document.getElementById('slot' + i);
     if (!slot) continue;
     const player = App.room.players[i - 1];
+    
     if (player) {
       slot.classList.add('filled');
       if (player.avatar) {
@@ -646,12 +698,14 @@ function updateWaitingUI() {
         slot.textContent = '';
       } else {
         slot.style.backgroundImage = '';
-        slot.textContent = player.username.charAt(0).toUpperCase();
+        slot.textContent = (player.username || '?').charAt(0).toUpperCase();
       }
+      slot.title = player.username || 'لاعب';
     } else {
       slot.classList.remove('filled');
       slot.style.backgroundImage = '';
       slot.textContent = '';
+      slot.title = '';
     }
   }
 }
