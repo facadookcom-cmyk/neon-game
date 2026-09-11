@@ -1,5 +1,5 @@
 // ============================================
-// Neon Prediction - Complete Script (v5)
+// Neon Prediction - Complete Script (v7)
 // ============================================
 
 // ==================== إعدادات Supabase ====================
@@ -528,7 +528,16 @@ function updateWaitingUI() {
     const countEl = document.getElementById('playersCount');
     if (countEl) countEl.textContent = App.room.players.length;
 
-    for (let i = 2; i <= 5; i++) {
+    const hintEl = document.getElementById('waitingHint');
+    if (hintEl) {
+        if (App.room.players.length < 5) {
+            hintEl.textContent = `في انتظار ${5 - App.room.players.length} لاعبين آخرين...`;
+        } else {
+            hintEl.textContent = '🔥 الغرفة اكتملت! استعد...';
+        }
+    }
+
+    for (let i = 1; i <= 5; i++) {
         const slot = document.getElementById('slot' + i);
         if (slot) {
             if (App.room.players[i - 1]) {
@@ -805,6 +814,7 @@ function buyPackage(points, price) {
     }
 }
 
+// ==================== إرسال الدفع ====================
 async function submitPayment() {
     const transNumber = document.getElementById('transNumberInput').value.trim();
 
@@ -818,8 +828,34 @@ async function submitPayment() {
         return;
     }
 
+    showCoinToast('⏳ جاري إرسال الطلب...', '📤', 'win');
+
     try {
-        const message = `
+        // 1) حفظ الطلب في Supabase
+        if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
+            const { error: dbError } = await db
+                .from('purchase_requests')
+                .insert([{
+                    user_id: App.user.id,
+                    username: App.user.username,
+                    phone: App.user.phone,
+                    points: App.pendingPurchase.points,
+                    price: App.pendingPurchase.price,
+                    trans_number: transNumber,
+                    status: 'pending'
+                }]);
+
+            if (dbError) {
+                console.error('❌ خطأ في Supabase:', dbError);
+                showToast('⚠️ خطأ في الحفظ: ' + dbError.message, 'error');
+            } else {
+                console.log('✅ تم حفظ الطلب في Supabase');
+            }
+        }
+
+        // 2) إرسال إشعار للبوت
+        try {
+            const message = `
 🔔 *طلب شراء جديد*
 
 👤 المستخدم: ${App.user.username}
@@ -829,27 +865,27 @@ async function submitPayment() {
 💰 السعر: ${App.pendingPurchase.price} جنيه
 🔢 رقم العملية: ${transNumber}
 ⏰ الوقت: ${new Date().toLocaleString('ar-EG')}
-        `;
+            `;
 
-        const botUrl = `https://api.telegram.org/bot${CONFIG.ADMIN_BOT_TOKEN}/sendMessage`;
+            const botUrl = `https://api.telegram.org/bot${CONFIG.ADMIN_BOT_TOKEN}/sendMessage`;
 
-        const response = await fetch(botUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: CONFIG.ADMIN_CHAT_ID,
-                text: message,
-                parse_mode: 'Markdown'
-            })
-        });
+            const response = await fetch(botUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: CONFIG.ADMIN_CHAT_ID,
+                    text: message,
+                    parse_mode: 'Markdown'
+                })
+            });
 
-        const result = await response.json();
-
-        if (result.ok) {
-            showCoinToast('✅ تم إرسال طلبك!', '📤', 'win');
-        } else {
-            showToast('⚠️ فيه مشكلة في الإشعار', 'warning');
+            const result = await response.json();
+            console.log('📤 نتيجة إرسال البوت:', result);
+        } catch (botError) {
+            console.error('❌ خطأ في إرسال البوت:', botError);
         }
+
+        showCoinToast('✅ تم إرسال طلبك!', '📤', 'win');
 
         setTimeout(() => {
             closeModal('paymentModal');
@@ -858,7 +894,7 @@ async function submitPayment() {
         }, 2000);
 
     } catch (e) {
-        console.error('خطأ:', e);
+        console.error('❌ خطأ:', e);
         showToast('❌ حدث خطأ، حاول تاني', 'error');
     }
 }
