@@ -654,4 +654,370 @@ async function showResult() {
 
     App.user.games_played = (App.user.games_played || 0) + 1;
 
-    if (isWi
+    if (isWinner) {
+        App.user.earned += CONFIG.WIN_REWARD;
+        checkLevelUp();
+        await checkReward500();
+        showCoinToast(`+${CONFIG.WIN_REWARD} نقطة`, '🏆', 'win');
+    } else {
+        showCoinToast(`-${totalCost} نقطة`, '💸', 'gift');
+    }
+
+    if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
+        try {
+            await db.from('users').update({
+                purchased_points: App.user.purchased,
+                earned_points: App.user.earned,
+                level: App.user.level,
+                games_played: App.user.games_played
+            }).eq('id', App.user.id);
+        } catch (e) { console.error(e); }
+    }
+
+    saveLocal();
+    updateUI();
+
+    const container = document.getElementById('resultContainer');
+    const icon = document.getElementById('resultIcon');
+    const title = document.getElementById('resultTitle');
+    const text = document.getElementById('resultText');
+    const reward = document.getElementById('resultReward');
+
+    if (isWinner) {
+        container.className = 'result-container winner';
+        icon.textContent = '🏆';
+        title.textContent = 'مبروك! فزت!';
+        reward.textContent = `+${CONFIG.WIN_REWARD} نقطة ⭐`;
+    } else {
+        container.className = 'result-container loser';
+        icon.textContent = '😢';
+        title.textContent = 'للأسف، خسرت';
+        reward.textContent = `-${totalCost} نقطة`;
+    }
+
+    text.innerHTML = `الخيار الصحيح: <strong>${correctName}</strong><br>اختيارك: <strong>${myChoiceName}</strong>`;
+
+    showView('resultView');
+}
+
+// ==================== المستويات ====================
+function checkLevelUp() {
+    const games = App.user.games_played || 0;
+    let newLevel = Math.floor(games / CONFIG.LEVELS_PER_GAMES) + 1;
+    if (newLevel > 7) newLevel = 7;
+
+    if (newLevel > App.user.level) {
+        App.user.level = newLevel;
+        showToast(`🎉 ترقيت! المستوى: ${CONFIG.LEVEL_NAMES[newLevel]}`, 'success');
+    }
+}
+
+// ==================== مكافأة 500 نقطة ====================
+async function checkReward500() {
+    if (App.user.earned >= CONFIG.REWARD_THRESHOLD) {
+        App.user.purchased += CONFIG.REWARD_AMOUNT + CONFIG.REWARD_GIFT;
+        App.user.earned -= CONFIG.REWARD_THRESHOLD;
+
+        showCoinToast(`+${CONFIG.REWARD_AMOUNT + CONFIG.REWARD_GIFT} نقطة هدية! 🎁`, '🎁', 'win');
+
+        try {
+            const message = `
+🎉 *مستخدم وصل 500 نقطة!*
+
+👤 الاسم: ${App.user.username}
+📱 التليفون: ${App.user.phone}
+🆔 ID: ${App.user.id}
+⭐ النقاط المكتسبة: ${CONFIG.REWARD_THRESHOLD}
+🎁 الهدية: ${CONFIG.REWARD_AMOUNT + CONFIG.REWARD_GIFT} نقطة
+⏰ الوقت: ${new Date().toLocaleString('ar-EG')}
+            `;
+
+            const botUrl = `https://api.telegram.org/bot${CONFIG.ADMIN_BOT_TOKEN}/sendMessage`;
+
+            await fetch(botUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: CONFIG.ADMIN_CHAT_ID,
+                    text: message,
+                    parse_mode: 'Markdown'
+                })
+            });
+        } catch (e) { console.error('خطأ في الإشعار:', e); }
+    }
+}
+
+// ==================== إعادة اللعب ====================
+async function playAgain() {
+    App.isLeaving = true;
+
+    if (db && App.room.id && !String(App.room.id).startsWith('local_')) {
+        try {
+            await db.from('room_players')
+                .delete()
+                .eq('room_id', App.room.id)
+                .eq('user_id', App.user.id);
+        } catch (e) { console.error(e); }
+    }
+
+    if (App.realtimeChannel && db) {
+        try {
+            db.removeChannel(App.realtimeChannel);
+        } catch (e) { console.error(e); }
+        App.realtimeChannel = null;
+    }
+
+    App.room = { id: null, category: null, players: [], status: 'idle', correctChoice: null };
+    App.myChoice = null;
+    App.gameStarted = false;
+
+    setTimeout(() => {
+        App.isLeaving = false;
+        showView('categoryView');
+    }, 300);
+}
+
+async function leaveRoom() {
+    await playAgain();
+    showToast('👋 غادرت الغرفة', 'info');
+}
+
+// ==================== المتجر ====================
+function openStore() {
+    document.getElementById('storeModal').classList.add('active');
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.remove('active');
+}
+
+function buyPackage(points, price) {
+    App.pendingPurchase = { points, price };
+    closeModal('storeModal');
+
+    const paymentModal = document.getElementById('paymentModal');
+    if (paymentModal) {
+        document.getElementById('paymentPoints').textContent = points;
+        document.getElementById('paymentPrice').textContent = price + ' جنيه';
+        document.getElementById('paymentVodafone').textContent = CONFIG.VODAFONE;
+        paymentModal.classList.add('active');
+    }
+}
+
+async function submitPayment() {
+    const transNumber = document.getElementById('transNumberInput').value.trim();
+
+    if (!transNumber || transNumber.length < 4) {
+        showToast('❌ اكتب رقم عملية صحيح', 'error');
+        return;
+    }
+
+    if (!App.pendingPurchase) {
+        showToast('❌ حدث خطأ، جرب تاني', 'error');
+        return;
+    }
+
+    try {
+        const message = `
+🔔 *طلب شراء جديد*
+
+👤 المستخدم: ${App.user.username}
+📱 التليفون: ${App.user.phone}
+🆔 ID: ${App.user.id}
+💎 النقاط: ${App.pendingPurchase.points}
+💰 السعر: ${App.pendingPurchase.price} جنيه
+🔢 رقم العملية: ${transNumber}
+⏰ الوقت: ${new Date().toLocaleString('ar-EG')}
+        `;
+
+        const botUrl = `https://api.telegram.org/bot${CONFIG.ADMIN_BOT_TOKEN}/sendMessage`;
+
+        const response = await fetch(botUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: CONFIG.ADMIN_CHAT_ID,
+                text: message,
+                parse_mode: 'Markdown'
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.ok) {
+            showCoinToast('✅ تم إرسال طلبك!', '📤', 'win');
+        } else {
+            showToast('⚠️ فيه مشكلة في الإشعار', 'warning');
+        }
+
+        setTimeout(() => {
+            closeModal('paymentModal');
+            App.pendingPurchase = null;
+            document.getElementById('transNumberInput').value = '';
+        }, 2000);
+
+    } catch (e) {
+        console.error('خطأ:', e);
+        showToast('❌ حدث خطأ، حاول تاني', 'error');
+    }
+}
+
+// ==================== الملف الشخصي ====================
+function openProfile() {
+    document.getElementById('profileName').textContent = App.user.username;
+    document.getElementById('profilePhone').textContent = App.user.phone || '--';
+    document.getElementById('profilePurchased').textContent = App.user.purchased;
+    document.getElementById('profileEarned').textContent = App.user.earned;
+    document.getElementById('profileLevel').textContent = CONFIG.LEVEL_NAMES[App.user.level] || 'مبتدئ 🌱';
+    document.getElementById('profileGames').textContent = App.user.games_played || 0;
+
+    const avatarEl = document.getElementById('profileAvatar');
+    if (App.user.avatar_url) {
+        avatarEl.style.backgroundImage = `url(${App.user.avatar_url})`;
+        avatarEl.innerHTML = '<span class="edit-avatar-badge">📷</span>';
+    } else {
+        avatarEl.style.backgroundImage = '';
+        avatarEl.innerHTML = App.user.username.charAt(0).toUpperCase() + '<span class="edit-avatar-badge">📷</span>';
+    }
+
+    const referralEl = document.getElementById('profileReferral');
+    const shareRow = document.getElementById('shareRow');
+    if (referralEl && shareRow) {
+        if (App.user.shared) {
+            referralEl.textContent = '✅ تمت المشاركة';
+            shareRow.style.opacity = '0.6';
+            shareRow.style.cursor = 'default';
+            shareRow.onclick = null;
+        } else {
+            referralEl.textContent = `🎁 اضغط للمشاركة`;
+            shareRow.style.opacity = '1';
+            shareRow.style.cursor = 'pointer';
+            shareRow.onclick = shareGame;
+        }
+    }
+
+    document.getElementById('profileModal').classList.add('active');
+}
+
+// ==================== رفع الصورة ====================
+async function uploadAvatar(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.size > 500000) {
+        showToast('❌ الصورة كبيرة جداً (أقصى 500KB)', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const base64 = e.target.result;
+        App.user.avatar_url = base64;
+        saveLocal();
+        updateUI();
+
+        if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
+            try {
+                await db.from('users').update({
+                    avatar_url: base64
+                }).eq('id', App.user.id);
+            } catch (err) { console.error(err); }
+        }
+
+        showCoinToast('✅ تم تحديث الصورة!', '📷', 'win');
+        openProfile();
+    };
+    reader.readAsDataURL(file);
+}
+
+// ==================== المشاركة ====================
+async function shareGame() {
+    if (App.user.shared) {
+        showToast('⚠️ لقد حصلت على مكافأة المشاركة بالفعل!', 'error');
+        return;
+    }
+
+    const shareUrl = 'https://neon-game-seven.vercel.app';
+    const shareText = `🎮 العب معايا Neon Prediction! 🎯\nتوقع واكسب نقاط! 💎\n${shareUrl}`;
+
+    try {
+        if (navigator.share) {
+            await navigator.share({
+                title: 'Neon Prediction',
+                text: shareText,
+                url: shareUrl
+            });
+        } else {
+            await navigator.clipboard.writeText(shareText);
+            showToast('✅ تم نسخ الرابط!', 'success');
+        }
+
+        App.user.purchased += CONFIG.SHARE_BONUS;
+        App.user.shared = true;
+        saveLocal();
+        updateUI();
+
+        showCoinToast(`+${CONFIG.SHARE_BONUS} نقطة (مشاركة)`, '🎁', 'win');
+
+        if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
+            try {
+                await db.from('users').update({
+                    purchased_points: App.user.purchased,
+                    shared: true
+                }).eq('id', App.user.id);
+            } catch (e) { console.error(e); }
+        }
+
+        setTimeout(() => {
+            const referralEl = document.getElementById('profileReferral');
+            if (referralEl) referralEl.textContent = '✅ تمت المشاركة';
+        }, 500);
+
+    } catch (e) {
+        if (e.name !== 'AbortError') {
+            console.error('خطأ في المشاركة:', e);
+        }
+    }
+}
+
+// ==================== الإشعارات ====================
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    const icon = document.getElementById('toastIcon');
+    const text = document.getElementById('toastText');
+    if (!toast) return;
+
+    const icons = { info: 'ℹ️', success: '✅', error: '❌', warning: '⚠️' };
+
+    if (icon) icon.textContent = icons[type] || 'ℹ️';
+    if (text) text.textContent = message;
+
+    toast.className = 'toast ' + type;
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function showCoinToast(message, icon = '💰', type = 'win') {
+    const toast = document.getElementById('coinToast');
+    const iconEl = document.getElementById('coinToastIcon');
+    const textEl = document.getElementById('coinToastText');
+    if (!toast) return;
+
+    if (iconEl) iconEl.textContent = icon;
+    if (textEl) textEl.textContent = message;
+
+    toast.className = 'coin-toast ' + type;
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// ==================== تنظيف عند الخروج ====================
+window.addEventListener('beforeunload', () => {
+    if (db && App.user.id && App.room.id && !String(App.room.id).startsWith('local_')) {
+        db.from('room_players')
+            .delete()
+            .eq('room_id', App.room.id)
+            .eq('user_id', App.user.id);
+    }
+});
