@@ -1,5 +1,5 @@
 // ============================================
-// Neon Prediction - Complete Script (v11)
+// Neon Prediction - Complete Script (v12 - 3 Players)
 // ============================================
 
 // ==================== عرض الأخطاء ====================
@@ -24,7 +24,7 @@ const CONFIG = Object.freeze({
   ENTRY_FEE: 12,
   WIN_REWARD: 28,
   COMMISSION: 2,
-  ROOM_SIZE: 5,
+  ROOM_SIZE: 3,
   CHOICE_TIMEOUT: 10,
   STARTER_POINTS: 60,
   SHARE_BONUS: 20,
@@ -362,7 +362,7 @@ async function createPrivateRoom() {
       .insert([{
         category: 'football',
         status: 'waiting',
-        max_players: 5,
+        max_players: CONFIG.ROOM_SIZE,
         code: code,
         is_private: true
       }])
@@ -454,7 +454,7 @@ async function joinRoomByCode() {
       .select('*', { count: 'exact', head: true })
       .eq('room_id', room.id);
 
-    if (count >= 5) {
+    if (count >= CONFIG.ROOM_SIZE) {
       return showToast('❌ الغرفة ممتلئة', 'error');
     }
 
@@ -527,7 +527,7 @@ async function selectCategory(category) {
             .select('*', { count: 'exact', head: true })
             .eq('room_id', room.id);
           
-          if (count < 5) {
+          if (count < CONFIG.ROOM_SIZE) {
             roomId = room.id;
             break;
           }
@@ -536,7 +536,7 @@ async function selectCategory(category) {
 
       if (!roomId) {
         const { data: newRoom, error: createErr } = await db.from('rooms')
-          .insert([{ category, status: 'waiting', max_players: 5, is_private: false }])
+          .insert([{ category, status: 'waiting', max_players: CONFIG.ROOM_SIZE, is_private: false }])
           .select('id').single();
         if (createErr) throw createErr;
         roomId = newRoom.id;
@@ -567,14 +567,13 @@ async function selectCategory(category) {
   showToast(`انضممت لغرفة ${cat.name}`, 'success');
 }
 
-// ==================== تحميل اللاعبين (v11 - محسّن) ====================
+// ==================== تحميل اللاعبين ====================
 async function loadRoomPlayers(roomId) {
   if (!db || App.isLeaving) return;
   
   console.log('🔄 تحميل اللاعبين للغرفة:', roomId);
   
   try {
-    // 1) هات اللاعبين من room_players
     const { data: players, error } = await db.from('room_players')
       .select('user_id, choice, result')
       .eq('room_id', roomId);
@@ -592,7 +591,6 @@ async function loadRoomPlayers(roomId) {
       return;
     }
 
-    // 2) هات بيانات المستخدمين بشكل منفصل
     const userIds = players.map(p => p.user_id);
     const { data: users, error: usersErr } = await db.from('users')
       .select('id, username, avatar_url')
@@ -602,7 +600,6 @@ async function loadRoomPlayers(roomId) {
       console.error('❌ خطأ في تحميل المستخدمين:', usersErr);
     }
 
-    // 3) ادمج البيانات
     App.room.players = players.map(p => {
       const user = users?.find(u => u.id === p.user_id);
       return {
@@ -613,12 +610,11 @@ async function loadRoomPlayers(roomId) {
       };
     });
 
-    console.log('✅ عدد اللاعبين:', App.room.players.length, App.room.players);
+    console.log('✅ عدد اللاعبين:', App.room.players.length);
     
     updateWaitingUI();
 
-    // 4) لو الغرفة اكتملت، ابدأ اللعبة
-    if (App.room.players.length >= 5 && !App.gameStarted && App.room.status === 'waiting') {
+    if (App.room.players.length >= CONFIG.ROOM_SIZE && !App.gameStarted && App.room.status === 'waiting') {
       App.gameStarted = true;
       App.room.status = 'playing';
       console.log('🔥 الغرفة اكتملت! ابدأ اللعبة...');
@@ -671,7 +667,7 @@ function subscribeToRoom(roomId) {
     });
 }
 
-// ==================== تحديث واجهة الانتظار (v11) ====================
+// ==================== تحديث واجهة الانتظار ====================
 function updateWaitingUI() {
   const count = App.room.players.length;
   const countEl = document.getElementById('playersCount');
@@ -679,14 +675,14 @@ function updateWaitingUI() {
   
   const hint = document.getElementById('waitingHint');
   if (hint) {
-    hint.textContent = count < 5 
-      ? `في انتظار ${5 - count} لاعبين...` 
+    hint.textContent = count < CONFIG.ROOM_SIZE 
+      ? `في انتظار ${CONFIG.ROOM_SIZE - count} لاعبين...` 
       : 'الغرفة اكتملت! استعد';
   }
 
   console.log('🎨 تحديث الواجهة:', count, 'لاعبين');
 
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= CONFIG.ROOM_SIZE; i++) {
     const slot = document.getElementById('slot' + i);
     if (!slot) continue;
     const player = App.room.players[i - 1];
