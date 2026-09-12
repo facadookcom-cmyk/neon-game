@@ -1,20 +1,14 @@
 // ============================================
-// Neon Prediction - Complete Script (v12 - 3 Players)
+// Neon Prediction - Complete Script (v13)
 // ============================================
 
 // ==================== عرض الأخطاء ====================
 window.addEventListener('error', (e) => {
     console.error('❌ خطأ:', e.message, 'في', e.filename, 'سطر', e.lineno);
-    if (typeof showToast === 'function') {
-        showToast('❌ خطأ: ' + e.message, 'error');
-    }
 });
 
 window.addEventListener('unhandledrejection', (e) => {
     console.error('❌ خطأ غير متوقع:', e.reason);
-    if (typeof showToast === 'function') {
-        showToast('❌ خطأ: ' + (e.reason?.message || e.reason), 'error');
-    }
 });
 
 const SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -79,6 +73,7 @@ const App = {
   gameStarted: false,
   onlineInterval: null,
   speedInterval: null,
+  refreshInterval: null,
   adShown: false,
   isLeaving: false
 };
@@ -118,6 +113,7 @@ function restoreSession() {
 function startPeriodicUpdates() {
   App.onlineInterval = setInterval(updateOnlineCount, 4000);
   App.speedInterval = setInterval(updateSpeed, 2800);
+  App.refreshInterval = setInterval(refreshUserData, 10000);
   updateOnlineCount();
   updateSpeed();
 }
@@ -125,6 +121,32 @@ function startPeriodicUpdates() {
 function initNotifications() {
   if (!('Notification' in window)) return;
   if (Notification.permission === 'default') Notification.requestPermission();
+}
+
+// ==================== تحديث بيانات المستخدم من Supabase ====================
+async function refreshUserData() {
+  if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
+  
+  try {
+    const { data: fresh } = await db.from('users')
+      .select('*')
+      .eq('id', App.user.id)
+      .maybeSingle();
+    
+    if (fresh) {
+      const oldPoints = App.user.purchased + App.user.earned;
+      const newPoints = (fresh.purchased_points || 0) + (fresh.earned_points || 0);
+      
+      if (oldPoints !== newPoints) {
+        console.log('🔄 النقاط اتحدثت:', oldPoints, '→', newPoints);
+        mapUser(fresh);
+        saveLocal();
+        updateUI();
+      }
+    }
+  } catch (e) {
+    // تجاهل الأخطاء
+  }
 }
 
 function buildPrizeTableProfile() {
@@ -245,10 +267,31 @@ function saveLocal() {
   localStorage.setItem('neon_user', JSON.stringify(App.user));
 }
 
-function enterGame() {
+// ==================== دخول اللعبة (v13 - محدّث) ====================
+async function enterGame() {
   document.getElementById('loginScreen')?.classList.remove('active');
   document.getElementById('mainScreen')?.classList.add('active');
+  
+  // 🆕 اقرأ البيانات الحديثة من Supabase
+  if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
+    try {
+      const { data: fresh } = await db.from('users')
+        .select('*')
+        .eq('id', App.user.id)
+        .maybeSingle();
+      
+      if (fresh) {
+        mapUser(fresh);
+        saveLocal();
+        console.log('✅ تم تحديث البيانات من Supabase:', fresh.purchased_points);
+      }
+    } catch (e) {
+      console.error('خطأ في تحديث البيانات:', e);
+    }
+  }
+  
   updateUI();
+  
   if (!App.adShown && !localStorage.getItem('adShown')) {
     document.getElementById('welcomeAd')?.classList.remove('hidden');
   }
@@ -640,28 +683,19 @@ function subscribeToRoom(roomId) {
       schema: 'public',
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, (payload) => {
-      console.log('➕ لاعب جديد دخل');
-      loadRoomPlayers(roomId);
-    })
+    }, () => loadRoomPlayers(roomId))
     .on('postgres_changes', {
       event: 'DELETE',
       schema: 'public',
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, () => {
-      console.log('➖ لاعب خرج');
-      loadRoomPlayers(roomId);
-    })
+    }, () => loadRoomPlayers(roomId))
     .on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public',
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
-    }, () => {
-      console.log('🔄 تحديث اللاعب');
-      loadRoomPlayers(roomId);
-    })
+    }, () => loadRoomPlayers(roomId))
     .subscribe((status) => {
       console.log('📡 حالة الاشتراك:', status);
     });
