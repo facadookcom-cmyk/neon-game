@@ -1,15 +1,6 @@
 // ============================================
-// Neon Prediction - Complete Script (v14)
+// Neon Prediction - Complete Script (v15)
 // ============================================
-
-// ==================== عرض الأخطاء ====================
-window.addEventListener('error', (e) => {
-    console.error('❌ خطأ:', e.message, 'في', e.filename, 'سطر', e.lineno);
-});
-
-window.addEventListener('unhandledrejection', (e) => {
-    console.error('❌ خطأ غير متوقع:', e.reason);
-});
 
 const SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_vgUfkb0u8FIx7GFR_FF3bw_jE357yJD';
@@ -32,26 +23,16 @@ const CONFIG = Object.freeze({
     4: 'خبير 🥇', 5: 'أسطورة 💎', 6: 'نخبة 👑', 7: 'أسطوري 🏆'
   }),
   PRIZES: [
-    { threshold: 150, money: 20 },
-    { threshold: 200, money: 30 },
-    { threshold: 250, money: 40 },
-    { threshold: 300, money: 55 },
-    { threshold: 350, money: 70 },
-    { threshold: 400, money: 90 },
-    { threshold: 450, money: 110 },
-    { threshold: 500, money: 135 },
-    { threshold: 550, money: 160 },
-    { threshold: 600, money: 190 },
-    { threshold: 650, money: 220 },
-    { threshold: 700, money: 255 },
-    { threshold: 750, money: 290 },
-    { threshold: 800, money: 330 },
-    { threshold: 850, money: 375 },
-    { threshold: 900, money: 420 },
-    { threshold: 950, money: 470 },
-    { threshold: 1000, money: 525 },
-    { threshold: 1100, money: 580 },
-    { threshold: 1200, money: 650 }
+    { threshold: 150, money: 20 }, { threshold: 200, money: 30 },
+    { threshold: 250, money: 40 }, { threshold: 300, money: 55 },
+    { threshold: 350, money: 70 }, { threshold: 400, money: 90 },
+    { threshold: 450, money: 110 }, { threshold: 500, money: 135 },
+    { threshold: 550, money: 160 }, { threshold: 600, money: 190 },
+    { threshold: 650, money: 220 }, { threshold: 700, money: 255 },
+    { threshold: 750, money: 290 }, { threshold: 800, money: 330 },
+    { threshold: 850, money: 375 }, { threshold: 900, money: 420 },
+    { threshold: 950, money: 470 }, { threshold: 1000, money: 525 },
+    { threshold: 1100, money: 580 }, { threshold: 1200, money: 650 }
   ]
 });
 
@@ -73,9 +54,9 @@ const App = {
   gameStarted: false,
   onlineInterval: null,
   speedInterval: null,
-  refreshInterval: null,
   adShown: false,
-  isLeaving: false
+  isLeaving: false,
+  lastUpdateTime: 0
 };
 
 let db = null;
@@ -113,7 +94,6 @@ function restoreSession() {
 function startPeriodicUpdates() {
   App.onlineInterval = setInterval(updateOnlineCount, 4000);
   App.speedInterval = setInterval(updateSpeed, 2800);
-  App.refreshInterval = setInterval(refreshUserData, 10000);
   updateOnlineCount();
   updateSpeed();
 }
@@ -123,53 +103,15 @@ function initNotifications() {
   if (Notification.permission === 'default') Notification.requestPermission();
 }
 
-// ==================== تحديث بيانات المستخدم من Supabase (v14) ====================
-async function refreshUserData() {
-  if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
-  
-  // ⚠️ متحدثش لو المستخدم في غرفة أو بيلعب
-  if (App.room.status === 'playing' || App.room.status === 'waiting') {
-    console.log('⏸️ متوقف عن التحديث - المستخدم في غرفة');
-    return;
-  }
-  
-  try {
-    const { data: fresh } = await db.from('users')
-      .select('*')
-      .eq('id', App.user.id)
-      .maybeSingle();
-    
-    if (fresh) {
-      const oldPoints = App.user.purchased + App.user.earned;
-      const newPoints = (fresh.purchased_points || 0) + (fresh.earned_points || 0);
-      
-      // ⚠️ حدّث بس لو السيرفر فيه نقاط أكتر (مش أقل)
-      if (newPoints > oldPoints) {
-        console.log('🔄 النقاط اتحدثت (زيادة):', oldPoints, '→', newPoints);
-        mapUser(fresh);
-        saveLocal();
-        updateUI();
-      } else if (newPoints < oldPoints) {
-        console.log('⚠️ السيرفر فيه نقاط أقل، مش هحدث');
-      }
-    }
-  } catch (e) {
-    // تجاهل الأخطاء
-  }
-}
-
 function buildPrizeTableProfile() {
   const container = document.getElementById('prizeTableProfile');
   if (!container) return;
-  
   container.innerHTML = CONFIG.PRIZES.map((p, i) => {
     const isHighlight = [150, 500, 1200].includes(p.threshold) || i % 4 === 0;
-    return `
-      <div class="prize-row ${isHighlight ? 'highlight' : ''}">
-        <span class="prize-points">${p.threshold} نقطة</span>
-        <span class="prize-money">${p.money} جنيه</span>
-      </div>
-    `;
+    return `<div class="prize-row ${isHighlight ? 'highlight' : ''}">
+      <span class="prize-points">${p.threshold} نقطة</span>
+      <span class="prize-money">${p.money} جنيه</span>
+    </div>`;
   }).join('');
 }
 
@@ -246,6 +188,7 @@ async function login() {
       showToast(`أهلاً ${name}! حصلت على ${CONFIG.STARTER_POINTS} نقطة`, 'success');
     }
     saveLocal();
+    App.lastUpdateTime = Date.now();
     enterGame();
   } catch (e) {
     createLocalUser(name, phone);
@@ -274,6 +217,7 @@ function createLocalUser(name, phone) {
 
 function saveLocal() {
   localStorage.setItem('neon_user', JSON.stringify(App.user));
+  App.lastUpdateTime = Date.now();
 }
 
 // ==================== دخول اللعبة ====================
@@ -281,7 +225,8 @@ async function enterGame() {
   document.getElementById('loginScreen')?.classList.remove('active');
   document.getElementById('mainScreen')?.classList.add('active');
   
-  if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
+  // اقرأ من Supabase بس لو مش لسه بيلعب
+  if (db && App.user.id && !String(App.user.id).startsWith('local_') && !App.isPlaying()) {
     try {
       const { data: fresh } = await db.from('users')
         .select('*')
@@ -289,13 +234,18 @@ async function enterGame() {
         .maybeSingle();
       
       if (fresh) {
-        mapUser(fresh);
-        saveLocal();
-        console.log('✅ تم تحديث البيانات من Supabase:', fresh.purchased_points);
+        const freshTotal = (fresh.purchased_points || 0) + (fresh.earned_points || 0);
+        const localTotal = App.user.purchased + App.user.earned;
+        
+        // ⚠️ خد الأقل (عشان لو خسرت متترجعش)
+        if (freshTotal < localTotal) {
+          console.log('⚠️ السيرفر فيه نقاط أقل، هستخدم المحلي:', localTotal);
+        } else {
+          mapUser(fresh);
+          saveLocal();
+        }
       }
-    } catch (e) {
-      console.error('خطأ في تحديث البيانات:', e);
-    }
+    } catch (e) {}
   }
   
   updateUI();
@@ -304,6 +254,11 @@ async function enterGame() {
     document.getElementById('welcomeAd')?.classList.remove('hidden');
   }
 }
+
+// اتحقق لو المستخدم بيلعب
+App.isPlaying = function() {
+  return this.room.status === 'playing' || this.room.status === 'waiting';
+};
 
 function closeWelcomeAd() {
   document.getElementById('welcomeAd')?.classList.add('hidden');
@@ -377,11 +332,35 @@ function generateRoomCode() {
   return code;
 }
 
+// ==================== حفظ النقاط في Supabase (دالة موحدة) ====================
+async function saveToSupabase() {
+  if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return false;
+  
+  try {
+    const { error } = await db.from('users').update({
+      purchased_points: App.user.purchased,
+      earned_points: App.user.earned,
+      level: App.user.level,
+      games_played: App.user.games_played,
+      claimed_prizes: App.user.claimedPrizes
+    }).eq('id', App.user.id);
+    
+    if (error) {
+      console.error('❌ خطأ في الحفظ:', error);
+      return false;
+    }
+    
+    console.log('✅ تم الحفظ في Supabase:', App.user.purchased, App.user.earned);
+    return true;
+  } catch (e) {
+    console.error('❌ خطأ في الحفظ:', e);
+    return false;
+  }
+}
+
 // ==================== إنشاء غرفة خاصة ====================
 async function createPrivateRoom() {
-  if (App.room.status === 'waiting' || App.room.status === 'playing') {
-    return showToast('أنت في غرفة بالفعل', 'error');
-  }
+  if (App.isPlaying()) return showToast('أنت في غرفة بالفعل', 'error');
   
   const total = App.user.purchased + App.user.earned;
   if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) {
@@ -389,62 +368,35 @@ async function createPrivateRoom() {
   }
 
   await cleanMyRooms();
-  
-  if (!db) {
-    return showToast('Supabase غير متصل', 'error');
-  }
+  if (!db) return showToast('Supabase غير متصل', 'error');
 
   try {
     let code = generateRoomCode();
     let attempts = 0;
-    
     while (attempts < 5) {
-      const { data: existing } = await db.from('rooms')
-        .select('id')
-        .eq('code', code)
-        .maybeSingle();
-      
+      const { data: existing } = await db.from('rooms').select('id').eq('code', code).maybeSingle();
       if (!existing) break;
       code = generateRoomCode();
       attempts++;
     }
 
     const { data: newRoom, error } = await db.from('rooms')
-      .insert([{
-        category: 'football',
-        status: 'waiting',
-        max_players: CONFIG.ROOM_SIZE,
-        code: code,
-        is_private: true
-      }])
+      .insert([{ category: 'football', status: 'waiting', max_players: CONFIG.ROOM_SIZE, code, is_private: true }])
       .select('id').single();
-
     if (error) throw error;
 
-    App.room = {
-      id: newRoom.id,
-      category: 'football',
-      players: [],
-      status: 'waiting',
-      correctChoice: null,
-      code: code
-    };
+    App.room = { id: newRoom.id, category: 'football', players: [], status: 'waiting', correctChoice: null, code };
     App.gameStarted = false;
     App.isLeaving = false;
 
-    await db.from('room_players').insert([{
-      room_id: newRoom.id,
-      user_id: App.user.id
-    }]);
+    await db.from('room_players').insert([{ room_id: newRoom.id, user_id: App.user.id }]);
 
     document.getElementById('roomCodeDisplay').textContent = code;
     document.getElementById('roomCodeModal').classList.add('active');
 
     subscribeToRoom(newRoom.id);
     await loadRoomPlayers(newRoom.id);
-
   } catch (e) {
-    console.error('createPrivateRoom error:', e);
     showToast('حدث خطأ: ' + (e.message || 'حاول تاني'), 'error');
   }
 }
@@ -452,76 +404,40 @@ async function createPrivateRoom() {
 function copyRoomCode() {
   const code = document.getElementById('roomCodeDisplay').textContent;
   if (!code || code === '------') return;
-  
   const text = `🎮 العب معايا Neon Prediction!\n\n🔒 كود الغرفة: ${code}\n\nادخل الموقع: https://neon-game-seven.vercel.app\nواختار "الانضمام بكود" واكتب: ${code}`;
-  
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('✅ تم نسخ الكود! ابعته لأصدقائك', 'success');
-  }).catch(() => {
-    showToast('❌ فشل النسخ، انسخه يدوياً: ' + code, 'error');
-  });
+  navigator.clipboard.writeText(text).then(() => showToast('✅ تم نسخ الكود!', 'success'));
 }
 
 function openJoinModal() {
-  if (App.room.status === 'waiting' || App.room.status === 'playing') {
-    return showToast('أنت في غرفة بالفعل', 'error');
-  }
+  if (App.isPlaying()) return showToast('أنت في غرفة بالفعل', 'error');
   document.getElementById('joinCodeInput').value = '';
   document.getElementById('joinRoomModal').classList.add('active');
 }
 
 async function joinRoomByCode() {
   const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
-  
-  if (code.length !== 6) {
-    return showToast('الكود لازم يكون 6 حروف', 'error');
-  }
-
-  if (!db) {
-    return showToast('Supabase غير متصل', 'error');
-  }
+  if (code.length !== 6) return showToast('الكود لازم يكون 6 حروف', 'error');
+  if (!db) return showToast('Supabase غير متصل', 'error');
 
   const total = App.user.purchased + App.user.earned;
   if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) {
-    return showToast(`رصيدك غير كافٍ (تحتاج ${CONFIG.ENTRY_FEE + CONFIG.COMMISSION})`, 'error');
+    return showToast(`رصيدك غير كافٍ`, 'error');
   }
 
   await cleanMyRooms();
 
   try {
-    const { data: room, error } = await db.from('rooms')
-      .select('*')
-      .eq('code', code)
-      .eq('status', 'waiting')
-      .maybeSingle();
-
+    const { data: room, error } = await db.from('rooms').select('*').eq('code', code).eq('status', 'waiting').maybeSingle();
     if (error) throw error;
-    
-    if (!room) {
-      return showToast('❌ الكود غير صحيح أو الغرفة مقفلة', 'error');
-    }
+    if (!room) return showToast('❌ الكود غير صحيح', 'error');
 
-    const { count } = await db.from('room_players')
-      .select('*', { count: 'exact', head: true })
-      .eq('room_id', room.id);
+    const { count } = await db.from('room_players').select('*', { count: 'exact', head: true }).eq('room_id', room.id);
+    if (count >= CONFIG.ROOM_SIZE) return showToast('❌ الغرفة ممتلئة', 'error');
 
-    if (count >= CONFIG.ROOM_SIZE) {
-      return showToast('❌ الغرفة ممتلئة', 'error');
-    }
-
-    const { error: joinErr } = await db.from('room_players')
-      .insert([{ room_id: room.id, user_id: App.user.id }]);
-
+    const { error: joinErr } = await db.from('room_players').insert([{ room_id: room.id, user_id: App.user.id }]);
     if (joinErr && joinErr.code !== '23505') throw joinErr;
 
-    App.room = {
-      id: room.id,
-      category: room.category || 'football',
-      players: [],
-      status: 'waiting',
-      correctChoice: null,
-      code: code
-    };
+    App.room = { id: room.id, category: room.category || 'football', players: [], status: 'waiting', correctChoice: null, code };
     App.gameStarted = false;
     App.isLeaving = false;
 
@@ -534,22 +450,18 @@ async function joinRoomByCode() {
     updateWaitingUI();
     showView('waitingView');
     showToast('✅ انضممت للغرفة!', 'success');
-
   } catch (e) {
-    console.error('joinRoomByCode error:', e);
-    showToast('حدث خطأ: ' + (e.message || 'حاول تاني'), 'error');
+    showToast('حدث خطأ', 'error');
   }
 }
 
-// ==================== اختيار الفئة العادي ====================
+// ==================== اختيار الفئة ====================
 async function selectCategory(category) {
-  if (App.room.status === 'waiting' || App.room.status === 'playing') {
-    return showToast('أنت في غرفة بالفعل', 'error');
-  }
+  if (App.isPlaying()) return showToast('أنت في غرفة بالفعل', 'error');
 
   const total = App.user.purchased + App.user.earned;
   if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) {
-    return showToast(`رصيدك غير كافٍ (تحتاج ${CONFIG.ENTRY_FEE + CONFIG.COMMISSION})`, 'error');
+    return showToast(`رصيدك غير كافٍ`, 'error');
   }
 
   await cleanMyRooms();
@@ -561,27 +473,18 @@ async function selectCategory(category) {
 
   try {
     if (db) {
-      const { data: rooms, error: roomsError } = await db.from('rooms')
+      const { data: rooms } = await db.from('rooms')
         .select('id, created_at')
         .eq('category', category)
         .eq('status', 'waiting')
         .or('is_private.is.null,is_private.eq.false')
         .order('created_at', { ascending: true });
 
-      if (roomsError) throw roomsError;
-
       let roomId = null;
-
       if (rooms && rooms.length > 0) {
         for (const room of rooms) {
-          const { count } = await db.from('room_players')
-            .select('*', { count: 'exact', head: true })
-            .eq('room_id', room.id);
-          
-          if (count < CONFIG.ROOM_SIZE) {
-            roomId = room.id;
-            break;
-          }
+          const { count } = await db.from('room_players').select('*', { count: 'exact', head: true }).eq('room_id', room.id);
+          if (count < CONFIG.ROOM_SIZE) { roomId = room.id; break; }
         }
       }
 
@@ -594,20 +497,11 @@ async function selectCategory(category) {
       }
 
       App.room.id = roomId;
-
-      const { error: joinErr } = await db.from('room_players')
-        .insert([{ room_id: roomId, user_id: App.user.id }]);
-
-      if (joinErr && joinErr.code !== '23505') throw joinErr;
-
+      await db.from('room_players').insert([{ room_id: roomId, user_id: App.user.id }]);
       subscribeToRoom(roomId);
       await loadRoomPlayers(roomId);
-    } else {
-      App.room.id = 'local_' + Date.now();
-      App.room.players = [{ username: App.user.username, avatar: App.user.avatar_url }];
     }
   } catch (e) {
-    console.error('selectCategory error:', e);
     return showToast('حدث خطأ، حاول تاني', 'error');
   }
 
@@ -621,38 +515,19 @@ async function selectCategory(category) {
 // ==================== تحميل اللاعبين ====================
 async function loadRoomPlayers(roomId) {
   if (!db || App.isLeaving) return;
-  
   try {
-    const { data: players, error } = await db.from('room_players')
-      .select('user_id, choice, result')
-      .eq('room_id', roomId);
-
-    if (error) {
-      console.error('❌ خطأ في تحميل اللاعبين:', error);
-      return;
-    }
-
+    const { data: players } = await db.from('room_players').select('user_id, choice, result').eq('room_id', roomId);
     if (!players || players.length === 0) {
       App.room.players = [];
       updateWaitingUI();
       return;
     }
-
     const userIds = players.map(p => p.user_id);
-    const { data: users } = await db.from('users')
-      .select('id, username, avatar_url')
-      .in('id', userIds);
-
+    const { data: users } = await db.from('users').select('id, username, avatar_url').in('id', userIds);
     App.room.players = players.map(p => {
       const user = users?.find(u => u.id === p.user_id);
-      return {
-        user_id: p.user_id,
-        username: user?.username || 'لاعب',
-        avatar: user?.avatar_url || '',
-        choice: p.choice
-      };
+      return { user_id: p.user_id, username: user?.username || 'لاعب', avatar: user?.avatar_url || '', choice: p.choice };
     });
-
     updateWaitingUI();
 
     if (App.room.players.length >= CONFIG.ROOM_SIZE && !App.gameStarted && App.room.status === 'waiting') {
@@ -660,37 +535,14 @@ async function loadRoomPlayers(roomId) {
       App.room.status = 'playing';
       setTimeout(startGame, 800);
     }
-  } catch (e) {
-    console.error('❌ loadRoomPlayers error:', e);
-  }
+  } catch (e) {}
 }
 
-// ==================== الاشتراك في Realtime ====================
 function subscribeToRoom(roomId) {
   if (!db) return;
-  if (App.realtimeChannel) {
-    try { db.removeChannel(App.realtimeChannel); } catch (e) {}
-  }
-  
+  if (App.realtimeChannel) { try { db.removeChannel(App.realtimeChannel); } catch (e) {} }
   App.realtimeChannel = db.channel('room_' + roomId + '_' + Date.now())
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'room_players',
-      filter: `room_id=eq.${roomId}`
-    }, () => loadRoomPlayers(roomId))
-    .on('postgres_changes', {
-      event: 'DELETE',
-      schema: 'public',
-      table: 'room_players',
-      filter: `room_id=eq.${roomId}`
-    }, () => loadRoomPlayers(roomId))
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'room_players',
-      filter: `room_id=eq.${roomId}`
-    }, () => loadRoomPlayers(roomId))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_players', filter: `room_id=eq.${roomId}` }, () => loadRoomPlayers(roomId))
     .subscribe();
 }
 
@@ -698,34 +550,21 @@ function updateWaitingUI() {
   const count = App.room.players.length;
   const countEl = document.getElementById('playersCount');
   if (countEl) countEl.textContent = count;
-  
   const hint = document.getElementById('waitingHint');
-  if (hint) {
-    hint.textContent = count < CONFIG.ROOM_SIZE 
-      ? `في انتظار ${CONFIG.ROOM_SIZE - count} لاعبين...` 
-      : 'الغرفة اكتملت! استعد';
-  }
+  if (hint) hint.textContent = count < CONFIG.ROOM_SIZE ? `في انتظار ${CONFIG.ROOM_SIZE - count} لاعبين...` : 'الغرفة اكتملت! استعد';
 
   for (let i = 1; i <= CONFIG.ROOM_SIZE; i++) {
     const slot = document.getElementById('slot' + i);
     if (!slot) continue;
     const player = App.room.players[i - 1];
-    
     if (player) {
       slot.classList.add('filled');
-      if (player.avatar) {
-        slot.style.backgroundImage = `url(${player.avatar})`;
-        slot.textContent = '';
-      } else {
-        slot.style.backgroundImage = '';
-        slot.textContent = (player.username || '?').charAt(0).toUpperCase();
-      }
-      slot.title = player.username || 'لاعب';
+      if (player.avatar) { slot.style.backgroundImage = `url(${player.avatar})`; slot.textContent = ''; }
+      else { slot.style.backgroundImage = ''; slot.textContent = (player.username || '?').charAt(0).toUpperCase(); }
     } else {
       slot.classList.remove('filled');
       slot.style.backgroundImage = '';
       slot.textContent = '';
-      slot.title = '';
     }
   }
 }
@@ -757,12 +596,6 @@ async function makeChoice(num) {
     b.disabled = true;
     if (i + 1 === num) b.classList.add('selected');
   });
-  if (db && App.room.id && !String(App.room.id).startsWith('local_')) {
-    try {
-      await db.from('room_players').update({ choice: num })
-        .eq('room_id', App.room.id).eq('user_id', App.user.id);
-    } catch (e) {}
-  }
   stopTimer();
   setTimeout(showResult, 1600);
 }
@@ -796,7 +629,7 @@ function stopTimer() {
   App.timerInterval = null;
 }
 
-// ==================== عرض النتيجة (v14 - مع حفظ فوري) ====================
+// ==================== عرض النتيجة (v15) ====================
 async function showResult() {
   App.room.status = 'finished';
   const correct = App.room.correctChoice;
@@ -806,10 +639,6 @@ async function showResult() {
   const myName = App.myChoice ? choices[App.myChoice - 1] : 'لم تختر';
   const won = App.myChoice === correct;
   const cost = CONFIG.ENTRY_FEE + CONFIG.COMMISSION;
-
-  // 🆕 حفظ النقاط القديمة للمقارنة
-  const oldPurchased = App.user.purchased;
-  const oldEarned = App.user.earned;
 
   // خصم الرسوم
   if (App.user.purchased >= cost) {
@@ -821,7 +650,6 @@ async function showResult() {
   }
   App.user.games_played++;
 
-  // إضافة المكافأة
   if (won) {
     App.user.earned += CONFIG.WIN_REWARD;
     checkLevelUp();
@@ -831,30 +659,12 @@ async function showResult() {
     showCoinToast(`-${cost} نقطة`, '💸');
   }
 
-  // 🆕 حفظ محلي فوراً
+  // 💾 حفظ محلي أولاً (مهم)
   saveLocal();
   updateUI();
 
-  // 🆕 حفظ في Supabase فوراً
-  if (db && !String(App.user.id).startsWith('local_')) {
-    try {
-      const { error } = await db.from('users').update({
-        purchased_points: App.user.purchased,
-        earned_points: App.user.earned,
-        level: App.user.level,
-        games_played: App.user.games_played,
-        claimed_prizes: App.user.claimedPrizes
-      }).eq('id', App.user.id);
-      
-      if (error) {
-        console.error('❌ خطأ في حفظ النقاط:', error);
-      } else {
-        console.log('✅ تم حفظ النقاط في Supabase:', App.user.purchased, App.user.earned);
-      }
-    } catch (e) {
-      console.error('❌ خطأ في الحفظ:', e);
-    }
-  }
+  // 💾 حفظ في Supabase
+  await saveToSupabase();
 
   // عرض النتيجة
   const box = document.getElementById('resultContainer');
@@ -880,27 +690,10 @@ async function checkPrizes() {
     if (App.user.earned >= prize.threshold && !App.user.claimedPrizes.includes(prize.threshold)) {
       App.user.claimedPrizes.push(prize.threshold);
       App.user.earned -= prize.threshold;
-
       showCoinToast(`فزت بـ ${prize.money} جنيه!`, '💰');
       
-      if (Notification.permission === 'granted') {
-        new Notification('مبروك الفوز!', {
-          body: `ربحت ${prize.money} جنيه فودافون كاش`
-        });
-      }
-
       try {
-        const message = `
-🎉 فائز بجائزة!
-
-👤 الاسم: ${App.user.username}
-📱 التليفون: ${App.user.phone || 'غير متوفر'}
-🆔 ID: ${App.user.id}
-
-⭐ النقاط: ${prize.threshold}
-💰 الجائزة: ${prize.money} جنيه فودافون كاش
-⏰ الوقت: ${new Date().toLocaleString('ar-EG')}
-        `.trim();
+        const message = `🎉 فائز بجائزة!\n\n👤 الاسم: ${App.user.username}\n📱 التليفون: ${App.user.phone || 'غير متوفر'}\n🆔 ID: ${App.user.id}\n\n⭐ النقاط: ${prize.threshold}\n💰 الجائزة: ${prize.money} جنيه\n⏰ ${new Date().toLocaleString('ar-EG')}`;
         await sendTelegram(message);
       } catch (e) {}
     }
@@ -914,10 +707,7 @@ async function sendTelegram(message) {
     await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: CONFIG.ADMIN_CHAT_ID,
-        text: message
-      })
+      body: JSON.stringify({ chat_id: CONFIG.ADMIN_CHAT_ID, text: message })
     });
   } catch (e) {}
 }
@@ -925,14 +715,9 @@ async function sendTelegram(message) {
 async function playAgain() {
   App.isLeaving = true;
   if (db && App.room.id && !String(App.room.id).startsWith('local_')) {
-    try {
-      await db.from('room_players').delete().eq('room_id', App.room.id).eq('user_id', App.user.id);
-    } catch (e) {}
+    try { await db.from('room_players').delete().eq('room_id', App.room.id).eq('user_id', App.user.id); } catch (e) {}
   }
-  if (App.realtimeChannel) {
-    try { db.removeChannel(App.realtimeChannel); } catch (e) {}
-    App.realtimeChannel = null;
-  }
+  if (App.realtimeChannel) { try { db.removeChannel(App.realtimeChannel); } catch (e) {} App.realtimeChannel = null; }
   App.room = { id: null, category: null, players: [], status: 'idle', correctChoice: null, code: null };
   App.myChoice = null;
   App.gameStarted = false;
@@ -968,29 +753,13 @@ async function submitPayment() {
   try {
     if (db && !String(App.user.id).startsWith('local_')) {
       await db.from('purchase_requests').insert([{
-        user_id: App.user.id,
-        username: App.user.username,
-        phone: App.user.phone,
-        points: App.pendingPurchase.points,
-        price: App.pendingPurchase.price,
-        trans_number: num,
-        status: 'pending'
+        user_id: App.user.id, username: App.user.username, phone: App.user.phone,
+        points: App.pendingPurchase.points, price: App.pendingPurchase.price,
+        trans_number: num, status: 'pending'
       }]);
     }
 
-    const message = `
-🔔 طلب شراء جديد
-
-👤 المستخدم: ${App.user.username}
-📱 التليفون: ${App.user.phone || 'غير متوفر'}
-🆔 ID: ${App.user.id}
-
-💎 النقاط: ${App.pendingPurchase.points}
-💰 السعر: ${App.pendingPurchase.price} جنيه
-🔢 رقم العملية: ${num}
-⏰ الوقت: ${new Date().toLocaleString('ar-EG')}
-    `.trim();
-
+    const message = `🔔 طلب شراء جديد\n\n👤 ${App.user.username}\n📱 ${App.user.phone}\n🆔 ${App.user.id}\n\n💎 ${App.pendingPurchase.points} نقطة\n💰 ${App.pendingPurchase.price} جنيه\n🔢 ${num}`;
     await sendTelegram(message);
 
     showCoinToast('تم إرسال الطلب بنجاح', '✅');
@@ -1026,12 +795,10 @@ function openProfile() {
     if (App.user.shared) {
       referralEl.textContent = '✅ تمت المشاركة';
       shareRow.style.opacity = '0.6';
-      shareRow.style.cursor = 'default';
       shareRow.onclick = null;
     } else {
       referralEl.textContent = `🎁 اضغط للمشاركة`;
       shareRow.style.opacity = '1';
-      shareRow.style.cursor = 'pointer';
       shareRow.onclick = shareGame;
     }
   }
@@ -1043,17 +810,13 @@ async function uploadAvatar(event) {
   const file = event.target.files[0];
   if (!file) return;
   if (file.size > 500000) return showToast('الصورة كبيرة جداً', 'error');
-
   const reader = new FileReader();
   reader.onload = async (e) => {
-    const base64 = e.target.result;
-    App.user.avatar_url = base64;
+    App.user.avatar_url = e.target.result;
     saveLocal();
     updateUI();
     if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
-      try {
-        await db.from('users').update({ avatar_url: base64 }).eq('id', App.user.id);
-      } catch (err) {}
+      try { await db.from('users').update({ avatar_url: App.user.avatar_url }).eq('id', App.user.id); } catch (err) {}
     }
     showCoinToast('تم تحديث الصورة', '📷');
     closeModal('profileModal');
@@ -1065,31 +828,17 @@ async function uploadAvatar(event) {
 async function shareGame() {
   if (App.user.shared) return showToast('حصلت على المكافأة بالفعل', 'error');
   const shareUrl = 'https://neon-game-seven.vercel.app';
-  const shareText = `🎮 العب معايا Neon Prediction! 🎯\nتوقع واكسب نقاط! 💎\n${shareUrl}`;
-
+  const shareText = `🎮 العب معايا Neon Prediction! 🎯\n${shareUrl}`;
   try {
-    if (navigator.share) {
-      await navigator.share({ title: 'Neon Prediction', text: shareText, url: shareUrl });
-    } else {
-      await navigator.clipboard.writeText(shareText);
-      showToast('تم نسخ الرابط', 'success');
-    }
+    if (navigator.share) await navigator.share({ title: 'Neon Prediction', text: shareText, url: shareUrl });
+    else { await navigator.clipboard.writeText(shareText); showToast('تم نسخ الرابط', 'success'); }
     App.user.purchased += CONFIG.SHARE_BONUS;
     App.user.shared = true;
     saveLocal();
     updateUI();
     showCoinToast(`+${CONFIG.SHARE_BONUS} نقطة`, '🎁');
-    if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
-      try {
-        await db.from('users').update({
-          purchased_points: App.user.purchased,
-          shared: true
-        }).eq('id', App.user.id);
-      } catch (e) {}
-    }
-  } catch (e) {
-    if (e.name !== 'AbortError') console.error(e);
-  }
+    await saveToSupabase();
+  } catch (e) {}
 }
 
 function showToast(message, type = 'info') {
@@ -1119,9 +868,6 @@ function showCoinToast(message, icon = '💰') {
 
 window.addEventListener('beforeunload', () => {
   if (db && App.user.id && App.room.id && !String(App.room.id).startsWith('local_')) {
-    db.from('room_players')
-      .delete()
-      .eq('room_id', App.room.id)
-      .eq('user_id', App.user.id);
+    db.from('room_players').delete().eq('room_id', App.room.id).eq('user_id', App.user.id);
   }
 });
