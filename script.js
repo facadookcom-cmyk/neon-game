@@ -1,5 +1,5 @@
 // ============================================
-// Neon Prediction - Complete Script (v22)
+// Neon Prediction - Complete Script (v18 Final)
 // ============================================
 
 const SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -18,9 +18,6 @@ const CONFIG = Object.freeze({
   ADMIN_BOT_TOKEN: '8843827619:AAEXRV-smWNN7VSJAqETM1cS4rvKA0aSFj4',
   ADMIN_CHAT_ID: '6778071782',
   LEVELS_PER_GAMES: 20,
-  VIP_PRICE: 100,
-  VIP_DURATION_DAYS: 30,
-  VIP_WIN_MULTIPLIER: 2,
   LEVEL_NAMES: Object.freeze({
     1: 'مبتدئ 🌱', 2: 'هاوي 🥉', 3: 'محترف 🥈',
     4: 'خبير 🥇', 5: 'أسطورة 💎', 6: 'نخبة 👑', 7: 'أسطوري 🏆'
@@ -47,12 +44,7 @@ const CATEGORIES = Object.freeze({
 });
 
 const App = {
-  user: {
-    id: null, username: '', phone: '', avatar_url: '',
-    purchased: 0, earned: 0, level: 1, games_played: 0, shared: false,
-    claimedPrizes: [], vip: { active: false, end_date: null },
-    achievements: [], items: [], friends: []
-  },
+  user: { id: null, username: '', phone: '', avatar_url: '', purchased: 0, earned: 0, level: 1, games_played: 0, shared: false, claimedPrizes: [] },
   room: { id: null, category: null, players: [], status: 'idle', correctChoice: null, code: null },
   myChoice: null,
   timerInterval: null,
@@ -62,6 +54,7 @@ const App = {
   gameStarted: false,
   onlineInterval: null,
   speedInterval: null,
+  refreshInterval: null,
   adShown: false,
   isLeaving: false,
   lockRefresh: false
@@ -85,7 +78,9 @@ function initDatabase() {
   try {
     db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     console.log('✅ Supabase متصل');
-  } catch (e) {}
+  } catch (e) {
+    console.error('❌ خطأ في الاتصال:', e);
+  }
 }
 
 function restoreSession() {
@@ -94,10 +89,6 @@ function restoreSession() {
   try {
     App.user = { ...App.user, ...JSON.parse(saved) };
     if (!App.user.claimedPrizes) App.user.claimedPrizes = [];
-    if (!App.user.vip) App.user.vip = { active: false, end_date: null };
-    if (!App.user.achievements) App.user.achievements = [];
-    if (!App.user.items) App.user.items = [];
-    if (!App.user.friends) App.user.friends = [];
     if (App.user.username) setTimeout(enterGame, 280);
   } catch (e) {
     localStorage.removeItem('neon_user');
@@ -107,7 +98,7 @@ function restoreSession() {
 function startPeriodicUpdates() {
   App.onlineInterval = setInterval(updateOnlineCount, 4000);
   App.speedInterval = setInterval(updateSpeed, 2800);
-  // ❌ مفيش refreshInterval (شلناه لحل مشكلة رجوع النقاط)
+  App.refreshInterval = setInterval(refreshUserData, 15000);
   updateOnlineCount();
   updateSpeed();
 }
@@ -117,23 +108,45 @@ function initNotifications() {
   if (Notification.permission === 'default') Notification.requestPermission();
 }
 
-// ==================== فحص VIP ====================
-async function checkVIP() {
+// ==================== تحديث بيانات المستخدم (v18) ====================
+async function refreshUserData() {
   if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
+  if (App.room.status === 'playing' || App.room.status === 'waiting') return;
+  
+  // 🔒 قفل التحديث لو المستخدم لسه خلص لعبة
+  if (App.lockRefresh) {
+    console.log('🔒 القفل مفعّل، مش هحدث');
+    return;
+  }
+  
   try {
-    const { data } = await db.from('subscriptions')
-      .select('*').eq('user_id', App.user.id).eq('status', 'active').maybeSingle();
-    if (data && new Date(data.end_date) > new Date()) {
-      App.user.vip = { active: true, end_date: data.end_date };
-    } else {
-      App.user.vip = { active: false, end_date: null };
-      if (data) await db.from('subscriptions').update({ status: 'expired' }).eq('id', data.id);
+    const { data: fresh } = await db.from('users')
+      .select('*')
+      .eq('id', App.user.id)
+      .maybeSingle();
+    
+    if (!fresh) return;
+    
+    const freshTotal = (fresh.purchased_points || 0) + (fresh.earned_points || 0);
+    const localTotal = App.user.purchased + App.user.earned;
+    
+    // ⚠️ حدّث بس لو السيرفر فيه نقاط أكتر
+    if (freshTotal > localTotal) {
+      console.log('🔄 النقاط اتحدثت (زيادة):', localTotal, '→', freshTotal);
+      App.user.purchased = fresh.purchased_points || 0;
+      App.user.earned = fresh.earned_points || 0;
+      App.user.level = fresh.level || 1;
+      App.user.games_played = fresh.games_played || 0;
+      App.user.claimedPrizes = fresh.claimed_prizes || [];
+      saveLocal();
+      updateUI();
+      showToast(`💰 تم إضافة ${freshTotal - localTotal} نقطة!`, 'success');
     }
-    saveLocal();
-  } catch (e) {}
+  } catch (e) {
+    console.error('❌ خطأ:', e);
+  }
 }
 
-// ==================== بناء جدول الجوائز ====================
 function buildPrizeTableProfile() {
   const container = document.getElementById('prizeTableProfile');
   if (!container) return;
@@ -155,8 +168,10 @@ function startTriangleBackground() {
   const tris = Array.from({ length: 12 }, () => ({
     x: Math.random() * W, y: Math.random() * H,
     size: Math.random() * 50 + 22,
-    speedX: (Math.random() - 0.5) * 0.22, speedY: (Math.random() - 0.5) * 0.22,
-    rot: Math.random() * Math.PI * 2, rotSpeed: (Math.random() - 0.5) * 0.0035,
+    speedX: (Math.random() - 0.5) * 0.22,
+    speedY: (Math.random() - 0.5) * 0.22,
+    rot: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.0035,
     op: Math.random() * 0.2 + 0.06
   }));
   addEventListener('resize', () => { W = canvas.width = innerWidth; H = canvas.height = innerHeight; });
@@ -165,8 +180,10 @@ function startTriangleBackground() {
     ctx.fillRect(0, 0, W, H);
     for (const t of tris) {
       t.x += t.speedX; t.y += t.speedY; t.rot += t.rotSpeed;
-      if (t.x < -70) t.x = W + 70; if (t.x > W + 70) t.x = -70;
-      if (t.y < -70) t.y = H + 70; if (t.y > H + 70) t.y = -70;
+      if (t.x < -70) t.x = W + 70;
+      if (t.x > W + 70) t.x = -70;
+      if (t.y < -70) t.y = H + 70;
+      if (t.y > H + 70) t.y = -70;
       ctx.save();
       ctx.translate(t.x, t.y);
       ctx.rotate(t.rot);
@@ -214,13 +231,10 @@ async function login() {
       mapUser(neu);
       showToast(`أهلاً ${name}! حصلت على ${CONFIG.STARTER_POINTS} نقطة`, 'success');
     }
-    await checkVIP();
-    await loadUserAchievements();
-    await loadUserItems();
-    await loadFriends();
     saveLocal();
     enterGame();
   } catch (e) {
+    console.error('❌ خطأ:', e);
     createLocalUser(name, phone);
     showToast(`أهلاً ${name}`, 'success');
     enterGame();
@@ -233,20 +247,14 @@ function mapUser(r) {
     avatar_url: r.avatar_url || '', purchased: r.purchased_points || 0,
     earned: r.earned_points || 0, level: r.level || 1,
     games_played: r.games_played || 0, shared: r.shared || false,
-    claimedPrizes: r.claimed_prizes || [],
-    vip: App.user.vip || { active: false, end_date: null },
-    achievements: App.user.achievements || [],
-    items: App.user.items || [],
-    friends: App.user.friends || []
+    claimedPrizes: r.claimed_prizes || []
   };
 }
 
 function createLocalUser(name, phone) {
   App.user = {
     id: 'local_' + Date.now(), username: name, phone, avatar_url: '',
-    purchased: CONFIG.STARTER_POINTS, earned: 0, level: 1, games_played: 0, shared: false,
-    claimedPrizes: [], vip: { active: false, end_date: null },
-    achievements: [], items: [], friends: []
+    purchased: CONFIG.STARTER_POINTS, earned: 0, level: 1, games_played: 0, shared: false, claimedPrizes: []
   };
   saveLocal();
 }
@@ -276,7 +284,6 @@ function updateUI() {
   document.getElementById('userName').textContent = App.user.username;
   document.getElementById('userPoints').textContent = total;
   document.getElementById('userLevel').textContent = CONFIG.LEVEL_NAMES[App.user.level] || 'مبتدئ';
-  
   const av = document.getElementById('userAvatar');
   if (App.user.avatar_url) {
     av.style.backgroundImage = `url(${App.user.avatar_url})`;
@@ -284,11 +291,6 @@ function updateUI() {
   } else {
     av.style.backgroundImage = '';
     av.textContent = App.user.username.charAt(0).toUpperCase();
-  }
-  
-  if (App.user.vip?.active) {
-    const badge = document.getElementById('vipBadge');
-    if (badge) badge.style.display = 'inline-block';
   }
 }
 
@@ -337,11 +339,13 @@ async function cleanMyRooms() {
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
-  for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
   return code;
 }
 
-// ==================== حفظ في Supabase ====================
+// ==================== حفظ النقاط في Supabase ====================
 async function saveToSupabase() {
   if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return false;
   try {
@@ -353,18 +357,22 @@ async function saveToSupabase() {
       claimed_prizes: App.user.claimedPrizes
     }).eq('id', App.user.id);
     if (error) { console.error('❌ خطأ:', error); return false; }
-    console.log('✅ تم الحفظ:', App.user.purchased, App.user.earned);
+    console.log('✅ تم الحفظ في Supabase:', App.user.purchased, App.user.earned);
     return true;
   } catch (e) { return false; }
 }
 
 // ==================== إنشاء غرفة خاصة ====================
 async function createPrivateRoom() {
-  if (App.room.status === 'waiting' || App.room.status === 'playing') return showToast('أنت في غرفة بالفعل', 'error');
+  if (App.room.status === 'waiting' || App.room.status === 'playing') {
+    return showToast('أنت في غرفة بالفعل', 'error');
+  }
   const total = App.user.purchased + App.user.earned;
   if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) return showToast(`رصيدك غير كافٍ`, 'error');
+
   await cleanMyRooms();
   if (!db) return showToast('Supabase غير متصل', 'error');
+
   try {
     let code = generateRoomCode();
     let attempts = 0;
@@ -374,19 +382,27 @@ async function createPrivateRoom() {
       code = generateRoomCode();
       attempts++;
     }
+
     const { data: newRoom, error } = await db.from('rooms')
       .insert([{ category: 'football', status: 'waiting', max_players: CONFIG.ROOM_SIZE, code, is_private: true }])
       .select('id').single();
     if (error) throw error;
+
     App.room = { id: newRoom.id, category: 'football', players: [], status: 'waiting', correctChoice: null, code };
     App.gameStarted = false;
     App.isLeaving = false;
+
     await db.from('room_players').insert([{ room_id: newRoom.id, user_id: App.user.id }]);
+
     document.getElementById('roomCodeDisplay').textContent = code;
     document.getElementById('roomCodeModal').classList.add('active');
+
     subscribeToRoom(newRoom.id);
     await loadRoomPlayers(newRoom.id);
-  } catch (e) { showToast('حدث خطأ', 'error'); }
+  } catch (e) {
+    console.error('❌ خطأ:', e);
+    showToast('حدث خطأ: ' + (e.message || 'حاول تاني'), 'error');
+  }
 }
 
 function copyRoomCode() {
@@ -397,7 +413,9 @@ function copyRoomCode() {
 }
 
 function openJoinModal() {
-  if (App.room.status === 'waiting' || App.room.status === 'playing') return showToast('أنت في غرفة بالفعل', 'error');
+  if (App.room.status === 'waiting' || App.room.status === 'playing') {
+    return showToast('أنت في غرفة بالفعل', 'error');
+  }
   document.getElementById('joinCodeInput').value = '';
   document.getElementById('joinRoomModal').classList.add('active');
 }
@@ -406,46 +424,66 @@ async function joinRoomByCode() {
   const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
   if (code.length !== 6) return showToast('الكود لازم يكون 6 حروف', 'error');
   if (!db) return showToast('Supabase غير متصل', 'error');
+
   const total = App.user.purchased + App.user.earned;
   if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) return showToast(`رصيدك غير كافٍ`, 'error');
+
   await cleanMyRooms();
+
   try {
     const { data: room, error } = await db.from('rooms').select('*').eq('code', code).eq('status', 'waiting').maybeSingle();
     if (error) throw error;
     if (!room) return showToast('❌ الكود غير صحيح', 'error');
+
     const { count } = await db.from('room_players').select('*', { count: 'exact', head: true }).eq('room_id', room.id);
     if (count >= CONFIG.ROOM_SIZE) return showToast('❌ الغرفة ممتلئة', 'error');
+
     const { error: joinErr } = await db.from('room_players').insert([{ room_id: room.id, user_id: App.user.id }]);
     if (joinErr && joinErr.code !== '23505') throw joinErr;
+
     App.room = { id: room.id, category: room.category || 'football', players: [], status: 'waiting', correctChoice: null, code };
     App.gameStarted = false;
     App.isLeaving = false;
+
     closeModal('joinRoomModal');
     subscribeToRoom(room.id);
     await loadRoomPlayers(room.id);
+
     const titleEl = document.getElementById('waitingTitle');
     if (titleEl) titleEl.textContent = `غرفة ${code}`;
     updateWaitingUI();
     showView('waitingView');
     showToast('✅ انضممت للغرفة!', 'success');
-  } catch (e) { showToast('حدث خطأ', 'error'); }
+  } catch (e) {
+    console.error('❌ خطأ:', e);
+    showToast('حدث خطأ', 'error');
+  }
 }
 
 // ==================== اختيار الفئة ====================
 async function selectCategory(category) {
-  if (App.room.status === 'waiting' || App.room.status === 'playing') return showToast('أنت في غرفة بالفعل', 'error');
-  const needed = App.user.vip?.active ? CONFIG.COMMISSION : (CONFIG.ENTRY_FEE + CONFIG.COMMISSION);
+  if (App.room.status === 'waiting' || App.room.status === 'playing') {
+    return showToast('أنت في غرفة بالفعل', 'error');
+  }
   const total = App.user.purchased + App.user.earned;
-  if (total < needed) return showToast(`رصيدك غير كافٍ (تحتاج ${needed})`, 'error');
+  if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) return showToast(`رصيدك غير كافٍ`, 'error');
+
   await cleanMyRooms();
+  
   const cat = CATEGORIES[category];
   App.room = { id: null, category, players: [], status: 'waiting', correctChoice: null, code: null };
   App.gameStarted = false;
   App.isLeaving = false;
+
   try {
     if (db) {
-      const { data: rooms } = await db.from('rooms').select('id, created_at').eq('category', category).eq('status', 'waiting')
-        .or('is_private.is.null,is_private.eq.false').order('created_at', { ascending: true });
+      const { data: rooms } = await db.from('rooms')
+        .select('id, created_at')
+        .eq('category', category)
+        .eq('status', 'waiting')
+        .or('is_private.is.null,is_private.eq.false')
+        .order('created_at', { ascending: true });
+
       let roomId = null;
       if (rooms && rooms.length > 0) {
         for (const room of rooms) {
@@ -453,18 +491,28 @@ async function selectCategory(category) {
           if (count < CONFIG.ROOM_SIZE) { roomId = room.id; break; }
         }
       }
+
       if (!roomId) {
         const { data: newRoom, error: createErr } = await db.from('rooms')
-          .insert([{ category, status: 'waiting', max_players: CONFIG.ROOM_SIZE, is_private: false }]).select('id').single();
+          .insert([{ category, status: 'waiting', max_players: CONFIG.ROOM_SIZE, is_private: false }])
+          .select('id').single();
         if (createErr) throw createErr;
         roomId = newRoom.id;
       }
+
       App.room.id = roomId;
       await db.from('room_players').insert([{ room_id: roomId, user_id: App.user.id }]);
       subscribeToRoom(roomId);
       await loadRoomPlayers(roomId);
+    } else {
+      App.room.id = 'local_' + Date.now();
+      App.room.players = [{ username: App.user.username, avatar: App.user.avatar_url }];
     }
-  } catch (e) { return showToast('حدث خطأ، حاول تاني', 'error'); }
+  } catch (e) {
+    console.error('❌ خطأ:', e);
+    return showToast('حدث خطأ، حاول تاني', 'error');
+  }
+
   const titleEl = document.getElementById('waitingTitle');
   if (titleEl) titleEl.textContent = `غرفة ${cat.name}`;
   updateWaitingUI();
@@ -472,11 +520,16 @@ async function selectCategory(category) {
   showToast(`انضممت لغرفة ${cat.name}`, 'success');
 }
 
+// ==================== تحميل اللاعبين ====================
 async function loadRoomPlayers(roomId) {
   if (!db || App.isLeaving) return;
   try {
     const { data: players } = await db.from('room_players').select('user_id, choice, result').eq('room_id', roomId);
-    if (!players || players.length === 0) { App.room.players = []; updateWaitingUI(); return; }
+    if (!players || players.length === 0) {
+      App.room.players = [];
+      updateWaitingUI();
+      return;
+    }
     const userIds = players.map(p => p.user_id);
     const { data: users } = await db.from('users').select('id, username, avatar_url').in('id', userIds);
     App.room.players = players.map(p => {
@@ -484,6 +537,7 @@ async function loadRoomPlayers(roomId) {
       return { user_id: p.user_id, username: user?.username || 'لاعب', avatar: user?.avatar_url || '', choice: p.choice };
     });
     updateWaitingUI();
+
     if (App.room.players.length >= CONFIG.ROOM_SIZE && !App.gameStarted && App.room.status === 'waiting') {
       App.gameStarted = true;
       App.room.status = 'playing';
@@ -506,6 +560,7 @@ function updateWaitingUI() {
   if (countEl) countEl.textContent = count;
   const hint = document.getElementById('waitingHint');
   if (hint) hint.textContent = count < CONFIG.ROOM_SIZE ? `في انتظار ${CONFIG.ROOM_SIZE - count} لاعبين...` : 'الغرفة اكتملت! استعد';
+
   for (let i = 1; i <= CONFIG.ROOM_SIZE; i++) {
     const slot = document.getElementById('slot' + i);
     if (!slot) continue;
@@ -522,6 +577,7 @@ function updateWaitingUI() {
   }
 }
 
+// ==================== بدء اللعبة ====================
 function startGame() {
   App.room.status = 'playing';
   App.myChoice = null;
@@ -581,7 +637,7 @@ function stopTimer() {
   App.timerInterval = null;
 }
 
-// ==================== عرض النتيجة (v22 - حفظ فوري) ====================
+// ==================== عرض النتيجة (v18) ====================
 async function showResult() {
   App.room.status = 'finished';
   const correct = App.room.correctChoice;
@@ -590,7 +646,10 @@ async function showResult() {
   const correctName = choices[correct - 1];
   const myName = App.myChoice ? choices[App.myChoice - 1] : 'لم تختر';
   const won = App.myChoice === correct;
-  const cost = App.user.vip?.active ? CONFIG.COMMISSION : (CONFIG.ENTRY_FEE + CONFIG.COMMISSION);
+  const cost = CONFIG.ENTRY_FEE + CONFIG.COMMISSION;
+
+  // 🔒 قفل التحديث فوراً
+  App.lockRefresh = true;
 
   if (App.user.purchased >= cost) {
     App.user.purchased -= cost;
@@ -602,13 +661,10 @@ async function showResult() {
   App.user.games_played++;
 
   if (won) {
-    const multiplier = App.user.vip?.active ? CONFIG.VIP_WIN_MULTIPLIER : 1;
-    const reward = CONFIG.WIN_REWARD * multiplier;
-    App.user.earned += reward;
+    App.user.earned += CONFIG.WIN_REWARD;
     checkLevelUp();
     await checkPrizes();
-    await checkAchievements();
-    showCoinToast(`+${reward} نقطة${App.user.vip?.active ? ' (VIP ×2)' : ''}`, '🏆');
+    showCoinToast(`+${CONFIG.WIN_REWARD} نقطة`, '🏆');
   } else {
     showCoinToast(`-${cost} نقطة`, '💸');
   }
@@ -618,35 +674,19 @@ async function showResult() {
   updateUI();
   
   // 💾 حفظ في Supabase
-  const saved = await saveToSupabase();
-  console.log('💾 حفظ في Supabase:', saved);
+  await saveToSupabase();
 
-  // 🆕 لو الحفظ نجح، اقرا البيانات الحديثة من السيرفر للتأكد
-  if (saved && db && App.user.id && !String(App.user.id).startsWith('local_')) {
-    setTimeout(async () => {
-      try {
-        const { data: fresh } = await db.from('users').select('*').eq('id', App.user.id).maybeSingle();
-        if (fresh) {
-          const freshTotal = (fresh.purchased_points || 0) + (fresh.earned_points || 0);
-          const localTotal = App.user.purchased + App.user.earned;
-          if (freshTotal > localTotal) {
-            App.user.purchased = fresh.purchased_points || 0;
-            App.user.earned = fresh.earned_points || 0;
-            saveLocal();
-            updateUI();
-            console.log('🔄 تم تحديث النقاط من السيرفر (زيادة)');
-          }
-        }
-      } catch (e) {}
-    }, 2000);
-  }
+  // 🔓 فك القفل بعد 30 ثانية
+  setTimeout(() => {
+    App.lockRefresh = false;
+    console.log('🔓 القفل اتفك، النقاط اتحفظت:', App.user.purchased, App.user.earned);
+  }, 30000);
 
   const box = document.getElementById('resultContainer');
   document.getElementById('resultIcon').textContent = won ? '🏆' : '😢';
   document.getElementById('resultTitle').textContent = won ? 'مبروك! فزت' : 'للأسف خسرت';
   document.getElementById('resultText').innerHTML = `الصحيح: <strong>${correctName}</strong><br>اختيارك: <strong>${myName}</strong>`;
-  const displayReward = won ? CONFIG.WIN_REWARD * (App.user.vip?.active ? 2 : 1) : cost;
-  document.getElementById('resultReward').textContent = won ? `+${displayReward} نقطة` : `-${displayReward} نقطة`;
+  document.getElementById('resultReward').textContent = won ? `+${CONFIG.WIN_REWARD} نقطة` : `-${cost} نقطة`;
   box.className = 'result-container ' + (won ? 'winner' : 'loser');
   showView('resultView');
 }
@@ -667,7 +707,8 @@ async function checkPrizes() {
       App.user.earned -= prize.threshold;
       showCoinToast(`فزت بـ ${prize.money} جنيه!`, '💰');
       try {
-        await sendTelegram(`🎉 فائز بجائزة!\n\n👤 ${App.user.username}\n📱 ${App.user.phone}\n⭐ ${prize.threshold} نقطة\n💰 ${prize.money} جنيه`);
+        const message = `🎉 فائز بجائزة!\n\n👤 ${App.user.username}\n📱 ${App.user.phone || 'غير متوفر'}\n🆔 ${App.user.id}\n\n⭐ ${prize.threshold} نقطة\n💰 ${prize.money} جنيه\n⏰ ${new Date().toLocaleString('ar-EG')}`;
+        await sendTelegram(message);
       } catch (e) {}
     }
   }
@@ -694,7 +735,10 @@ async function playAgain() {
   App.room = { id: null, category: null, players: [], status: 'idle', correctChoice: null, code: null };
   App.myChoice = null;
   App.gameStarted = false;
-  setTimeout(() => { App.isLeaving = false; showView('categoryView'); }, 220);
+  setTimeout(() => {
+    App.isLeaving = false;
+    showView('categoryView');
+  }, 220);
 }
 
 async function leaveRoom() {
@@ -702,213 +746,6 @@ async function leaveRoom() {
   showToast('غادرت الغرفة', 'info');
 }
 
-// ==================== VIP ====================
-function openVIPModal() {
-  if (App.user.vip?.active) {
-    const endDate = new Date(App.user.vip.end_date);
-    showToast(`⭐ VIP نشط حتى: ${endDate.toLocaleDateString('ar-EG')}`, 'success');
-    return;
-  }
-  document.getElementById('vipVodafone').textContent = CONFIG.VODAFONE;
-  document.getElementById('vipTransInput').value = '';
-  document.getElementById('vipModal').classList.add('active');
-}
-
-async function submitVIPPayment() {
-  const num = document.getElementById('vipTransInput')?.value.trim() || '';
-  if (num.length < 4) return showToast('❌ اكتب رقم عملية صحيح', 'error');
-  showCoinToast('⏳ جاري إرسال طلب VIP...', '📤');
-  try {
-    if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + CONFIG.VIP_DURATION_DAYS);
-      const { error } = await db.from('subscriptions').upsert([{
-        user_id: App.user.id, start_date: new Date().toISOString(),
-        end_date: endDate.toISOString(), status: 'pending',
-        amount: CONFIG.VIP_PRICE, trans_number: num
-      }], { onConflict: 'user_id' });
-      if (error) throw error;
-    }
-    await sendTelegram(`⭐ طلب VIP جديد!\n\n👤 ${App.user.username}\n📱 ${App.user.phone}\n💰 ${CONFIG.VIP_PRICE} جنيه\n🔢 ${num}`);
-    showCoinToast('✅ تم إرسال طلب VIP!', '✅');
-    closeModal('vipModal');
-  } catch (e) { showToast('❌ حدث خطأ', 'error'); }
-}
-
-function updateVIPStatusUI() {
-  const vipRow = document.getElementById('vipRow');
-  const vipStatus = document.getElementById('vipStatus');
-  if (!vipRow || !vipStatus) return;
-  if (App.user.vip?.active) {
-    vipRow.classList.add('active');
-    const endDate = new Date(App.user.vip.end_date);
-    vipStatus.textContent = `✅ نشط حتى ${endDate.toLocaleDateString('ar-EG')}`;
-  } else {
-    vipRow.classList.remove('active');
-    vipStatus.textContent = 'غير مشترك';
-  }
-}
-
-// ==================== الإنجازات ====================
-async function loadUserAchievements() {
-  if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
-  try {
-    const { data } = await db.from('user_achievements').select('*, achievements(*)').eq('user_id', App.user.id);
-    App.user.achievements = (data || []).map(ua => ua.achievements?.code).filter(Boolean);
-    saveLocal();
-  } catch (e) {}
-}
-
-async function checkAchievements() {
-  if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
-  try {
-    const { data: allAch } = await db.from('achievements').select('*');
-    if (!allAch) return;
-    for (const ach of allAch) {
-      if (App.user.achievements.includes(ach.code)) continue;
-      let unlocked = false;
-      if (ach.code === 'first_win' && App.user.games_played >= 1) unlocked = true;
-      if (ach.code === 'ten_wins' && App.user.games_played >= 10) unlocked = true;
-      if (ach.code === 'hundred_games' && App.user.games_played >= 100) unlocked = true;
-      if (ach.code === 'level_5' && App.user.level >= 5) unlocked = true;
-      if (ach.code === 'rich_1000' && (App.user.purchased + App.user.earned) >= 1000) unlocked = true;
-      if (ach.code === 'vip_member' && App.user.vip?.active) unlocked = true;
-
-      if (unlocked) {
-        App.user.achievements.push(ach.code);
-        App.user.earned += ach.reward || 50;
-        await db.from('user_achievements').insert([{ user_id: App.user.id, achievement_id: ach.id }]);
-        showCoinToast(`🏆 إنجاز جديد: ${ach.name} (+${ach.reward})`, '🏆');
-      }
-    }
-    saveLocal();
-  } catch (e) {}
-}
-
-async function openAchievements() {
-  document.getElementById('achievementsModal').classList.add('active');
-  const container = document.getElementById('achievementsList');
-  if (!db) return;
-  try {
-    const { data: allAch } = await db.from('achievements').select('*');
-    if (!allAch || allAch.length === 0) {
-      container.innerHTML = '<p class="loading">لا يوجد إنجازات</p>';
-      return;
-    }
-    container.innerHTML = allAch.map(ach => {
-      const unlocked = App.user.achievements.includes(ach.code);
-      return `
-        <div class="achievement-item ${unlocked ? 'unlocked' : 'locked'}">
-          <div class="achievement-icon">${ach.icon}</div>
-          <div class="achievement-info">
-            <div class="achievement-name">${ach.name}</div>
-            <div class="achievement-desc">${ach.description}</div>
-            <div class="achievement-reward">🎁 ${ach.reward} نقطة</div>
-          </div>
-          <div class="achievement-status">${unlocked ? '✅' : '🔒'}</div>
-        </div>
-      `;
-    }).join('');
-  } catch (e) {
-    container.innerHTML = '<p class="loading">❌ حدث خطأ</p>';
-  }
-}
-
-// ==================== المتجر المميز ====================
-async function loadUserItems() {
-  if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
-  try {
-    const { data } = await db.from('user_items').select('*, shop_items(*)').eq('user_id', App.user.id);
-    App.user.items = (data || []).map(ui => ({ id: ui.shop_items?.id, name: ui.shop_items?.name, equipped: ui.equipped }));
-    saveLocal();
-  } catch (e) {}
-}
-
-async function loadShopItems() {
-  if (!db) return [];
-  try {
-    const { data } = await db.from('shop_items').select('*');
-    return data || [];
-  } catch (e) { return []; }
-}
-
-async function openShop() {
-  document.getElementById('shopModal').classList.add('active');
-  const items = await loadShopItems();
-  const container = document.getElementById('shopItems');
-  if (!container) return;
-  if (items.length === 0) {
-    container.innerHTML = '<p class="loading">لا يوجد عناصر</p>';
-    return;
-  }
-  container.innerHTML = items.map(item => {
-    const owned = App.user.items.some(i => i.id === item.id);
-    return `
-      <div class="shop-item">
-        <div class="shop-icon">${item.icon || '🎁'}</div>
-        <div class="shop-info">
-          <div class="shop-name">${item.name}</div>
-          <div class="shop-desc">${item.description || ''}</div>
-          <div class="shop-price">💎 ${item.price} نقطة</div>
-        </div>
-        ${owned
-          ? '<button class="btn-owned" disabled>✅ مشترى</button>'
-          : `<button class="btn-buy" onclick="buyItem(${item.id}, ${item.price})">🛒 اشترى</button>`}
-      </div>
-    `;
-  }).join('');
-}
-
-async function buyItem(itemId, price) {
-  const total = App.user.purchased + App.user.earned;
-  if (total < price) return showToast('❌ رصيدك غير كافٍ', 'error');
-  try {
-    if (App.user.purchased >= price) App.user.purchased -= price;
-    else {
-      const rem = price - App.user.purchased;
-      App.user.purchased = 0;
-      App.user.earned -= rem;
-    }
-    if (db && !String(App.user.id).startsWith('local_')) {
-      await db.from('user_items').insert([{ user_id: App.user.id, item_id: itemId }]);
-      await saveToSupabase();
-    }
-    await loadUserItems();
-    saveLocal();
-    updateUI();
-    showCoinToast('✅ تم الشراء!', '🎁');
-    openShop();
-  } catch (e) { showToast('❌ حدث خطأ', 'error'); }
-}
-
-// ==================== الأصدقاء ====================
-async function loadFriends() {
-  if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
-  try {
-    const { data } = await db.from('friendships').select('*')
-      .or(`user_id.eq.${App.user.id},friend_id.eq.${App.user.id}`)
-      .eq('status', 'accepted');
-    App.user.friends = (data || []).map(f => f.user_id === App.user.id ? f.friend_id : f.user_id);
-    saveLocal();
-  } catch (e) {}
-}
-
-async function addFriend(friendUsername) {
-  if (!db || !App.user.id) return;
-  try {
-    const { data: friend } = await db.from('users').select('id, username').eq('username', friendUsername).maybeSingle();
-    if (!friend) return showToast('❌ المستخدم غير موجود', 'error');
-    if (friend.id === App.user.id) return showToast('❌ لا يمكنك إضافة نفسك', 'error');
-    if (App.user.friends.includes(friend.id)) return showToast('⚠️ موجود بالفعل', 'error');
-    await db.from('friendships').insert([{ user_id: App.user.id, friend_id: friend.id, status: 'accepted' }]);
-    App.user.friends.push(friend.id);
-    saveLocal();
-    showToast(`✅ تم إضافة ${friend.username}`, 'success');
-    await loadFriends();
-  } catch (e) { showToast('❌ حدث خطأ', 'error'); }
-}
-
-// ==================== المتجر (النقاط) ====================
 function openStore() { document.getElementById('storeModal').classList.add('active'); }
 function closeModal(id) { document.getElementById(id)?.classList.remove('active'); }
 
@@ -925,6 +762,7 @@ async function submitPayment() {
   const num = document.getElementById('transNumberInput')?.value.trim() || '';
   if (num.length < 4) return showToast('اكتب رقم العملية', 'error');
   if (!App.pendingPurchase) return;
+
   showCoinToast('جاري إرسال الطلب...', '📤');
   try {
     if (db && !String(App.user.id).startsWith('local_')) {
@@ -934,14 +772,18 @@ async function submitPayment() {
         trans_number: num, status: 'pending'
       }]);
     }
-    await sendTelegram(`🔔 طلب شراء جديد\n\n👤 ${App.user.username}\n📱 ${App.user.phone}\n💎 ${App.pendingPurchase.points} نقطة\n💰 ${App.pendingPurchase.price} جنيه\n🔢 ${num}`);
-    showCoinToast('تم إرسال الطلب', '✅');
+    const message = `🔔 طلب شراء جديد\n\n👤 ${App.user.username}\n📱 ${App.user.phone}\n🆔 ${App.user.id}\n\n💎 ${App.pendingPurchase.points} نقطة\n💰 ${App.pendingPurchase.price} جنيه\n🔢 ${num}`;
+    await sendTelegram(message);
+    showCoinToast('تم إرسال الطلب بنجاح', '✅');
     closeModal('paymentModal');
     App.pendingPurchase = null;
-  } catch (e) { showToast('حدث خطأ', 'error'); }
+    const input = document.getElementById('transNumberInput');
+    if (input) input.value = '';
+  } catch (e) {
+    showToast('حدث خطأ، حاول تاني', 'error');
+  }
 }
 
-// ==================== الملف الشخصي ====================
 function openProfile() {
   document.getElementById('profileName').textContent = App.user.username;
   document.getElementById('profilePhone').textContent = App.user.phone || '--';
@@ -959,16 +801,26 @@ function openProfile() {
     avatarEl.innerHTML = App.user.username.charAt(0).toUpperCase() + '<span class="edit-avatar-badge">📷</span>';
   }
 
-  updateVIPStatusUI();
-  const achCount = document.getElementById('achievementsCount');
-  if (achCount) achCount.textContent = (App.user.achievements?.length || 0);
+  const referralEl = document.getElementById('profileReferral');
+  const shareRow = document.getElementById('shareRow');
+  if (referralEl && shareRow) {
+    if (App.user.shared) {
+      referralEl.textContent = '✅ تمت المشاركة';
+      shareRow.style.opacity = '0.6';
+      shareRow.onclick = null;
+    } else {
+      referralEl.textContent = `🎁 اضغط للمشاركة`;
+      shareRow.style.opacity = '1';
+      shareRow.onclick = shareGame;
+    }
+  }
   document.getElementById('profileModal').classList.add('active');
 }
 
 async function uploadAvatar(event) {
   const file = event.target.files[0];
   if (!file) return;
-  if (file.size > 500000) return showToast('الصورة كبيرة', 'error');
+  if (file.size > 500000) return showToast('الصورة كبيرة جداً', 'error');
   const reader = new FileReader();
   reader.onload = async (e) => {
     App.user.avatar_url = e.target.result;
@@ -985,7 +837,7 @@ async function uploadAvatar(event) {
 }
 
 async function shareGame() {
-  if (App.user.shared) return showToast('حصلت على المكافأة', 'error');
+  if (App.user.shared) return showToast('حصلت على المكافأة بالفعل', 'error');
   const shareUrl = 'https://neon-game-seven.vercel.app';
   const shareText = `🎮 العب معايا Neon Prediction! 🎯\n${shareUrl}`;
   try {
@@ -1000,7 +852,6 @@ async function shareGame() {
   } catch (e) {}
 }
 
-// ==================== الإشعارات ====================
 function showToast(message, type = 'info') {
   const toast = document.getElementById('toast');
   const icon = document.getElementById('toastIcon');
