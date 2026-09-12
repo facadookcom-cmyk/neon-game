@@ -54,7 +54,10 @@ body {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
-.login-logo { font-size: 48px; margin-bottom: 15px; }
+.login-logo {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
 
 .brand-title {
   font-family: 'Orbitron', sans-serif;
@@ -240,8 +243,15 @@ body {
   font-size: 18px;
 }
 
-.admin-name { font-weight: 800; font-size: 13px; }
-.admin-status { font-size: 11px; color: var(--success); }
+.admin-name {
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.admin-status {
+  font-size: 11px;
+  color: var(--success);
+}
 
 .btn-logout {
   width: 100%;
@@ -287,9 +297,15 @@ body {
   margin-bottom: 4px;
 }
 
-.page-date { font-size: 13px; color: var(--text-secondary); }
+.page-date {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
 
-.header-actions { display: flex; gap: 8px; }
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
 
 .btn-icon {
   width: 40px;
@@ -323,8 +339,8 @@ body {
 /* ==================== بطاقات الإحصائيات ==================== */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
   margin-bottom: 25px;
 }
 
@@ -332,10 +348,10 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 18px;
+  padding: 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
   transition: all 0.2s;
 }
 
@@ -344,18 +360,14 @@ body {
   transform: translateY(-2px);
 }
 
-.stat-card.vip-stat {
-  border-color: rgba(240, 176, 80, 0.4);
-}
-
 .stat-icon-box {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 24px;
   flex-shrink: 0;
 }
 
@@ -371,12 +383,20 @@ body {
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 900;
   color: var(--text);
   font-family: 'Orbitron', sans-serif;
   line-height: 1;
+  margin-bottom: 4px;
 }
+
+.stat-change {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.stat-change.positive { color: var(--success); }
 
 /* ==================== الرسم البياني ==================== */
 .chart-card {
@@ -396,7 +416,11 @@ body {
   gap: 10px;
 }
 
-.chart-header h3 { font-size: 16px; font-weight: 900; color: var(--text); }
+.chart-header h3 {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text);
+}
 
 .chart-legend {
   display: flex;
@@ -428,7 +452,6 @@ body {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 20px;
-  margin-bottom: 20px;
 }
 
 .panel-header {
@@ -440,8 +463,16 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.panel-header h3 { font-size: 15px; font-weight: 900; color: var(--text); }
-.panel-desc { font-size: 12px; color: var(--text-secondary); }
+.panel-header h3 {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.panel-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
 
 /* ==================== قائمة Top Users ==================== */
 .top-users-list {
@@ -460,7 +491,9 @@ body {
   transition: all 0.2s;
 }
 
-.top-user-item:hover { background: var(--card-hover); }
+.top-user-item:hover {
+  background: var(--card-hover);
+}
 
 .top-rank {
   width: 28px;
@@ -477,8 +510,19 @@ body {
 }
 
 .top-user-info { flex: 1; }
-.top-user-name { font-weight: 800; font-size: 13px; color: var(--text); margin-bottom: 2px; }
-.top-user-points { font-size: 11px; color: var(--gold); font-weight: 700; }
+
+.top-user-name {
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.top-user-points {
+  font-size: 11px;
+  color: var(--gold);
+  font-weight: 700;
+}
 
 /* ==================== قائمة آخر النشاطات ==================== */
 .recent-activity-list {
@@ -498,10 +542,23 @@ body {
   border-right: 3px solid var(--primary);
 }
 
-.activity-icon { font-size: 20px; flex-shrink: 0; }
+.activity-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
 .activity-content { flex: 1; }
-.activity-text { font-size: 13px; color: var(--text); margin-bottom: 3px; }
-.activity-time { font-size: 11px; color: var(--muted); }
+
+.activity-text {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.activity-time {
+  font-size: 11px;
+  color: var(--muted);
+}
 
 /* ==================== شريط الأدوات ==================== */
 .toolbar {
@@ -540,8 +597,13 @@ body {
   transition: all 0.2s;
 }
 
-.search-input-wrapper input:focus { border-color: var(--primary); }
-.search-input-wrapper input::placeholder { color: var(--muted); }
+.search-input-wrapper input:focus {
+  border-color: var(--primary);
+}
+
+.search-input-wrapper input::placeholder {
+  color: var(--muted);
+}
 
 .filter-select {
   padding: 12px 15px;
@@ -606,7 +668,11 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.user-header h3 { font-size: 15px; color: var(--text); font-weight: 900; }
+.user-header h3 {
+  font-size: 15px;
+  color: var(--text);
+  font-weight: 900;
+}
 
 .user-level {
   font-size: 11px;
@@ -624,8 +690,14 @@ body {
   font-size: 12px;
 }
 
-.user-info div { color: var(--text-secondary); }
-.user-info strong { color: var(--gold); font-weight: 800; }
+.user-info div {
+  color: var(--text-secondary);
+}
+
+.user-info strong {
+  color: var(--gold);
+  font-weight: 800;
+}
 
 .btn-manage {
   width: 100%;
@@ -643,7 +715,7 @@ body {
 
 .btn-manage:active { transform: scale(0.97); }
 
-/* ==================== طلبات الشراء و VIP ==================== */
+/* ==================== طلبات الشراء ==================== */
 .filter-tabs {
   display: flex;
   gap: 8px;
@@ -686,7 +758,6 @@ body {
 
 .request-card.approved { border-right-color: var(--success); }
 .request-card.rejected { border-right-color: var(--danger); }
-.request-card.vip { border-right-color: var(--gold); }
 
 .req-header {
   display: flex;
@@ -703,7 +774,6 @@ body {
 
 .req-header h3.approved { color: var(--success); }
 .req-header h3.rejected { color: var(--danger); }
-.req-header h3.vip { color: var(--gold); }
 
 .req-info {
   font-size: 13px;
@@ -752,9 +822,13 @@ body {
   max-width: 700px;
 }
 
-.transfer-form { margin-top: 20px; }
+.transfer-form {
+  margin-top: 20px;
+}
 
-.form-group { margin-bottom: 18px; }
+.form-group {
+  margin-bottom: 18px;
+}
 
 .form-group label {
   display: block;
@@ -777,7 +851,9 @@ body {
   transition: all 0.2s;
 }
 
-.form-group input:focus { border-color: var(--primary); }
+.form-group input:focus {
+  border-color: var(--primary);
+}
 
 .search-results {
   margin-top: 8px;
@@ -803,8 +879,15 @@ body {
   border-color: var(--primary);
 }
 
-.search-result-item strong { color: var(--gold); font-size: 13px; }
-.search-result-item small { color: var(--text-secondary); font-size: 11px; }
+.search-result-item strong {
+  color: var(--gold);
+  font-size: 13px;
+}
+
+.search-result-item small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
 
 .selected-user-card {
   padding: 15px;
@@ -816,8 +899,17 @@ body {
   align-items: center;
 }
 
-.selected-user-card strong { color: var(--gold); font-size: 15px; }
-.selected-user-card small { color: var(--text-secondary); font-size: 12px; display: block; margin-top: 3px; }
+.selected-user-card strong {
+  color: var(--gold);
+  font-size: 15px;
+}
+
+.selected-user-card small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  display: block;
+  margin-top: 3px;
+}
 
 .quick-amounts {
   display: flex;
@@ -861,7 +953,10 @@ body {
   color: var(--text-secondary);
 }
 
-.summary-row strong { color: var(--text); font-weight: 800; }
+.summary-row strong {
+  color: var(--text);
+  font-weight: 800;
+}
 
 .summary-row.highlight {
   border-top: 1px solid var(--border);
@@ -874,7 +969,10 @@ body {
   font-size: 16px;
 }
 
-.transfer-actions { display: flex; gap: 10px; }
+.transfer-actions {
+  display: flex;
+  gap: 10px;
+}
 
 .btn-primary, .btn-secondary {
   flex: 1;
@@ -931,54 +1029,14 @@ body {
   font-size: 13px;
 }
 
-.history-item .amount { color: var(--success); font-weight: 900; }
-.history-item .time { color: var(--muted); font-size: 11px; }
-
-/* ==================== الإنجازات والمتجر ==================== */
-.achievements-grid, .shop-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
-}
-
-.achievement-card-admin, .shop-item-admin {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.achievement-card-admin .icon, .shop-item-admin .icon {
-  font-size: 32px;
-  width: 55px;
-  height: 55px;
-  background: var(--elevated);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.achievement-card-admin .info, .shop-item-admin .info { flex: 1; }
-.achievement-card-admin .name, .shop-item-admin .name {
-  font-size: 14px;
+.history-item .amount {
+  color: var(--success);
   font-weight: 900;
-  color: var(--text);
-  margin-bottom: 4px;
 }
-.achievement-card-admin .desc, .shop-item-admin .desc {
+
+.history-item .time {
+  color: var(--muted);
   font-size: 11px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-.achievement-card-admin .reward, .shop-item-admin .price {
-  font-size: 12px;
-  color: var(--gold);
-  font-weight: 800;
 }
 
 /* ==================== سجل النشاط ==================== */
@@ -999,7 +1057,9 @@ body {
   transition: all 0.2s;
 }
 
-.log-item:hover { border-color: var(--border-light); }
+.log-item:hover {
+  border-color: var(--border-light);
+}
 
 .log-icon {
   width: 40px;
@@ -1022,8 +1082,17 @@ body {
 .log-icon.referral { background: rgba(139, 92, 246, 0.15); }
 
 .log-content { flex: 1; }
-.log-text { font-size: 13px; color: var(--text); margin-bottom: 3px; }
-.log-text strong { color: var(--gold); font-weight: 800; }
+
+.log-text {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.log-text strong {
+  color: var(--gold);
+  font-weight: 800;
+}
 
 .log-meta {
   display: flex;
@@ -1072,7 +1141,11 @@ body {
   margin-bottom: 12px;
 }
 
-.room-header h3 { font-size: 14px; color: var(--text); font-weight: 900; }
+.room-header h3 {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 900;
+}
 
 .room-code-badge {
   background: var(--primary);
@@ -1085,7 +1158,11 @@ body {
   letter-spacing: 1px;
 }
 
-.room-info { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+.room-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
 
 /* ==================== النوافذ المنبثقة ==================== */
 .modal {
@@ -1154,9 +1231,16 @@ body {
 }
 
 .info-row:last-child { border-bottom: none; }
-.info-row strong { color: var(--text); font-weight: 800; }
 
-.modal-buttons { display: flex; gap: 10px; }
+.info-row strong {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+}
 
 .btn-add, .btn-remove {
   flex: 1;
@@ -1202,7 +1286,9 @@ body {
   box-shadow: 0 10px 40px rgba(59, 130, 246, 0.4);
 }
 
-.admin-toast.show { transform: translateX(-50%) translateY(0); }
+.admin-toast.show {
+  transform: translateX(-50%) translateY(0);
+}
 
 .admin-toast.error {
   background: linear-gradient(135deg, var(--danger), #dc2626);
@@ -1225,7 +1311,9 @@ body {
 
 /* ==================== Responsive ==================== */
 @media (max-width: 968px) {
-  .two-columns { grid-template-columns: 1fr; }
+  .two-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1254,9 +1342,21 @@ body {
     border-bottom: 3px solid var(--gold);
   }
   
-  .sidebar-footer { display: none; }
-  .main-content { padding: 15px; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .users-grid, .requests-grid, .rooms-grid { grid-template-columns: 1fr; }
+  .sidebar-footer {
+    display: none;
+  }
+  
+  .main-content {
+    padding: 15px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .users-grid, .requests-grid, .rooms-grid {
+    grid-template-columns: 1fr;
+  }
+  
   .page-title { font-size: 18px; }
 }
