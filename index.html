@@ -41,26 +41,11 @@
         <h2>مسابقة الجوائز الكبرى</h2>
         <p class="prize-intro">كل ما تكسب نقاط مكتسبة أكتر، الجايزة تزيد!</p>
         <div class="prize-table">
-          <div class="prize-row">
-            <span class="prize-points">150 نقطة</span>
-            <span class="prize-money">20 جنيه</span>
-          </div>
-          <div class="prize-row">
-            <span class="prize-points">300 نقطة</span>
-            <span class="prize-money">55 جنيه</span>
-          </div>
-          <div class="prize-row highlight">
-            <span class="prize-points">500 نقطة</span>
-            <span class="prize-money">135 جنيه</span>
-          </div>
-          <div class="prize-row">
-            <span class="prize-points">800 نقطة</span>
-            <span class="prize-money">330 جنيه</span>
-          </div>
-          <div class="prize-row highlight">
-            <span class="prize-points">1200 نقطة</span>
-            <span class="prize-money">650 جنيه</span>
-          </div>
+          <div class="prize-row"><span class="prize-points">150 نقطة</span><span class="prize-money">20 جنيه</span></div>
+          <div class="prize-row"><span class="prize-points">300 نقطة</span><span class="prize-money">55 جنيه</span></div>
+          <div class="prize-row highlight"><span class="prize-points">500 نقطة</span><span class="prize-money">135 جنيه</span></div>
+          <div class="prize-row"><span class="prize-points">800 نقطة</span><span class="prize-money">330 جنيه</span></div>
+          <div class="prize-row highlight"><span class="prize-points">1200 نقطة</span><span class="prize-money">650 جنيه</span></div>
         </div>
         <p class="prize-note">الجوائز تتحول فودافون كاش بعد التحقق</p>
         <button class="btn-close-ad" onclick="closeWelcomeAd()">تمام، فهمت</button>
@@ -74,6 +59,7 @@
           <span class="user-name" id="userName">لاعب</span>
           <span class="user-level" id="userLevel">مبتدئ</span>
         </div>
+        <span class="vip-badge" id="vipBadge" style="display:none;">⭐ VIP</span>
       </div>
       <div class="header-info">
         <div class="speed-badge" id="speedBadge">
@@ -175,6 +161,10 @@
         <span class="nav-icon">💎</span>
         <span>المتجر</span>
       </button>
+      <button class="nav-btn" onclick="openShop()">
+        <span class="nav-icon">🛍️</span>
+        <span>المتجر المميز</span>
+      </button>
       <button class="nav-btn" onclick="openProfile()">
         <span class="nav-icon">👤</span>
         <span>حسابي</span>
@@ -182,7 +172,7 @@
     </nav>
   </section>
 
-  <!-- المتجر -->
+  <!-- المتجر (النقاط) -->
   <div id="storeModal" class="modal">
     <div class="modal-content">
       <button class="close-modal" onclick="closeModal('storeModal')">&times;</button>
@@ -213,6 +203,18 @@
     </div>
   </div>
 
+  <!-- المتجر المميز (العناصر) -->
+  <div id="shopModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('shopModal')">&times;</button>
+      <h2 class="neon-title">🛍️ المتجر المميز</h2>
+      <p class="small-text">اشترى إطارات، ألوان، وإيموجي</p>
+      <div id="shopItems" class="shop-items-list">
+        <p class="loading">جاري التحميل...</p>
+      </div>
+    </div>
+  </div>
+
   <!-- الدفع -->
   <div id="paymentModal" class="modal">
     <div class="modal-content">
@@ -235,7 +237,7 @@
     </div>
   </div>
 
-  <!-- حسابي -->
+  <!-- الملف الشخصي -->
   <div id="profileModal" class="modal">
     <div class="modal-content">
       <button class="close-modal" onclick="closeModal('profileModal')">&times;</button>
@@ -253,9 +255,20 @@
         <div class="stat-row"><span>المستوى</span><span id="profileLevel">مبتدئ</span></div>
         <div class="stat-row"><span>عدد الألعاب</span><span id="profileGames">0</span></div>
         
+        <!-- VIP -->
+        <div class="stat-row vip-row" id="vipRow" onclick="openVIPModal()">
+          <span>⭐ اشتراك VIP</span>
+          <span id="vipStatus">غير مشترك</span>
+        </div>
+
+        <!-- الإنجازات -->
+        <div class="stat-row achievements-row" onclick="openAchievements()">
+          <span>🏆 الإنجازات</span>
+          <span id="achievementsCount">0</span>
+        </div>
+        
         <div class="prize-section">
           <h4>🏆 جدول الجوائز الكامل</h4>
-          <p class="prize-desc">كل ما توصل لنقاط مكتسبة معينة، تكسب الجائزة</p>
           <div class="prize-table small" id="prizeTableProfile"></div>
         </div>
 
@@ -267,12 +280,12 @@
     </div>
   </div>
 
-  <!-- نافذة عرض كود الغرفة -->
+  <!-- نافذة كود الغرفة -->
   <div id="roomCodeModal" class="modal">
     <div class="modal-content">
       <button class="close-modal" onclick="closeModal('roomCodeModal')">&times;</button>
       <h2 class="neon-title">🔒 غرفة خاصة</h2>
-      <p class="small-text">ابعت الكود ده لأصدقائك عشان يدخلوا معاك:</p>
+      <p class="small-text">ابعت الكود ده لأصدقائك:</p>
       <div class="room-code-display" id="roomCodeDisplay">------</div>
       <button class="btn-neon" onclick="copyRoomCode()">📋 نسخ الكود</button>
       <button class="btn-cancel" onclick="closeModal('roomCodeModal')">إغلاق</button>
@@ -284,11 +297,58 @@
     <div class="modal-content">
       <button class="close-modal" onclick="closeModal('joinRoomModal')">&times;</button>
       <h2 class="neon-title">🔑 الانضمام بكود</h2>
-      <p class="small-text">اكتب الكود اللي وصلك من صاحب الغرفة:</p>
+      <p class="small-text">اكتب الكود اللي وصلك:</p>
       <div class="input-group">
         <input type="text" id="joinCodeInput" placeholder="ABC123" maxlength="6" style="text-align: center; font-size: 22px; letter-spacing: 4px; font-family: 'Orbitron', sans-serif; text-transform: uppercase;">
       </div>
       <button class="btn-neon" onclick="joinRoomByCode()">✅ انضمام</button>
+    </div>
+  </div>
+
+  <!-- نافذة VIP -->
+  <div id="vipModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('vipModal')">&times;</button>
+      <h2 class="neon-title">⭐ اشتراك VIP</h2>
+      
+      <div class="vip-benefits">
+        <h3>🎁 مزايا VIP:</h3>
+        <ul>
+          <li>✅ مضاعفة الأرباح (56 بدل 28 نقطة)</li>
+          <li>✅ بدون رسوم دخول (توفير 14 نقطة)</li>
+          <li>✅ شارة VIP في البروفايل</li>
+          <li>✅ تصميم مختلف للإطار</li>
+        </ul>
+      </div>
+
+      <div class="vip-price-box">
+        <div class="vip-price">100 جنيه</div>
+        <div class="vip-duration">لمدة 30 يوم</div>
+      </div>
+
+      <div class="vip-payment-info">
+        <h3>📱 حوّل على فودافون كاش:</h3>
+        <div class="vodafone-number" id="vipVodafone">01091602772</div>
+        <p class="small-text">بعد التحويل، اكتب رقم العملية:</p>
+      </div>
+
+      <div class="input-group">
+        <label>🔢 رقم العملية</label>
+        <input type="text" id="vipTransInput" placeholder="مثال: 123456789">
+      </div>
+
+      <button class="btn-neon" onclick="submitVIPPayment()">✅ إرسال طلب الاشتراك</button>
+    </div>
+  </div>
+
+  <!-- نافذة الإنجازات -->
+  <div id="achievementsModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('achievementsModal')">&times;</button>
+      <h2 class="neon-title">🏆 الإنجازات</h2>
+      <div id="achievementsList" class="achievements-list">
+        <p class="loading">جاري التحميل...</p>
+      </div>
     </div>
   </div>
 
