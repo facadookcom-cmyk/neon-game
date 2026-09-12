@@ -1,5 +1,5 @@
 // ============================================
-// Neon Prediction - Complete Script (v16 Final)
+// Neon Prediction - Complete Script (v17 Final)
 // ============================================
 
 const SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -78,7 +78,7 @@ function initDatabase() {
     db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     console.log('✅ Supabase متصل');
   } catch (e) {
-    console.error('❌ خطأ في الاتصال بـ Supabase:', e);
+    console.error('❌ خطأ في الاتصال:', e);
   }
 }
 
@@ -107,15 +107,10 @@ function initNotifications() {
   if (Notification.permission === 'default') Notification.requestPermission();
 }
 
-// ==================== تحديث بيانات المستخدم (بيشتغل صح) ====================
+// ==================== تحديث بيانات المستخدم (v17) ====================
 async function refreshUserData() {
   if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
-  
-  // ⚠️ متحدثش لو المستخدم بيلعب أو في غرفة
-  if (App.room.status === 'playing' || App.room.status === 'waiting') {
-    console.log('⏸️ متوقف عن التحديث - المستخدم في غرفة');
-    return;
-  }
+  if (App.room.status === 'playing' || App.room.status === 'waiting') return;
   
   try {
     const { data: fresh } = await db.from('users')
@@ -128,16 +123,20 @@ async function refreshUserData() {
     const freshTotal = (fresh.purchased_points || 0) + (fresh.earned_points || 0);
     const localTotal = App.user.purchased + App.user.earned;
     
-    // ⚠️ حدّث بس لو السيرفر فيه نقاط أكتر (عشان لو خسرت متترجعش)
+    // ⚠️ حدّث بس لو السيرفر فيه نقاط أكتر
     if (freshTotal > localTotal) {
       console.log('🔄 النقاط اتحدثت (زيادة):', localTotal, '→', freshTotal);
-      mapUser(fresh);
+      App.user.purchased = fresh.purchased_points || 0;
+      App.user.earned = fresh.earned_points || 0;
+      App.user.level = fresh.level || 1;
+      App.user.games_played = fresh.games_played || 0;
+      App.user.claimedPrizes = fresh.claimed_prizes || [];
       saveLocal();
       updateUI();
-      showToast(`💰 تم إضافة ${freshTotal - localTotal} نقطة من الأدمن!`, 'success');
+      showToast(`💰 تم إضافة ${freshTotal - localTotal} نقطة!`, 'success');
     }
   } catch (e) {
-    console.error('❌ خطأ في refreshUserData:', e);
+    console.error('❌ خطأ:', e);
   }
 }
 
@@ -228,7 +227,7 @@ async function login() {
     saveLocal();
     enterGame();
   } catch (e) {
-    console.error('❌ خطأ في تسجيل الدخول:', e);
+    console.error('❌ خطأ:', e);
     createLocalUser(name, phone);
     showToast(`أهلاً ${name}`, 'success');
     enterGame();
@@ -257,23 +256,12 @@ function saveLocal() {
   localStorage.setItem('neon_user', JSON.stringify(App.user));
 }
 
-// ==================== دخول اللعبة ====================
-async function enterGame() {
+// ==================== دخول اللعبة (v17 - بسيط) ====================
+function enterGame() {
   document.getElementById('loginScreen')?.classList.remove('active');
   document.getElementById('mainScreen')?.classList.add('active');
   
-  // اقرأ من Supabase عند الدخول
-  if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
-    try {
-      const { data: fresh } = await db.from('users').select('*').eq('id', App.user.id).maybeSingle();
-      if (fresh) {
-        mapUser(fresh);
-        saveLocal();
-        console.log('✅ تم تحديث البيانات:', fresh.purchased_points);
-      }
-    } catch (e) {}
-  }
-  
+  // ⚠️ مهم: نستخدم localStorage بس، مش نقرأ من Supabase كل مرة
   updateUI();
   
   if (!App.adShown && !localStorage.getItem('adShown')) {
@@ -364,7 +352,8 @@ async function saveToSupabase() {
       games_played: App.user.games_played,
       claimed_prizes: App.user.claimedPrizes
     }).eq('id', App.user.id);
-    if (error) { console.error('❌ خطأ:', error); return false; }
+    if (error) { console.error('❌ خطأ في الحفظ:', error); return false; }
+    console.log('✅ تم الحفظ في Supabase:', App.user.purchased, App.user.earned);
     return true;
   } catch (e) { return false; }
 }
@@ -374,11 +363,8 @@ async function createPrivateRoom() {
   if (App.room.status === 'waiting' || App.room.status === 'playing') {
     return showToast('أنت في غرفة بالفعل', 'error');
   }
-  
   const total = App.user.purchased + App.user.earned;
-  if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) {
-    return showToast(`رصيدك غير كافٍ`, 'error');
-  }
+  if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) return showToast(`رصيدك غير كافٍ`, 'error');
 
   await cleanMyRooms();
   if (!db) return showToast('Supabase غير متصل', 'error');
@@ -436,9 +422,7 @@ async function joinRoomByCode() {
   if (!db) return showToast('Supabase غير متصل', 'error');
 
   const total = App.user.purchased + App.user.earned;
-  if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) {
-    return showToast(`رصيدك غير كافٍ`, 'error');
-  }
+  if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) return showToast(`رصيدك غير كافٍ`, 'error');
 
   await cleanMyRooms();
 
@@ -477,11 +461,8 @@ async function selectCategory(category) {
   if (App.room.status === 'waiting' || App.room.status === 'playing') {
     return showToast('أنت في غرفة بالفعل', 'error');
   }
-
   const total = App.user.purchased + App.user.earned;
-  if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) {
-    return showToast(`رصيدك غير كافٍ`, 'error');
-  }
+  if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) return showToast(`رصيدك غير كافٍ`, 'error');
 
   await cleanMyRooms();
   
@@ -652,7 +633,7 @@ function stopTimer() {
   App.timerInterval = null;
 }
 
-// ==================== عرض النتيجة ====================
+// ==================== عرض النتيجة (v17) ====================
 async function showResult() {
   App.room.status = 'finished';
   const correct = App.room.correctChoice;
@@ -681,8 +662,11 @@ async function showResult() {
     showCoinToast(`-${cost} نقطة`, '💸');
   }
 
+  // 💾 حفظ محلي فوراً
   saveLocal();
   updateUI();
+  
+  // 💾 حفظ في Supabase
   await saveToSupabase();
 
   const box = document.getElementById('resultContainer');
