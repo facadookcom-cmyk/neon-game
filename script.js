@@ -1,5 +1,5 @@
 // ============================================
-// Neon Prediction - Complete Script (v13)
+// Neon Prediction - Complete Script (v14)
 // ============================================
 
 // ==================== عرض الأخطاء ====================
@@ -123,9 +123,15 @@ function initNotifications() {
   if (Notification.permission === 'default') Notification.requestPermission();
 }
 
-// ==================== تحديث بيانات المستخدم من Supabase ====================
+// ==================== تحديث بيانات المستخدم من Supabase (v14) ====================
 async function refreshUserData() {
   if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
+  
+  // ⚠️ متحدثش لو المستخدم في غرفة أو بيلعب
+  if (App.room.status === 'playing' || App.room.status === 'waiting') {
+    console.log('⏸️ متوقف عن التحديث - المستخدم في غرفة');
+    return;
+  }
   
   try {
     const { data: fresh } = await db.from('users')
@@ -137,11 +143,14 @@ async function refreshUserData() {
       const oldPoints = App.user.purchased + App.user.earned;
       const newPoints = (fresh.purchased_points || 0) + (fresh.earned_points || 0);
       
-      if (oldPoints !== newPoints) {
-        console.log('🔄 النقاط اتحدثت:', oldPoints, '→', newPoints);
+      // ⚠️ حدّث بس لو السيرفر فيه نقاط أكتر (مش أقل)
+      if (newPoints > oldPoints) {
+        console.log('🔄 النقاط اتحدثت (زيادة):', oldPoints, '→', newPoints);
         mapUser(fresh);
         saveLocal();
         updateUI();
+      } else if (newPoints < oldPoints) {
+        console.log('⚠️ السيرفر فيه نقاط أقل، مش هحدث');
       }
     }
   } catch (e) {
@@ -267,12 +276,11 @@ function saveLocal() {
   localStorage.setItem('neon_user', JSON.stringify(App.user));
 }
 
-// ==================== دخول اللعبة (v13 - محدّث) ====================
+// ==================== دخول اللعبة ====================
 async function enterGame() {
   document.getElementById('loginScreen')?.classList.remove('active');
   document.getElementById('mainScreen')?.classList.add('active');
   
-  // 🆕 اقرأ البيانات الحديثة من Supabase
   if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
     try {
       const { data: fresh } = await db.from('users')
@@ -614,8 +622,6 @@ async function selectCategory(category) {
 async function loadRoomPlayers(roomId) {
   if (!db || App.isLeaving) return;
   
-  console.log('🔄 تحميل اللاعبين للغرفة:', roomId);
-  
   try {
     const { data: players, error } = await db.from('room_players')
       .select('user_id, choice, result')
@@ -626,8 +632,6 @@ async function loadRoomPlayers(roomId) {
       return;
     }
 
-    console.log('📊 عدد اللاعبين في room_players:', players?.length || 0);
-
     if (!players || players.length === 0) {
       App.room.players = [];
       updateWaitingUI();
@@ -635,13 +639,9 @@ async function loadRoomPlayers(roomId) {
     }
 
     const userIds = players.map(p => p.user_id);
-    const { data: users, error: usersErr } = await db.from('users')
+    const { data: users } = await db.from('users')
       .select('id, username, avatar_url')
       .in('id', userIds);
-
-    if (usersErr) {
-      console.error('❌ خطأ في تحميل المستخدمين:', usersErr);
-    }
 
     App.room.players = players.map(p => {
       const user = users?.find(u => u.id === p.user_id);
@@ -653,14 +653,11 @@ async function loadRoomPlayers(roomId) {
       };
     });
 
-    console.log('✅ عدد اللاعبين:', App.room.players.length);
-    
     updateWaitingUI();
 
     if (App.room.players.length >= CONFIG.ROOM_SIZE && !App.gameStarted && App.room.status === 'waiting') {
       App.gameStarted = true;
       App.room.status = 'playing';
-      console.log('🔥 الغرفة اكتملت! ابدأ اللعبة...');
       setTimeout(startGame, 800);
     }
   } catch (e) {
@@ -674,8 +671,6 @@ function subscribeToRoom(roomId) {
   if (App.realtimeChannel) {
     try { db.removeChannel(App.realtimeChannel); } catch (e) {}
   }
-  
-  console.log('📡 الاشتراك في الغرفة:', roomId);
   
   App.realtimeChannel = db.channel('room_' + roomId + '_' + Date.now())
     .on('postgres_changes', {
@@ -696,12 +691,9 @@ function subscribeToRoom(roomId) {
       table: 'room_players',
       filter: `room_id=eq.${roomId}`
     }, () => loadRoomPlayers(roomId))
-    .subscribe((status) => {
-      console.log('📡 حالة الاشتراك:', status);
-    });
+    .subscribe();
 }
 
-// ==================== تحديث واجهة الانتظار ====================
 function updateWaitingUI() {
   const count = App.room.players.length;
   const countEl = document.getElementById('playersCount');
@@ -713,8 +705,6 @@ function updateWaitingUI() {
       ? `في انتظار ${CONFIG.ROOM_SIZE - count} لاعبين...` 
       : 'الغرفة اكتملت! استعد';
   }
-
-  console.log('🎨 تحديث الواجهة:', count, 'لاعبين');
 
   for (let i = 1; i <= CONFIG.ROOM_SIZE; i++) {
     const slot = document.getElementById('slot' + i);
@@ -806,6 +796,7 @@ function stopTimer() {
   App.timerInterval = null;
 }
 
+// ==================== عرض النتيجة (v14 - مع حفظ فوري) ====================
 async function showResult() {
   App.room.status = 'finished';
   const correct = App.room.correctChoice;
@@ -816,14 +807,21 @@ async function showResult() {
   const won = App.myChoice === correct;
   const cost = CONFIG.ENTRY_FEE + CONFIG.COMMISSION;
 
-  if (App.user.purchased >= cost) App.user.purchased -= cost;
-  else {
+  // 🆕 حفظ النقاط القديمة للمقارنة
+  const oldPurchased = App.user.purchased;
+  const oldEarned = App.user.earned;
+
+  // خصم الرسوم
+  if (App.user.purchased >= cost) {
+    App.user.purchased -= cost;
+  } else {
     const rem = cost - App.user.purchased;
     App.user.purchased = 0;
     App.user.earned = Math.max(0, App.user.earned - rem);
   }
   App.user.games_played++;
 
+  // إضافة المكافأة
   if (won) {
     App.user.earned += CONFIG.WIN_REWARD;
     checkLevelUp();
@@ -833,20 +831,32 @@ async function showResult() {
     showCoinToast(`-${cost} نقطة`, '💸');
   }
 
+  // 🆕 حفظ محلي فوراً
+  saveLocal();
+  updateUI();
+
+  // 🆕 حفظ في Supabase فوراً
   if (db && !String(App.user.id).startsWith('local_')) {
     try {
-      await db.from('users').update({
+      const { error } = await db.from('users').update({
         purchased_points: App.user.purchased,
         earned_points: App.user.earned,
         level: App.user.level,
         games_played: App.user.games_played,
         claimed_prizes: App.user.claimedPrizes
       }).eq('id', App.user.id);
-    } catch (e) {}
+      
+      if (error) {
+        console.error('❌ خطأ في حفظ النقاط:', error);
+      } else {
+        console.log('✅ تم حفظ النقاط في Supabase:', App.user.purchased, App.user.earned);
+      }
+    } catch (e) {
+      console.error('❌ خطأ في الحفظ:', e);
+    }
   }
-  saveLocal();
-  updateUI();
 
+  // عرض النتيجة
   const box = document.getElementById('resultContainer');
   document.getElementById('resultIcon').textContent = won ? '🏆' : '😢';
   document.getElementById('resultTitle').textContent = won ? 'مبروك! فزت' : 'للأسف خسرت';
