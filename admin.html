@@ -51,21 +51,9 @@
           <span class="nav-icon">🛒</span>
           <span>طلبات الشراء</span>
         </button>
-        <button class="nav-item" onclick="showTab('vipTab', event)">
-          <span class="nav-icon">⭐</span>
-          <span>طلبات VIP</span>
-        </button>
         <button class="nav-item" onclick="showTab('transferTab', event)">
           <span class="nav-icon">💸</span>
           <span>تحويل النقاط</span>
-        </button>
-        <button class="nav-item" onclick="showTab('achievementsTab', event)">
-          <span class="nav-icon">🏆</span>
-          <span>الإنجازات</span>
-        </button>
-        <button class="nav-item" onclick="showTab('shopTab', event)">
-          <span class="nav-icon">🛍️</span>
-          <span>المتجر المميز</span>
         </button>
         <button class="nav-item" onclick="showTab('logsTab', event)">
           <span class="nav-icon">📝</span>
@@ -114,14 +102,16 @@
             <div class="stat-content">
               <div class="stat-label">إجمالي المستخدمين</div>
               <div class="stat-value" id="statUsers">0</div>
+              <div class="stat-change positive" id="statUsersChange">+0%</div>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon-box gold">🛒</div>
             <div class="stat-content">
-              <div class="stat-label">طلبات شراء معلقة</div>
+              <div class="stat-label">طلبات معلقة</div>
               <div class="stat-value" id="statRequests">0</div>
+              <div class="stat-change" id="statRequestsChange">بحاجة لمراجعة</div>
             </div>
           </div>
 
@@ -130,6 +120,7 @@
             <div class="stat-content">
               <div class="stat-label">إجمالي النقاط</div>
               <div class="stat-value" id="statPoints">0</div>
+              <div class="stat-change positive">نقاط نشطة</div>
             </div>
           </div>
 
@@ -138,39 +129,7 @@
             <div class="stat-content">
               <div class="stat-label">غرف نشطة</div>
               <div class="stat-value" id="statRooms">0</div>
-            </div>
-          </div>
-
-          <!-- إحصائيات جديدة -->
-          <div class="stat-card vip-stat">
-            <div class="stat-icon-box gold">⭐</div>
-            <div class="stat-content">
-              <div class="stat-label">طلبات VIP معلقة</div>
-              <div class="stat-value" id="statVIP">0</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon-box green">🏆</div>
-            <div class="stat-content">
-              <div class="stat-label">إنجازات مفتوحة</div>
-              <div class="stat-value" id="statAchievements">0</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon-box purple">🛍️</div>
-            <div class="stat-content">
-              <div class="stat-label">عناصر مباعة</div>
-              <div class="stat-value" id="statItems">0</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon-box blue">👥</div>
-            <div class="stat-content">
-              <div class="stat-label">إجمالي الأصدقاء</div>
-              <div class="stat-value" id="statFriends">0</div>
+              <div class="stat-change">في الوقت الحالي</div>
             </div>
           </div>
         </div>
@@ -215,7 +174,7 @@
         <div class="toolbar">
           <div class="search-input-wrapper">
             <span class="search-icon">🔍</span>
-            <input type="text" id="searchUsers" placeholder="ابحث بالاسم، الرقم..." oninput="filterUsers()">
+            <input type="text" id="searchUsers" placeholder="ابحث بالاسم، الرقم، أو المستوى..." oninput="filterUsers()">
           </div>
           <select id="filterLevel" class="filter-select" onchange="filterUsers()">
             <option value="">كل المستويات</option>
@@ -248,19 +207,6 @@
           <button class="filter-btn" onclick="filterRequests('rejected', event)">❌ مرفوضة</button>
         </div>
         <div id="requestsList" class="requests-grid">
-          <p class="loading">جاري التحميل...</p>
-        </div>
-      </div>
-
-      <!-- تاب طلبات VIP -->
-      <div id="vipTab" class="tab-content">
-        <div class="filter-tabs">
-          <button class="filter-btn active" onclick="filterVIP('pending', event)">⏳ معلقة</button>
-          <button class="filter-btn" onclick="filterVIP('active', event)">⭐ نشطة</button>
-          <button class="filter-btn" onclick="filterVIP('expired', event)">⌛ منتهية</button>
-          <button class="filter-btn" onclick="filterVIP('rejected', event)">❌ مرفوضة</button>
-        </div>
-        <div id="vipList" class="requests-grid">
           <p class="loading">جاري التحميل...</p>
         </div>
       </div>
@@ -302,13 +248,22 @@
 
             <div class="form-group">
               <label>📝 سبب التحويل (اختياري)</label>
-              <input type="text" id="transferReason" placeholder="مثلاً: مكافأة">
+              <input type="text" id="transferReason" placeholder="مثلاً: مكافأة، تعويض، إلخ...">
             </div>
 
             <div class="transfer-summary" id="transferSummary" style="display:none;">
-              <div class="summary-row"><span>المستخدم:</span><strong id="summaryUser">--</strong></div>
-              <div class="summary-row"><span>النقاط الحالية:</span><strong id="summaryCurrent">0</strong></div>
-              <div class="summary-row highlight"><span>النقاط بعد التحويل:</span><strong id="summaryAfter">0</strong></div>
+              <div class="summary-row">
+                <span>المستخدم:</span>
+                <strong id="summaryUser">--</strong>
+              </div>
+              <div class="summary-row">
+                <span>النقاط الحالية:</span>
+                <strong id="summaryCurrent">0</strong>
+              </div>
+              <div class="summary-row highlight">
+                <span>النقاط بعد التحويل:</span>
+                <strong id="summaryAfter">0</strong>
+              </div>
             </div>
 
             <div class="transfer-actions">
@@ -322,30 +277,6 @@
             <div id="transferHistory" class="history-list">
               <p class="loading">جاري التحميل...</p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- تاب الإنجازات -->
-      <div id="achievementsTab" class="tab-content">
-        <div class="panel">
-          <div class="panel-header">
-            <h3>🏆 الإنجازات المتاحة</h3>
-          </div>
-          <div id="achievementsList" class="achievements-grid">
-            <p class="loading">جاري التحميل...</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- تاب المتجر المميز -->
-      <div id="shopTab" class="tab-content">
-        <div class="panel">
-          <div class="panel-header">
-            <h3>🛍️ عناصر المتجر</h3>
-          </div>
-          <div id="shopItemsList" class="shop-grid">
-            <p class="loading">جاري التحميل...</p>
           </div>
         </div>
       </div>
