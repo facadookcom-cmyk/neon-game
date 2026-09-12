@@ -1,5 +1,5 @@
 // ============================================
-// Neon Prediction - Complete Script (v15)
+// Neon Prediction - Complete Script (v16 Final)
 // ============================================
 
 const SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -54,9 +54,9 @@ const App = {
   gameStarted: false,
   onlineInterval: null,
   speedInterval: null,
+  refreshInterval: null,
   adShown: false,
-  isLeaving: false,
-  lastUpdateTime: 0
+  isLeaving: false
 };
 
 let db = null;
@@ -76,7 +76,10 @@ function initDatabase() {
   if (typeof supabase === 'undefined') return;
   try {
     db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  } catch (e) {}
+    console.log('✅ Supabase متصل');
+  } catch (e) {
+    console.error('❌ خطأ في الاتصال بـ Supabase:', e);
+  }
 }
 
 function restoreSession() {
@@ -94,6 +97,7 @@ function restoreSession() {
 function startPeriodicUpdates() {
   App.onlineInterval = setInterval(updateOnlineCount, 4000);
   App.speedInterval = setInterval(updateSpeed, 2800);
+  App.refreshInterval = setInterval(refreshUserData, 15000);
   updateOnlineCount();
   updateSpeed();
 }
@@ -101,6 +105,40 @@ function startPeriodicUpdates() {
 function initNotifications() {
   if (!('Notification' in window)) return;
   if (Notification.permission === 'default') Notification.requestPermission();
+}
+
+// ==================== تحديث بيانات المستخدم (بيشتغل صح) ====================
+async function refreshUserData() {
+  if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
+  
+  // ⚠️ متحدثش لو المستخدم بيلعب أو في غرفة
+  if (App.room.status === 'playing' || App.room.status === 'waiting') {
+    console.log('⏸️ متوقف عن التحديث - المستخدم في غرفة');
+    return;
+  }
+  
+  try {
+    const { data: fresh } = await db.from('users')
+      .select('*')
+      .eq('id', App.user.id)
+      .maybeSingle();
+    
+    if (!fresh) return;
+    
+    const freshTotal = (fresh.purchased_points || 0) + (fresh.earned_points || 0);
+    const localTotal = App.user.purchased + App.user.earned;
+    
+    // ⚠️ حدّث بس لو السيرفر فيه نقاط أكتر (عشان لو خسرت متترجعش)
+    if (freshTotal > localTotal) {
+      console.log('🔄 النقاط اتحدثت (زيادة):', localTotal, '→', freshTotal);
+      mapUser(fresh);
+      saveLocal();
+      updateUI();
+      showToast(`💰 تم إضافة ${freshTotal - localTotal} نقطة من الأدمن!`, 'success');
+    }
+  } catch (e) {
+    console.error('❌ خطأ في refreshUserData:', e);
+  }
 }
 
 function buildPrizeTableProfile() {
@@ -188,9 +226,9 @@ async function login() {
       showToast(`أهلاً ${name}! حصلت على ${CONFIG.STARTER_POINTS} نقطة`, 'success');
     }
     saveLocal();
-    App.lastUpdateTime = Date.now();
     enterGame();
   } catch (e) {
+    console.error('❌ خطأ في تسجيل الدخول:', e);
     createLocalUser(name, phone);
     showToast(`أهلاً ${name}`, 'success');
     enterGame();
@@ -217,7 +255,6 @@ function createLocalUser(name, phone) {
 
 function saveLocal() {
   localStorage.setItem('neon_user', JSON.stringify(App.user));
-  App.lastUpdateTime = Date.now();
 }
 
 // ==================== دخول اللعبة ====================
@@ -225,25 +262,14 @@ async function enterGame() {
   document.getElementById('loginScreen')?.classList.remove('active');
   document.getElementById('mainScreen')?.classList.add('active');
   
-  // اقرأ من Supabase بس لو مش لسه بيلعب
-  if (db && App.user.id && !String(App.user.id).startsWith('local_') && !App.isPlaying()) {
+  // اقرأ من Supabase عند الدخول
+  if (db && App.user.id && !String(App.user.id).startsWith('local_')) {
     try {
-      const { data: fresh } = await db.from('users')
-        .select('*')
-        .eq('id', App.user.id)
-        .maybeSingle();
-      
+      const { data: fresh } = await db.from('users').select('*').eq('id', App.user.id).maybeSingle();
       if (fresh) {
-        const freshTotal = (fresh.purchased_points || 0) + (fresh.earned_points || 0);
-        const localTotal = App.user.purchased + App.user.earned;
-        
-        // ⚠️ خد الأقل (عشان لو خسرت متترجعش)
-        if (freshTotal < localTotal) {
-          console.log('⚠️ السيرفر فيه نقاط أقل، هستخدم المحلي:', localTotal);
-        } else {
-          mapUser(fresh);
-          saveLocal();
-        }
+        mapUser(fresh);
+        saveLocal();
+        console.log('✅ تم تحديث البيانات:', fresh.purchased_points);
       }
     } catch (e) {}
   }
@@ -254,11 +280,6 @@ async function enterGame() {
     document.getElementById('welcomeAd')?.classList.remove('hidden');
   }
 }
-
-// اتحقق لو المستخدم بيلعب
-App.isPlaying = function() {
-  return this.room.status === 'playing' || this.room.status === 'waiting';
-};
 
 function closeWelcomeAd() {
   document.getElementById('welcomeAd')?.classList.add('hidden');
@@ -332,10 +353,9 @@ function generateRoomCode() {
   return code;
 }
 
-// ==================== حفظ النقاط في Supabase (دالة موحدة) ====================
+// ==================== حفظ النقاط في Supabase ====================
 async function saveToSupabase() {
   if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return false;
-  
   try {
     const { error } = await db.from('users').update({
       purchased_points: App.user.purchased,
@@ -344,27 +364,20 @@ async function saveToSupabase() {
       games_played: App.user.games_played,
       claimed_prizes: App.user.claimedPrizes
     }).eq('id', App.user.id);
-    
-    if (error) {
-      console.error('❌ خطأ في الحفظ:', error);
-      return false;
-    }
-    
-    console.log('✅ تم الحفظ في Supabase:', App.user.purchased, App.user.earned);
+    if (error) { console.error('❌ خطأ:', error); return false; }
     return true;
-  } catch (e) {
-    console.error('❌ خطأ في الحفظ:', e);
-    return false;
-  }
+  } catch (e) { return false; }
 }
 
 // ==================== إنشاء غرفة خاصة ====================
 async function createPrivateRoom() {
-  if (App.isPlaying()) return showToast('أنت في غرفة بالفعل', 'error');
+  if (App.room.status === 'waiting' || App.room.status === 'playing') {
+    return showToast('أنت في غرفة بالفعل', 'error');
+  }
   
   const total = App.user.purchased + App.user.earned;
   if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) {
-    return showToast(`رصيدك غير كافٍ (تحتاج ${CONFIG.ENTRY_FEE + CONFIG.COMMISSION})`, 'error');
+    return showToast(`رصيدك غير كافٍ`, 'error');
   }
 
   await cleanMyRooms();
@@ -397,6 +410,7 @@ async function createPrivateRoom() {
     subscribeToRoom(newRoom.id);
     await loadRoomPlayers(newRoom.id);
   } catch (e) {
+    console.error('❌ خطأ:', e);
     showToast('حدث خطأ: ' + (e.message || 'حاول تاني'), 'error');
   }
 }
@@ -409,7 +423,9 @@ function copyRoomCode() {
 }
 
 function openJoinModal() {
-  if (App.isPlaying()) return showToast('أنت في غرفة بالفعل', 'error');
+  if (App.room.status === 'waiting' || App.room.status === 'playing') {
+    return showToast('أنت في غرفة بالفعل', 'error');
+  }
   document.getElementById('joinCodeInput').value = '';
   document.getElementById('joinRoomModal').classList.add('active');
 }
@@ -451,13 +467,16 @@ async function joinRoomByCode() {
     showView('waitingView');
     showToast('✅ انضممت للغرفة!', 'success');
   } catch (e) {
+    console.error('❌ خطأ:', e);
     showToast('حدث خطأ', 'error');
   }
 }
 
 // ==================== اختيار الفئة ====================
 async function selectCategory(category) {
-  if (App.isPlaying()) return showToast('أنت في غرفة بالفعل', 'error');
+  if (App.room.status === 'waiting' || App.room.status === 'playing') {
+    return showToast('أنت في غرفة بالفعل', 'error');
+  }
 
   const total = App.user.purchased + App.user.earned;
   if (total < CONFIG.ENTRY_FEE + CONFIG.COMMISSION) {
@@ -500,8 +519,12 @@ async function selectCategory(category) {
       await db.from('room_players').insert([{ room_id: roomId, user_id: App.user.id }]);
       subscribeToRoom(roomId);
       await loadRoomPlayers(roomId);
+    } else {
+      App.room.id = 'local_' + Date.now();
+      App.room.players = [{ username: App.user.username, avatar: App.user.avatar_url }];
     }
   } catch (e) {
+    console.error('❌ خطأ:', e);
     return showToast('حدث خطأ، حاول تاني', 'error');
   }
 
@@ -629,7 +652,7 @@ function stopTimer() {
   App.timerInterval = null;
 }
 
-// ==================== عرض النتيجة (v15) ====================
+// ==================== عرض النتيجة ====================
 async function showResult() {
   App.room.status = 'finished';
   const correct = App.room.correctChoice;
@@ -640,7 +663,6 @@ async function showResult() {
   const won = App.myChoice === correct;
   const cost = CONFIG.ENTRY_FEE + CONFIG.COMMISSION;
 
-  // خصم الرسوم
   if (App.user.purchased >= cost) {
     App.user.purchased -= cost;
   } else {
@@ -659,14 +681,10 @@ async function showResult() {
     showCoinToast(`-${cost} نقطة`, '💸');
   }
 
-  // 💾 حفظ محلي أولاً (مهم)
   saveLocal();
   updateUI();
-
-  // 💾 حفظ في Supabase
   await saveToSupabase();
 
-  // عرض النتيجة
   const box = document.getElementById('resultContainer');
   document.getElementById('resultIcon').textContent = won ? '🏆' : '😢';
   document.getElementById('resultTitle').textContent = won ? 'مبروك! فزت' : 'للأسف خسرت';
@@ -691,9 +709,8 @@ async function checkPrizes() {
       App.user.claimedPrizes.push(prize.threshold);
       App.user.earned -= prize.threshold;
       showCoinToast(`فزت بـ ${prize.money} جنيه!`, '💰');
-      
       try {
-        const message = `🎉 فائز بجائزة!\n\n👤 الاسم: ${App.user.username}\n📱 التليفون: ${App.user.phone || 'غير متوفر'}\n🆔 ID: ${App.user.id}\n\n⭐ النقاط: ${prize.threshold}\n💰 الجائزة: ${prize.money} جنيه\n⏰ ${new Date().toLocaleString('ar-EG')}`;
+        const message = `🎉 فائز بجائزة!\n\n👤 ${App.user.username}\n📱 ${App.user.phone || 'غير متوفر'}\n🆔 ${App.user.id}\n\n⭐ ${prize.threshold} نقطة\n💰 ${prize.money} جنيه\n⏰ ${new Date().toLocaleString('ar-EG')}`;
         await sendTelegram(message);
       } catch (e) {}
     }
@@ -758,10 +775,8 @@ async function submitPayment() {
         trans_number: num, status: 'pending'
       }]);
     }
-
     const message = `🔔 طلب شراء جديد\n\n👤 ${App.user.username}\n📱 ${App.user.phone}\n🆔 ${App.user.id}\n\n💎 ${App.pendingPurchase.points} نقطة\n💰 ${App.pendingPurchase.price} جنيه\n🔢 ${num}`;
     await sendTelegram(message);
-
     showCoinToast('تم إرسال الطلب بنجاح', '✅');
     closeModal('paymentModal');
     App.pendingPurchase = null;
@@ -802,7 +817,6 @@ function openProfile() {
       shareRow.onclick = shareGame;
     }
   }
-
   document.getElementById('profileModal').classList.add('active');
 }
 
