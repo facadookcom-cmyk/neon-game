@@ -1,5 +1,5 @@
 // ============================================
-// Neon Prediction - Complete Script (v20)
+// Neon Prediction - Complete Script (v21)
 // ============================================
 
 const SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -21,7 +21,6 @@ const CONFIG = Object.freeze({
   VIP_PRICE: 100,
   VIP_DURATION_DAYS: 30,
   VIP_WIN_MULTIPLIER: 2,
-  VIP_NO_ENTRY_FEE: true,
   LEVEL_NAMES: Object.freeze({
     1: 'مبتدئ 🌱', 2: 'هاوي 🥉', 3: 'محترف 🥈',
     4: 'خبير 🥇', 5: 'أسطورة 💎', 6: 'نخبة 👑', 7: 'أسطوري 🏆'
@@ -147,18 +146,14 @@ async function refreshUserData() {
 // ==================== فحص VIP ====================
 async function checkVIP() {
   if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
-  
   try {
     const { data } = await db.from('subscriptions')
       .select('*').eq('user_id', App.user.id).eq('status', 'active').maybeSingle();
-    
     if (data && new Date(data.end_date) > new Date()) {
       App.user.vip = { active: true, end_date: data.end_date };
     } else {
       App.user.vip = { active: false, end_date: null };
-      if (data) {
-        await db.from('subscriptions').update({ status: 'expired' }).eq('id', data.id);
-      }
+      if (data) await db.from('subscriptions').update({ status: 'expired' }).eq('id', data.id);
     }
     saveLocal();
   } catch (e) {}
@@ -248,6 +243,7 @@ async function login() {
     await checkVIP();
     await loadUserAchievements();
     await loadUserItems();
+    await loadFriends();
     saveLocal();
     enterGame();
   } catch (e) {
@@ -316,7 +312,6 @@ function updateUI() {
     av.textContent = App.user.username.charAt(0).toUpperCase();
   }
   
-  // VIP badge
   if (App.user.vip?.active) {
     const badge = document.getElementById('vipBadge');
     if (badge) badge.style.display = 'inline-block';
@@ -327,7 +322,7 @@ function showView(viewId) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(viewId)?.classList.add('active');
   const nav = document.getElementById('bottomNav');
-  if (nav) nav.style.display = (viewId === 'categoryView' || viewId === 'shopView') ? 'flex' : 'none';
+  if (nav) nav.style.display = (viewId === 'categoryView') ? 'flex' : 'none';
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   if (viewId === 'categoryView') document.querySelector('.nav-btn')?.classList.add('active');
 }
@@ -414,9 +409,7 @@ async function createPrivateRoom() {
     document.getElementById('roomCodeModal').classList.add('active');
     subscribeToRoom(newRoom.id);
     await loadRoomPlayers(newRoom.id);
-  } catch (e) {
-    showToast('حدث خطأ', 'error');
-  }
+  } catch (e) { showToast('حدث خطأ', 'error'); }
 }
 
 function copyRoomCode() {
@@ -458,9 +451,7 @@ async function joinRoomByCode() {
     updateWaitingUI();
     showView('waitingView');
     showToast('✅ انضممت للغرفة!', 'success');
-  } catch (e) {
-    showToast('حدث خطأ', 'error');
-  }
+  } catch (e) { showToast('حدث خطأ', 'error'); }
 }
 
 // ==================== اختيار الفئة ====================
@@ -496,9 +487,7 @@ async function selectCategory(category) {
       subscribeToRoom(roomId);
       await loadRoomPlayers(roomId);
     }
-  } catch (e) {
-    return showToast('حدث خطأ، حاول تاني', 'error');
-  }
+  } catch (e) { return showToast('حدث خطأ، حاول تاني', 'error'); }
   const titleEl = document.getElementById('waitingTitle');
   if (titleEl) titleEl.textContent = `غرفة ${cat.name}`;
   updateWaitingUI();
@@ -615,7 +604,7 @@ function stopTimer() {
   App.timerInterval = null;
 }
 
-// ==================== عرض النتيجة (مع VIP) ====================
+// ==================== عرض النتيجة ====================
 async function showResult() {
   App.room.status = 'finished';
   const correct = App.room.correctChoice;
@@ -659,7 +648,8 @@ async function showResult() {
   document.getElementById('resultIcon').textContent = won ? '🏆' : '😢';
   document.getElementById('resultTitle').textContent = won ? 'مبروك! فزت' : 'للأسف خسرت';
   document.getElementById('resultText').innerHTML = `الصحيح: <strong>${correctName}</strong><br>اختيارك: <strong>${myName}</strong>`;
-  document.getElementById('resultReward').textContent = won ? `+${CONFIG.WIN_REWARD * (App.user.vip?.active ? 2 : 1)} نقطة` : `-${cost} نقطة`;
+  const displayReward = won ? CONFIG.WIN_REWARD * (App.user.vip?.active ? 2 : 1) : cost;
+  document.getElementById('resultReward').textContent = won ? `+${displayReward} نقطة` : `-${displayReward} نقطة`;
   box.className = 'result-container ' + (won ? 'winner' : 'loser');
   showView('resultView');
 }
@@ -798,7 +788,38 @@ async function checkAchievements() {
   } catch (e) {}
 }
 
-// ==================== المتجر ====================
+async function openAchievements() {
+  document.getElementById('achievementsModal').classList.add('active');
+  const container = document.getElementById('achievementsList');
+  if (!db) return;
+  
+  try {
+    const { data: allAch } = await db.from('achievements').select('*');
+    if (!allAch || allAch.length === 0) {
+      container.innerHTML = '<p class="loading">لا يوجد إنجازات</p>';
+      return;
+    }
+    
+    container.innerHTML = allAch.map(ach => {
+      const unlocked = App.user.achievements.includes(ach.code);
+      return `
+        <div class="achievement-item ${unlocked ? 'unlocked' : 'locked'}">
+          <div class="achievement-icon">${ach.icon}</div>
+          <div class="achievement-info">
+            <div class="achievement-name">${ach.name}</div>
+            <div class="achievement-desc">${ach.description}</div>
+            <div class="achievement-reward">🎁 ${ach.reward} نقطة</div>
+          </div>
+          <div class="achievement-status">${unlocked ? '✅' : '🔒'}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = '<p class="loading">❌ حدث خطأ</p>';
+  }
+}
+
+// ==================== المتجر المميز ====================
 async function loadUserItems() {
   if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
   try {
@@ -884,7 +905,6 @@ async function addFriend(friendUsername) {
     if (!friend) return showToast('❌ المستخدم غير موجود', 'error');
     if (friend.id === App.user.id) return showToast('❌ لا يمكنك إضافة نفسك', 'error');
     if (App.user.friends.includes(friend.id)) return showToast('⚠️ موجود بالفعل', 'error');
-
     await db.from('friendships').insert([{ user_id: App.user.id, friend_id: friend.id, status: 'accepted' }]);
     App.user.friends.push(friend.id);
     saveLocal();
@@ -893,7 +913,7 @@ async function addFriend(friendUsername) {
   } catch (e) { showToast('❌ حدث خطأ', 'error'); }
 }
 
-// ==================== الشراء ====================
+// ==================== المتجر (النقاط) ====================
 function openStore() { document.getElementById('storeModal').classList.add('active'); }
 function closeModal(id) { document.getElementById(id)?.classList.remove('active'); }
 
@@ -945,6 +965,10 @@ function openProfile() {
   }
 
   updateVIPStatusUI();
+
+  const achCount = document.getElementById('achievementsCount');
+  if (achCount) achCount.textContent = (App.user.achievements?.length || 0);
+
   document.getElementById('profileModal').classList.add('active');
 }
 
