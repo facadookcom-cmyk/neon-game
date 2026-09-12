@@ -1,5 +1,5 @@
 // ============================================
-// Neon Prediction - Complete Script (v17 Final)
+// Neon Prediction - Complete Script (v18 Final)
 // ============================================
 
 const SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -56,7 +56,8 @@ const App = {
   speedInterval: null,
   refreshInterval: null,
   adShown: false,
-  isLeaving: false
+  isLeaving: false,
+  lockRefresh: false
 };
 
 let db = null;
@@ -107,10 +108,16 @@ function initNotifications() {
   if (Notification.permission === 'default') Notification.requestPermission();
 }
 
-// ==================== تحديث بيانات المستخدم (v17) ====================
+// ==================== تحديث بيانات المستخدم (v18) ====================
 async function refreshUserData() {
   if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
   if (App.room.status === 'playing' || App.room.status === 'waiting') return;
+  
+  // 🔒 قفل التحديث لو المستخدم لسه خلص لعبة
+  if (App.lockRefresh) {
+    console.log('🔒 القفل مفعّل، مش هحدث');
+    return;
+  }
   
   try {
     const { data: fresh } = await db.from('users')
@@ -256,14 +263,11 @@ function saveLocal() {
   localStorage.setItem('neon_user', JSON.stringify(App.user));
 }
 
-// ==================== دخول اللعبة (v17 - بسيط) ====================
+// ==================== دخول اللعبة ====================
 function enterGame() {
   document.getElementById('loginScreen')?.classList.remove('active');
   document.getElementById('mainScreen')?.classList.add('active');
-  
-  // ⚠️ مهم: نستخدم localStorage بس، مش نقرأ من Supabase كل مرة
   updateUI();
-  
   if (!App.adShown && !localStorage.getItem('adShown')) {
     document.getElementById('welcomeAd')?.classList.remove('hidden');
   }
@@ -352,7 +356,7 @@ async function saveToSupabase() {
       games_played: App.user.games_played,
       claimed_prizes: App.user.claimedPrizes
     }).eq('id', App.user.id);
-    if (error) { console.error('❌ خطأ في الحفظ:', error); return false; }
+    if (error) { console.error('❌ خطأ:', error); return false; }
     console.log('✅ تم الحفظ في Supabase:', App.user.purchased, App.user.earned);
     return true;
   } catch (e) { return false; }
@@ -633,7 +637,7 @@ function stopTimer() {
   App.timerInterval = null;
 }
 
-// ==================== عرض النتيجة (v17) ====================
+// ==================== عرض النتيجة (v18) ====================
 async function showResult() {
   App.room.status = 'finished';
   const correct = App.room.correctChoice;
@@ -643,6 +647,9 @@ async function showResult() {
   const myName = App.myChoice ? choices[App.myChoice - 1] : 'لم تختر';
   const won = App.myChoice === correct;
   const cost = CONFIG.ENTRY_FEE + CONFIG.COMMISSION;
+
+  // 🔒 قفل التحديث فوراً
+  App.lockRefresh = true;
 
   if (App.user.purchased >= cost) {
     App.user.purchased -= cost;
@@ -668,6 +675,12 @@ async function showResult() {
   
   // 💾 حفظ في Supabase
   await saveToSupabase();
+
+  // 🔓 فك القفل بعد 30 ثانية
+  setTimeout(() => {
+    App.lockRefresh = false;
+    console.log('🔓 القفل اتفك، النقاط اتحفظت:', App.user.purchased, App.user.earned);
+  }, 30000);
 
   const box = document.getElementById('resultContainer');
   document.getElementById('resultIcon').textContent = won ? '🏆' : '😢';
