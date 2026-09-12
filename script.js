@@ -1,5 +1,5 @@
 // ============================================
-// Neon Prediction - Complete Script (v21)
+// Neon Prediction - Complete Script (v22)
 // ============================================
 
 const SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -62,7 +62,6 @@ const App = {
   gameStarted: false,
   onlineInterval: null,
   speedInterval: null,
-  refreshInterval: null,
   adShown: false,
   isLeaving: false,
   lockRefresh: false
@@ -108,7 +107,7 @@ function restoreSession() {
 function startPeriodicUpdates() {
   App.onlineInterval = setInterval(updateOnlineCount, 4000);
   App.speedInterval = setInterval(updateSpeed, 2800);
-  App.refreshInterval = setInterval(refreshUserData, 15000);
+  // ❌ مفيش refreshInterval (شلناه لحل مشكلة رجوع النقاط)
   updateOnlineCount();
   updateSpeed();
 }
@@ -116,31 +115,6 @@ function startPeriodicUpdates() {
 function initNotifications() {
   if (!('Notification' in window)) return;
   if (Notification.permission === 'default') Notification.requestPermission();
-}
-
-// ==================== تحديث بيانات المستخدم ====================
-async function refreshUserData() {
-  if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return;
-  if (App.room.status === 'playing' || App.room.status === 'waiting') return;
-  if (App.lockRefresh) return;
-  
-  try {
-    const { data: fresh } = await db.from('users').select('*').eq('id', App.user.id).maybeSingle();
-    if (!fresh) return;
-    
-    const freshTotal = (fresh.purchased_points || 0) + (fresh.earned_points || 0);
-    const localTotal = App.user.purchased + App.user.earned;
-    
-    if (freshTotal > localTotal) {
-      App.user.purchased = fresh.purchased_points || 0;
-      App.user.earned = fresh.earned_points || 0;
-      App.user.level = fresh.level || 1;
-      App.user.games_played = fresh.games_played || 0;
-      saveLocal();
-      updateUI();
-      showToast(`💰 تم إضافة ${freshTotal - localTotal} نقطة!`, 'success');
-    }
-  } catch (e) {}
 }
 
 // ==================== فحص VIP ====================
@@ -367,6 +341,7 @@ function generateRoomCode() {
   return code;
 }
 
+// ==================== حفظ في Supabase ====================
 async function saveToSupabase() {
   if (!db || !App.user.id || String(App.user.id).startsWith('local_')) return false;
   try {
@@ -377,7 +352,9 @@ async function saveToSupabase() {
       games_played: App.user.games_played,
       claimed_prizes: App.user.claimedPrizes
     }).eq('id', App.user.id);
-    return !error;
+    if (error) { console.error('❌ خطأ:', error); return false; }
+    console.log('✅ تم الحفظ:', App.user.purchased, App.user.earned);
+    return true;
   } catch (e) { return false; }
 }
 
@@ -604,7 +581,7 @@ function stopTimer() {
   App.timerInterval = null;
 }
 
-// ==================== عرض النتيجة ====================
+// ==================== عرض النتيجة (v22 - حفظ فوري) ====================
 async function showResult() {
   App.room.status = 'finished';
   const correct = App.room.correctChoice;
@@ -614,8 +591,6 @@ async function showResult() {
   const myName = App.myChoice ? choices[App.myChoice - 1] : 'لم تختر';
   const won = App.myChoice === correct;
   const cost = App.user.vip?.active ? CONFIG.COMMISSION : (CONFIG.ENTRY_FEE + CONFIG.COMMISSION);
-
-  App.lockRefresh = true;
 
   if (App.user.purchased >= cost) {
     App.user.purchased -= cost;
@@ -638,11 +613,33 @@ async function showResult() {
     showCoinToast(`-${cost} نقطة`, '💸');
   }
 
+  // 💾 حفظ محلي فوراً
   saveLocal();
   updateUI();
-  await saveToSupabase();
+  
+  // 💾 حفظ في Supabase
+  const saved = await saveToSupabase();
+  console.log('💾 حفظ في Supabase:', saved);
 
-  setTimeout(() => { App.lockRefresh = false; }, 30000);
+  // 🆕 لو الحفظ نجح، اقرا البيانات الحديثة من السيرفر للتأكد
+  if (saved && db && App.user.id && !String(App.user.id).startsWith('local_')) {
+    setTimeout(async () => {
+      try {
+        const { data: fresh } = await db.from('users').select('*').eq('id', App.user.id).maybeSingle();
+        if (fresh) {
+          const freshTotal = (fresh.purchased_points || 0) + (fresh.earned_points || 0);
+          const localTotal = App.user.purchased + App.user.earned;
+          if (freshTotal > localTotal) {
+            App.user.purchased = fresh.purchased_points || 0;
+            App.user.earned = fresh.earned_points || 0;
+            saveLocal();
+            updateUI();
+            console.log('🔄 تم تحديث النقاط من السيرفر (زيادة)');
+          }
+        }
+      } catch (e) {}
+    }, 2000);
+  }
 
   const box = document.getElementById('resultContainer');
   document.getElementById('resultIcon').textContent = won ? '🏆' : '😢';
@@ -792,14 +789,12 @@ async function openAchievements() {
   document.getElementById('achievementsModal').classList.add('active');
   const container = document.getElementById('achievementsList');
   if (!db) return;
-  
   try {
     const { data: allAch } = await db.from('achievements').select('*');
     if (!allAch || allAch.length === 0) {
       container.innerHTML = '<p class="loading">لا يوجد إنجازات</p>';
       return;
     }
-    
     container.innerHTML = allAch.map(ach => {
       const unlocked = App.user.achievements.includes(ach.code);
       return `
@@ -965,10 +960,8 @@ function openProfile() {
   }
 
   updateVIPStatusUI();
-
   const achCount = document.getElementById('achievementsCount');
   if (achCount) achCount.textContent = (App.user.achievements?.length || 0);
-
   document.getElementById('profileModal').classList.add('active');
 }
 
