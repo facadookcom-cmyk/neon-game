@@ -1,93 +1,357 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الأدمن</title>
-    <link rel="stylesheet" href="admin.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - Neon Prediction</title>
+  <link rel="stylesheet" href="admin.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-    <!-- شاشة تسجيل الدخول -->
-    <div id="loginScreen" class="screen active">
-        <div class="login-box">
-            <h1>🔐 لوحة التحكم</h1>
-            <p>ادخل كلمة السر للوصول</p>
-            <input type="password" id="passwordInput" placeholder="كلمة السر" onkeypress="if(event.key==='Enter') loginAdmin()">
-            <button onclick="loginAdmin()">دخول</button>
-        </div>
+  <!-- شاشة تسجيل الدخول -->
+  <div id="loginScreen" class="screen active">
+    <div class="login-box">
+      <div class="login-logo">🎛️</div>
+      <h1 class="brand-title">Neon Prediction</h1>
+      <p class="brand-subtitle">لوحة التحكم الإدارية</p>
+      <div class="login-form">
+        <label>كلمة السر</label>
+        <input type="password" id="passwordInput" placeholder="••••••••" onkeypress="if(event.key==='Enter') loginAdmin()">
+        <button onclick="loginAdmin()">🔓 دخول آمن</button>
+      </div>
+      <p class="login-footer">© 2026 Neon Prediction - Admin Panel v3.0</p>
     </div>
+  </div>
 
-    <!-- لوحة التحكم -->
-    <div id="dashboard" class="screen">
-        <header class="admin-header">
-            <h1>🎛️ لوحة تحكم الأدمن</h1>
-            <div class="header-actions">
-                <span id="adminName">👤 الأدمن</span>
-                <button class="btn-logout" onclick="logoutAdmin()">خروج</button>
-            </div>
-        </header>
+  <!-- لوحة التحكم -->
+  <div id="dashboard" class="screen">
 
-        <nav class="admin-tabs">
-            <button class="tab-btn active" onclick="showTab('usersTab')">👥 المستخدمين</button>
-            <button class="tab-btn" onclick="showTab('requestsTab')">🛒 طلبات الشراء</button>
-            <button class="tab-btn" onclick="showTab('statsTab')">📊 إحصائيات</button>
-        </nav>
+    <!-- الشريط الجانبي -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">🎛️</div>
+        <div>
+          <div class="brand-name">Neon Prediction</div>
+          <div class="brand-role">Admin Panel</div>
+        </div>
+      </div>
 
-        <!-- تاب المستخدمين -->
-        <div id="usersTab" class="tab-content active">
-            <div class="search-box">
-                <input type="text" id="searchUsers" placeholder="🔍 ابحث عن مستخدم..." oninput="filterUsers()">
-                <button onclick="loadUsers()">🔄 تحديث</button>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" onclick="showTab('dashboardTab', event)">
+          <span class="nav-icon">📊</span>
+          <span>لوحة المعلومات</span>
+        </button>
+        <button class="nav-item" onclick="showTab('usersTab', event)">
+          <span class="nav-icon">👥</span>
+          <span>المستخدمين</span>
+        </button>
+        <button class="nav-item" onclick="showTab('requestsTab', event)">
+          <span class="nav-icon">🛒</span>
+          <span>طلبات الشراء</span>
+        </button>
+        <button class="nav-item" onclick="showTab('transferTab', event)">
+          <span class="nav-icon">💸</span>
+          <span>تحويل النقاط</span>
+        </button>
+        <button class="nav-item" onclick="showTab('logsTab', event)">
+          <span class="nav-icon">📝</span>
+          <span>سجل النشاط</span>
+        </button>
+        <button class="nav-item" onclick="showTab('roomsTab', event)">
+          <span class="nav-icon">🎮</span>
+          <span>الغرف النشطة</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="admin-badge">
+          <span class="admin-avatar">👤</span>
+          <div>
+            <div class="admin-name" id="adminName">Admin</div>
+            <div class="admin-status">● متصل</div>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="logoutAdmin()">🚪 خروج</button>
+      </div>
+    </aside>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="main-content">
+
+      <!-- الهيدر -->
+      <header class="main-header">
+        <div>
+          <h1 class="page-title" id="pageTitle">لوحة المعلومات</h1>
+          <p class="page-date" id="pageDate">--</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-icon" onclick="refreshAll()" title="تحديث">🔄</button>
+          <button class="btn-icon" onclick="toggleFullscreen()" title="شاشة كاملة">⛶</button>
+        </div>
+      </header>
+
+      <!-- تاب لوحة المعلومات -->
+      <div id="dashboardTab" class="tab-content active">
+        
+        <!-- بطاقات الإحصائيات -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon-box blue">👥</div>
+            <div class="stat-content">
+              <div class="stat-label">إجمالي المستخدمين</div>
+              <div class="stat-value" id="statUsers">0</div>
+              <div class="stat-change positive" id="statUsersChange">+0%</div>
             </div>
-            <div id="usersList" class="users-list">
-                <p class="loading">جاري التحميل...</p>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon-box gold">🛒</div>
+            <div class="stat-content">
+              <div class="stat-label">طلبات معلقة</div>
+              <div class="stat-value" id="statRequests">0</div>
+              <div class="stat-change" id="statRequestsChange">بحاجة لمراجعة</div>
             </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon-box green">💎</div>
+            <div class="stat-content">
+              <div class="stat-label">إجمالي النقاط</div>
+              <div class="stat-value" id="statPoints">0</div>
+              <div class="stat-change positive">نقاط نشطة</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon-box purple">🎮</div>
+            <div class="stat-content">
+              <div class="stat-label">غرف نشطة</div>
+              <div class="stat-value" id="statRooms">0</div>
+              <div class="stat-change">في الوقت الحالي</div>
+            </div>
+          </div>
         </div>
 
-        <!-- تاب طلبات الشراء -->
-        <div id="requestsTab" class="tab-content">
-            <button onclick="loadRequests()" class="btn-refresh">🔄 تحديث الطلبات</button>
-            <div id="requestsList" class="requests-list">
-                <p class="loading">جاري التحميل...</p>
+        <!-- الرسم البياني -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>📈 النشاط - آخر 7 أيام</h3>
+            <div class="chart-legend">
+              <span><span class="dot blue"></span> مستخدمين جدد</span>
+              <span><span class="dot gold"></span> طلبات شراء</span>
             </div>
+          </div>
+          <canvas id="activityChart" height="80"></canvas>
         </div>
 
-        <!-- تاب الإحصائيات -->
-        <div id="statsTab" class="tab-content">
-            <button onclick="loadStats()" class="btn-refresh">🔄 تحديث الإحصائيات</button>
-            <div id="statsBox" class="stats-box">
-                <p class="loading">جاري التحميل...</p>
+        <!-- الأكثر نشاطاً + آخر النشاطات -->
+        <div class="two-columns">
+          <div class="panel">
+            <div class="panel-header">
+              <h3>🏆 أكثر المستخدمين نشاطاً</h3>
             </div>
+            <div id="topUsers" class="top-users-list">
+              <p class="loading">جاري التحميل...</p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h3>🕐 آخر النشاطات</h3>
+            </div>
+            <div id="recentActivity" class="recent-activity-list">
+              <p class="loading">جاري التحميل...</p>
+            </div>
+          </div>
         </div>
+
+      </div>
+
+      <!-- تاب المستخدمين -->
+      <div id="usersTab" class="tab-content">
+        <div class="toolbar">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchUsers" placeholder="ابحث بالاسم، الرقم، أو المستوى..." oninput="filterUsers()">
+          </div>
+          <select id="filterLevel" class="filter-select" onchange="filterUsers()">
+            <option value="">كل المستويات</option>
+            <option value="1">مبتدئ 🌱</option>
+            <option value="2">هاوي 🥉</option>
+            <option value="3">محترف 🥈</option>
+            <option value="4">خبير 🥇</option>
+            <option value="5">أسطورة 💎</option>
+            <option value="6">نخبة 👑</option>
+            <option value="7">أسطوري 🏆</option>
+          </select>
+          <select id="sortUsers" class="filter-select" onchange="filterUsers()">
+            <option value="newest">الأحدث تسجيلاً</option>
+            <option value="points_desc">الأعلى نقاطاً</option>
+            <option value="points_asc">الأقل نقاطاً</option>
+            <option value="games_desc">الأكثر لعباً</option>
+          </select>
+          <button class="btn-export" onclick="exportUsers()">📥 تصدير CSV</button>
+        </div>
+        <div id="usersList" class="users-grid">
+          <p class="loading">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- تاب طلبات الشراء -->
+      <div id="requestsTab" class="tab-content">
+        <div class="filter-tabs">
+          <button class="filter-btn active" onclick="filterRequests('pending', event)">⏳ معلقة</button>
+          <button class="filter-btn" onclick="filterRequests('approved', event)">✅ مقبولة</button>
+          <button class="filter-btn" onclick="filterRequests('rejected', event)">❌ مرفوضة</button>
+        </div>
+        <div id="requestsList" class="requests-grid">
+          <p class="loading">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- تاب تحويل النقاط -->
+      <div id="transferTab" class="tab-content">
+        <div class="transfer-panel">
+          <div class="panel-header">
+            <h3>💸 تحويل النقاط لمستخدم</h3>
+            <p class="panel-desc">ابحث عن المستخدم، حدد عدد النقاط، ثم اضغط تحويل.</p>
+          </div>
+
+          <div class="transfer-form">
+            <div class="form-group">
+              <label>👤 المستخدم</label>
+              <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="transferSearch" placeholder="ابحث بالاسم أو رقم التليفون..." oninput="searchTransferUser()">
+              </div>
+              <div id="transferResults" class="search-results"></div>
+            </div>
+
+            <div class="form-group" id="selectedUserGroup" style="display:none;">
+              <label>✅ المستخدم المحدد</label>
+              <div class="selected-user-card" id="selectedUserCard"></div>
+            </div>
+
+            <div class="form-group">
+              <label>💎 عدد النقاط</label>
+              <input type="number" id="transferAmount" placeholder="مثلاً: 100" min="1">
+              <div class="quick-amounts">
+                <button onclick="setTransferAmount(50)">+50</button>
+                <button onclick="setTransferAmount(100)">+100</button>
+                <button onclick="setTransferAmount(200)">+200</button>
+                <button onclick="setTransferAmount(500)">+500</button>
+                <button onclick="setTransferAmount(1000)">+1000</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>📝 سبب التحويل (اختياري)</label>
+              <input type="text" id="transferReason" placeholder="مثلاً: مكافأة، تعويض، إلخ...">
+            </div>
+
+            <div class="transfer-summary" id="transferSummary" style="display:none;">
+              <div class="summary-row">
+                <span>المستخدم:</span>
+                <strong id="summaryUser">--</strong>
+              </div>
+              <div class="summary-row">
+                <span>النقاط الحالية:</span>
+                <strong id="summaryCurrent">0</strong>
+              </div>
+              <div class="summary-row highlight">
+                <span>النقاط بعد التحويل:</span>
+                <strong id="summaryAfter">0</strong>
+              </div>
+            </div>
+
+            <div class="transfer-actions">
+              <button class="btn-primary" onclick="executeTransfer()">💸 تنفيذ التحويل</button>
+              <button class="btn-secondary" onclick="resetTransfer()">🔄 إعادة تعيين</button>
+            </div>
+          </div>
+
+          <div class="transfer-history">
+            <h4>📜 آخر التحويلات</h4>
+            <div id="transferHistory" class="history-list">
+              <p class="loading">جاري التحميل...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- تاب سجل النشاط -->
+      <div id="logsTab" class="tab-content">
+        <div class="toolbar">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchLogs" placeholder="ابحث في السجل..." oninput="filterLogs()">
+          </div>
+          <select id="filterLogType" class="filter-select" onchange="filterLogs()">
+            <option value="">كل الأنواع</option>
+            <option value="purchase">طلبات شراء</option>
+            <option value="admin_add">إضافة نقاط</option>
+            <option value="admin_remove">خصم نقاط</option>
+            <option value="transfer">تحويلات</option>
+            <option value="win">ألعاب فائزة</option>
+            <option value="loss">ألعاب خاسرة</option>
+            <option value="referral">إحالات</option>
+          </select>
+          <button class="btn-export" onclick="exportLogs()">📥 تصدير CSV</button>
+        </div>
+        <div id="logsList" class="logs-list">
+          <p class="loading">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- تاب الغرف -->
+      <div id="roomsTab" class="tab-content">
+        <div id="roomsList" class="rooms-grid">
+          <p class="loading">جاري التحميل...</p>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- نافذة إدارة النقاط -->
+  <div id="pointsModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeModal('pointsModal')">&times;</span>
+      <h2 class="modal-title">💰 إدارة نقاط المستخدم</h2>
+      <div class="user-info-box">
+        <div class="info-row"><span>👤 الاسم:</span> <strong id="modalUsername">--</strong></div>
+        <div class="info-row"><span>📱 التليفون:</span> <strong id="modalPhone">--</strong></div>
+        <div class="info-row"><span>💎 النقاط الحالية:</span> <strong id="modalCurrentPoints">0</strong></div>
+        <div class="info-row"><span>⭐ المكتسبة:</span> <strong id="modalEarnedPoints">0</strong></div>
+      </div>
+      <div class="quick-amounts">
+        <button onclick="setAmount(10)">+10</button>
+        <button onclick="setAmount(50)">+50</button>
+        <button onclick="setAmount(100)">+100</button>
+        <button onclick="setAmount(500)">+500</button>
+      </div>
+      <div class="form-group">
+        <label>💎 عدد النقاط</label>
+        <input type="number" id="pointsAmount" placeholder="مثلاً: 100" min="1">
+      </div>
+      <div class="form-group">
+        <label>📝 السبب (اختياري)</label>
+        <input type="text" id="pointsReason" placeholder="مثلاً: مكافأة">
+      </div>
+      <div class="modal-buttons">
+        <button class="btn-add" onclick="addPoints()">➕ إضافة</button>
+        <button class="btn-remove" onclick="removePoints()">➖ خصم</button>
+      </div>
     </div>
+  </div>
 
-    <!-- نافذة إضافة نقاط -->
-    <div id="pointsModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal('pointsModal')">&times;</span>
-            <h2>💰 إدارة نقاط المستخدم</h2>
-            <div class="user-info-box">
-                <p><strong>👤 الاسم:</strong> <span id="modalUsername">--</span></p>
-                <p><strong>📱 التليفون:</strong> <span id="modalPhone">--</span></p>
-                <p><strong>💎 النقاط الحالية:</strong> <span id="modalCurrentPoints">0</span></p>
-            </div>
-            <div class="input-group">
-                <label>💎 عدد النقاط</label>
-                <input type="number" id="pointsAmount" placeholder="مثلاً: 100" min="1">
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-add" onclick="addPoints()">➕ إضافة</button>
-                <button class="btn-remove" onclick="removePoints()">➖ خصم</button>
-            </div>
-        </div>
-    </div>
+  <!-- الإشعارات -->
+  <div id="adminToast" class="admin-toast"></div>
 
-    <!-- الإشعارات -->
-    <div id="adminToast" class="admin-toast"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="admin.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="admin.js"></script>
 </body>
 </html>
