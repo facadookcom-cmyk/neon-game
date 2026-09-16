@@ -10,12 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{
-  --bg:#0c0a0a;--card:#161212;--elevated:#1e1818;
-  --border:rgba(220,80,80,.15);--border-strong:rgba(220,90,90,.28);
-  --text:#f5f0f0;--text-secondary:#d4b8b8;--muted:#b89898;
-  --accent:#e85a5a;--radius:14px;
-}
+:root{--bg:#0c0a0a;--card:#161212;--elevated:#1e1818;--border:rgba(220,80,80,.15);--border-strong:rgba(220,90,90,.28);--text:#f5f0f0;--text-secondary:#d4b8b8;--muted:#b89898;--accent:#e85a5a;--radius:14px}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:80px;user-select:none;-webkit-tap-highlight-color:transparent}
 #bgCanvas{position:fixed;inset:0;z-index:-1;opacity:.35}
@@ -30,7 +25,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 @keyframes softGlow{0%,100%{box-shadow:0 0 12px rgba(220,70,70,.18)}50%{box-shadow:0 0 22px rgba(220,80,80,.32)}}
 @keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(232,90,90,.7)}50%{box-shadow:0 0 0 12px rgba(232,90,90,0)}}
-
 .login-container{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 18px;gap:15px}
 .neon-title{font-family:'Orbitron',sans-serif;font-size:clamp(24px,6vw,30px);font-weight:900;background:linear-gradient(135deg,#ff8a8a,#e85a5a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 12px rgba(220,70,70,.4))}
 .subtitle{color:var(--text-secondary);font-size:15px;font-weight:600}
@@ -57,7 +51,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .prize-points{color:#e0c0c0}
 .prize-money{color:#f0a0a0;font-weight:900;font-size:15px}
 .prize-note{font-size:12px;color:var(--muted);margin-top:8px}
-
 .game-header{position:sticky;top:0;z-index:90;display:flex;justify-content:space-between;align-items:center;padding:11px 14px;padding-top:calc(11px + env(safe-area-inset-top));background:rgba(12,10,10,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
 .user-badge{display:flex;align-items:center;gap:10px}
 .user-details{display:flex;flex-direction:column;gap:1px}
@@ -70,11 +63,9 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .ticket-badge{background:rgba(100,180,255,.12);border-color:#5a9be8;color:#a0d0ff}
 .streak-badge{background:rgba(255,120,50,.15);border-color:#ff7a30;color:#ffb080}
 .points-badge{background:rgba(220,70,70,.12);border-color:#e85a5a;color:#f0c0c0}
-
 .game-content{padding:18px 14px calc(22px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
 .section-title{font-size:21px;font-weight:900;text-align:center;margin-bottom:12px;color:#f5f0f0}
 .home-hero{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
-
 .daily-login,.daily-chest{display:flex;align-items:center;gap:14px;padding:14px 16px;background:linear-gradient(135deg,rgba(220,70,70,.15),rgba(180,50,50,.08));border:1.5px solid rgba(220,80,80,.4);border-radius:14px;cursor:pointer;transition:.2s}
 .daily-login:active,.daily-chest:active{transform:scale(.98)}
 .daily-login.claimed,.daily-chest.claimed{opacity:.55}
@@ -83,21 +74,18 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .daily-info strong,.chest-info strong{font-size:15px;color:#f0a0a0}
 .daily-info span,.chest-info span{font-size:12px;color:#c0a0a0}
 .daily-streak{background:rgba(220,70,70,.25);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:800;color:#ffb0b0}
-
 .room-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .btn-room-action{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:linear-gradient(135deg,rgba(220,70,70,.1),rgba(180,50,50,.05));border:1.5px solid rgba(220,80,80,.35);border-radius:12px;color:#f0a0a0;font-family:'Cairo',sans-serif;font-size:13px;font-weight:800;cursor:pointer;transition:all .2s;position:relative}
 .btn-room-action:active{transform:scale(.97);border-color:#e85a5a;box-shadow:0 0 15px rgba(220,70,70,.3)}
 .room-action-icon{font-size:24px}
 .btn-room-action.online{border-color:#00c853;background:linear-gradient(135deg,rgba(0,200,83,.15),rgba(0,150,50,.05));color:#00e676}
 .btn-room-action.online::after{content:'جديد';position:absolute;top:-8px;left:-8px;background:#00c853;color:#fff;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:900;animation:pulse 1.5s infinite}
-
 .categories-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px}
 .category-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:26px 12px;text-align:center;cursor:pointer;transition:.18s;font-family:'Cairo',sans-serif;color:inherit}
 .category-card:active{transform:scale(.96);border-color:#e85a5a;box-shadow:0 0 20px rgba(220,70,70,.25)}
 .category-icon{font-size:44px;margin-bottom:8px;filter:drop-shadow(0 0 8px rgba(220,70,70,.45));animation:float 3s ease-in-out infinite}
 .category-card h3{font-size:16px;font-weight:900;margin-bottom:3px;color:#f5f0f0}
 .category-card p{font-size:12px;color:var(--text-secondary);font-weight:600}
-
 .missions-section{margin-top:24px;padding:16px;background:var(--card);border:1.5px solid var(--border);border-radius:14px}
 .missions-title{font-size:16px;font-weight:800;margin-bottom:12px;color:#f0a0a0}
 .missions-list{display:flex;flex-direction:column;gap:8px}
@@ -107,7 +95,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .mission-info strong{font-size:13px}
 .mission-info span{font-size:11px;color:var(--muted)}
 .mission-reward{font-weight:800;color:#f0a0a0;font-size:14px}
-
 .waiting-container{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:30px 16px;text-align:center;animation:softGlow 3.5s ease-in-out infinite}
 .players-circle{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-bottom:16px}
 .player-slot{width:60px;height:60px;border-radius:50%;background:var(--elevated);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#f5f0f0;transition:.25s;position:relative}
@@ -117,24 +104,18 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .waiting-hint{font-size:13px;color:var(--text-secondary);font-weight:600;margin-top:22px}
 .room-code-small{margin-top:12px;padding:8px 16px;background:rgba(220,70,70,.15);border-radius:10px;font-family:'Orbitron',sans-serif;font-size:18px;font-weight:700;color:#f0a0a0;letter-spacing:3px;direction:ltr;display:inline-block}
 .room-code-display{margin:20px 0;padding:20px;background:linear-gradient(135deg,#e85a5a,#c43a3a);border-radius:15px;font-family:'Orbitron',sans-serif;font-size:32px;font-weight:900;letter-spacing:6px;color:#fff;text-align:center;box-shadow:0 0 30px rgba(220,70,70,.5);direction:ltr;user-select:text;-webkit-user-select:text}
-
-/* Room ready button */
 .ready-btn{width:100%;max-width:280px;margin:20px auto 0;padding:16px;background:linear-gradient(135deg,#00c853,#00a040);color:#fff;border:none;border-radius:14px;font-size:17px;font-weight:900;font-family:'Cairo',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(0,200,83,.4);transition:.2s}
 .ready-btn.ready{background:linear-gradient(135deg,#4a4a4a,#2a2a2a);box-shadow:none;color:#a0a0a0}
 .ready-btn:active{transform:scale(.97)}
-
-/* Mic controls */
 .mic-bar{display:flex;gap:10px;justify-content:center;margin-top:16px;padding:10px;background:var(--elevated);border-radius:14px}
 .mic-btn{width:52px;height:52px;border-radius:50%;background:var(--card);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:.2s;color:#f5f0f0}
 .mic-btn.active{background:linear-gradient(135deg,#e85a5a,#c43a3a);border-color:#e85a5a;animation:micPulse 1.5s infinite}
 .mic-btn.muted{background:#2a1a1a;border-color:#8a3030;color:#ff6b6b}
 .mic-btn.speaking{border-color:#00c853;box-shadow:0 0 15px rgba(0,200,83,.5)}
-
 .timer-display{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;padding:12px;background:rgba(220,70,70,.08);border:1.5px solid rgba(220,80,80,.28);border-radius:14px}
 .timer-icon{font-size:22px;filter:drop-shadow(0 0 6px rgba(220,70,70,.4))}
 .timer-value{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;min-width:38px;text-align:center;color:#f0a0a0}
 .timer-value.danger{color:#ff4d4d;animation:pulse .5s infinite}
-
 .choices-grid{display:grid;gap:10px}
 .choice-btn{display:flex;align-items:center;gap:12px;width:100%;padding:15px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:#f5f0f0;font-size:16px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer;text-align:right;transition:.18s}
 .choice-btn .choice-num{width:32px;height:32px;border-radius:50%;background:rgba(220,70,70,.12);border:1.5px solid #e85a5a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#f0a0a0;flex-shrink:0}
@@ -142,10 +123,9 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .choice-btn.selected{background:linear-gradient(135deg,#e85a5a,#c43a3a);color:#fff;border-color:#e85a5a;box-shadow:0 0 18px rgba(220,70,70,.35)}
 .choice-btn.selected .choice-num{background:#fff;color:#c43a3a;border-color:#fff}
 .choice-btn:disabled{opacity:.4;cursor:not-allowed}
-.choice-btn.correct{background:linear-gradient(135deg,#00c853,#00a040);border-color:#00c853;color:#fff}
+.choice-btn.correct{background:linear-gradient(135deg,#00c853,#00a040);border-color:#00c853;color:#fff;opacity:1}
 .choice-btn.correct .choice-num{background:#fff;color:#00a040;border-color:#fff}
 .choice-btn.wrong{background:linear-gradient(135deg,#8a3030,#5a1a1a);border-color:#8a3030;opacity:1}
-
 .result-container{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:30px 18px;text-align:center;animation:slideUp .35s ease}
 .result-container.winner{border-color:#e85a5a;box-shadow:0 0 25px rgba(220,70,70,.25)}
 .result-container.loser{border-color:#8a3030;box-shadow:0 0 25px rgba(140,40,40,.25)}
@@ -159,8 +139,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .result-container.winner .result-reward{background:rgba(220,70,70,.12);color:#f0a0a0;border:1.5px solid #e85a5a}
 .result-container.loser .result-reward{background:rgba(140,40,40,.18);color:#ff6b6b;border:1.5px solid #8a3030}
 .streak-result{margin:10px 0;font-size:15px;font-weight:800;color:#ff9a50}
-
-/* Online game scores */
 .online-scores{display:flex;flex-direction:column;gap:6px;margin:14px 0;padding:12px;background:var(--elevated);border-radius:12px;max-height:280px;overflow-y:auto}
 .online-score-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(220,70,70,.05);border-radius:10px;border:1px solid rgba(220,80,80,.15)}
 .online-score-row.me{background:rgba(220,70,70,.15);border-color:#e85a5a}
@@ -169,20 +147,17 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .online-score-rank{font-weight:900;color:#f0a0a0;min-width:26px;font-size:13px}
 .online-score-name{flex:1;font-weight:700;font-size:14px}
 .online-score-points{font-family:'Orbitron',sans-serif;font-weight:900;color:#f0c0c0;font-size:14px}
-
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:90;display:flex;justify-content:space-around;padding:9px 0 calc(9px + env(safe-area-inset-bottom));background:rgba(12,10,10,.97);backdrop-filter:blur(14px);border-top:1px solid var(--border)}
 .bottom-nav.hidden{display:none}
 .nav-btn{background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 12px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;position:relative}
 .nav-btn.active{color:#f0a0a0}
 .nav-btn.active::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:24px;height:3px;background:#e85a5a;border-radius:0 0 4px 4px;box-shadow:0 0 8px rgba(220,70,70,.5)}
 .nav-icon{font-size:22px;filter:drop-shadow(0 0 5px rgba(220,70,70,.3))}
-
 .modal{display:none;position:fixed;inset:0;z-index:500;background:rgba(12,10,10,.94);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:18px}
 .modal.active{display:flex;animation:fadeIn .22s ease}
 .modal-content{position:relative;width:100%;max-width:370px;max-height:82vh;overflow-y:auto;padding:26px 18px;background:var(--card);border:1.5px solid var(--border-strong);border-radius:18px;box-shadow:0 0 28px rgba(200,50,50,.18)}
 .modal-content.wide{max-width:480px}
 .close-modal{position:absolute;top:12px;left:16px;font-size:26px;color:#e85a5a;background:none;border:none;cursor:pointer;font-weight:700;line-height:1}
-
 .packages-list{display:flex;flex-direction:column;gap:10px;margin:16px 0}
 .package-item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--elevated);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:.18s;font-family:'Cairo',sans-serif;color:inherit}
 .package-item.special{border-color:#ff7a30;background:linear-gradient(135deg,rgba(255,120,50,.15),rgba(220,70,70,.1))}
@@ -191,7 +166,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .pkg-icon{font-size:22px;filter:drop-shadow(0 0 6px rgba(220,70,70,.4))}
 .pkg-points{font-size:15px;font-weight:900;color:#f5f0f0}
 .pkg-price{font-size:13px;color:#f0a0a0;font-weight:700}
-
 .prime-section{margin-top:20px;padding-top:20px;border-top:1px dashed var(--border-strong)}
 .prime-title{font-size:16px;font-weight:900;color:#ffd700;margin-bottom:12px;text-align:center;text-shadow:0 0 12px rgba(255,215,0,.4)}
 .prime-card{display:flex;align-items:center;gap:12px;width:100%;padding:16px;margin-bottom:10px;background:linear-gradient(135deg,rgba(255,215,0,.12),rgba(255,180,0,.06));border:2px solid rgba(255,215,0,.5);border-radius:14px;cursor:pointer;transition:.2s;font-family:inherit;color:inherit;text-align:right}
@@ -203,17 +177,14 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .prime-card.multiplier-card .prime-info strong{color:#00e676}
 .prime-info span{font-size:12px;color:#e0c0c0}
 .prime-price{font-size:16px;font-weight:900;color:#fff;background:rgba(0,0,0,.3);padding:6px 12px;border-radius:20px}
-
 .store-balance-box{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;margin:12px 0;background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(5,150,105,.08));border:1.5px solid rgba(16,185,129,.5);border-radius:12px}
 .store-balance-label{color:#d4b8b8;font-size:13px;font-weight:700}
 .store-balance-value{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00e676}
 .store-deposit-link{display:block;text-align:center;margin-bottom:12px;color:#3b82f6;font-size:13px;font-weight:700;text-decoration:underline;cursor:pointer}
-
 .payment-info{margin:16px 0}
 .payment-instructions{margin:16px 0;padding:16px;background:rgba(220,70,70,.07);border:1px solid var(--border);border-radius:12px;text-align:center}
 .payment-instructions h3{font-size:14px;margin-bottom:10px;color:#e0c0c0;font-weight:700}
 .vodafone-number{margin:10px 0;padding:13px;background:linear-gradient(135deg,#e85a5a,#c43a3a);color:#fff;border-radius:11px;font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;letter-spacing:1.5px;box-shadow:0 0 14px rgba(220,70,70,.35);user-select:text;-webkit-user-select:text;direction:ltr}
-
 .profile-info{text-align:center;margin:14px 0}
 .profile-avatar-big{width:90px;height:90px;margin:0 auto 12px;border-radius:50%;background:linear-gradient(135deg,#e85a5a,#a03030);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#fff;border:3px solid #e85a5a;box-shadow:0 0 16px rgba(220,70,70,.4)}
 .profile-avatar-big.prime{border-color:#ffd700;box-shadow:0 0 20px rgba(255,215,0,.6);background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000}
@@ -226,14 +197,12 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .stat-row span:first-child{color:var(--text-secondary);font-weight:600}
 .stat-row span:last-child{font-weight:800;color:#f5f0f0}
 .badge-prime{display:inline-block;padding:2px 8px;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;font-size:10px;font-weight:900;border-radius:10px;margin-right:4px}
-
 .leaderboard-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .leaderboard-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(220,70,70,.07);border-radius:11px;border:1px solid var(--border)}
 .leaderboard-item.me{background:rgba(220,70,70,.2);border-color:#e85a5a}
 .leaderboard-item .rank{font-weight:900;color:#f0a0a0;min-width:32px}
 .leaderboard-item .name{flex:1;font-weight:700}
 .leaderboard-item .points{font-weight:800;color:#f0c0c0}
-
 .wheel-modal{text-align:center;max-width:420px}
 .wheel-wrapper{position:relative;width:300px;height:300px;margin:20px auto}
 .wheel-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);z-index:10;width:0;height:0}
@@ -245,8 +214,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .wheel-legend{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:16px;padding:12px;background:rgba(220,70,70,.06);border:1px solid var(--border);border-radius:12px}
 .legend-item{display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:800;background:rgba(0,0,0,.3);border:1px solid rgba(220,80,80,.2)}
 .legend-dot{width:8px;height:8px;border-radius:50%}
-
-/* Friends */
 .friends-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;max-height:400px;overflow-y:auto}
 .friend-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(220,70,70,.06);border:1px solid var(--border);border-radius:12px}
 .friend-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#e85a5a,#a03030);display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:16px;flex-shrink:0;position:relative}
@@ -259,18 +226,13 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .friend-btn{padding:8px 12px;background:var(--elevated);border:1px solid var(--border);border-radius:8px;color:#f0a0a0;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:.2s}
 .friend-btn:hover{background:#e85a5a;color:#fff;border-color:#e85a5a}
 .friend-btn.invite{background:linear-gradient(135deg,#00c853,#00a040);color:#fff;border-color:#00c853}
-
-/* Share modal */
 .share-box{padding:20px;background:linear-gradient(135deg,rgba(220,70,70,.1),rgba(180,50,50,.05));border:1.5px solid rgba(220,80,80,.35);border-radius:14px;margin:16px 0;text-align:center}
 .share-url{font-family:'Orbitron',sans-serif;font-size:14px;color:#f0a0a0;word-break:break-all;padding:12px;background:var(--elevated);border-radius:10px;margin:12px 0;direction:ltr;user-select:text;-webkit-user-select:text}
 .share-btn{padding:14px 24px;background:linear-gradient(135deg,#00c853,#00a040);color:#fff;border:none;border-radius:12px;font-family:'Cairo',sans-serif;font-size:15px;font-weight:900;cursor:pointer;margin:6px;min-width:140px}
 .share-btn.wa{background:linear-gradient(135deg,#25d366,#128c7e)}
 .share-btn.tg{background:linear-gradient(135deg,#0088cc,#006699)}
-.share-btn.fb{background:linear-gradient(135deg,#3b5998,#2d4373)}
-
 .offer-text{font-size:18px;font-weight:800;color:#f0a0a0;margin:16px 0;text-align:center}
 .offer-timer{font-size:15px;color:#ff9a50;font-weight:700;text-align:center;margin-bottom:20px}
-
 .toast,.coin-toast{position:fixed;left:50%;transform:translateX(-50%) translateY(14px);z-index:3000;opacity:0;pointer-events:none;transition:.25s}
 .toast.show,.coin-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast{bottom:calc(88px + env(safe-area-inset-bottom));background:var(--elevated);border:1.5px solid var(--border);border-radius:11px;padding:10px 15px}
@@ -279,7 +241,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .coin-toast-content{background:var(--card);border:1.5px solid rgba(220,80,80,.35);border-radius:12px;padding:11px 16px;display:flex;align-items:center;gap:9px;box-shadow:0 0 16px rgba(200,50,50,.25);font-weight:800;font-size:14px;color:#f5f0f0}
 .coin-toast-icon{font-size:20px}
 .coin-toast-text{font-weight:800}
-
 .wallet-section,.earnings-section{margin:20px 0;text-align:right}
 .wallet-title{font-size:15px;font-weight:900;color:#f0a0a0;margin-bottom:10px}
 .wallet-card,.earnings-card{padding:18px;background:linear-gradient(135deg,rgba(220,70,70,.1),rgba(180,50,50,.05));border:1.5px solid rgba(220,80,80,.35);border-radius:14px}
@@ -295,7 +256,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .wallet-btn.transfer{width:100%;padding:14px;background:linear-gradient(135deg,#00c853,#00a040);color:#fff;font-size:15px}
 .wallet-btn.transfer:disabled{opacity:.5;cursor:not-allowed}
 .wallet-btn:active{transform:scale(.97)}
-
 .milestones-modal{max-width:480px}
 .milestones-list{display:flex;flex-direction:column;gap:8px;margin-top:16px;max-height:60vh;overflow-y:auto;padding:4px}
 .milestone-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(220,70,70,.06);border:1px solid rgba(220,80,80,.2);border-radius:12px}
@@ -309,8 +269,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .ms-status.done{background:rgba(16,185,129,.2);color:#00e676}
 .ms-status.ready{background:rgba(240,176,80,.25);color:#f0b050}
 .ms-status.locked{background:rgba(160,128,128,.2);color:#a08080}
-
-/* Voice indicator */
 .voice-indicator{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#00c853,#00a040);color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:800;z-index:1500;opacity:0;transition:.3s;pointer-events:none}
 .voice-indicator.show{opacity:1}
 </style>
@@ -318,7 +276,7 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 <body>
 <canvas id="bgCanvas"></canvas>
 
-<!-- ==================== LOGIN ==================== -->
+<!-- ============ LOGIN ============ -->
 <section id="loginScreen" class="screen active">
   <div class="login-container">
     <h1 class="neon-title">NEON PREDICTION</h1>
@@ -336,7 +294,7 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
   </div>
 </section>
 
-<!-- ==================== MAIN ==================== -->
+<!-- ============ MAIN ============ -->
 <section id="mainScreen" class="screen">
   <div id="welcomeAd" class="welcome-ad hidden">
     <div class="ad-content">
@@ -379,7 +337,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
           <div class="chest-info"><strong>الصندوق اليومي</strong><span id="chestStatus">اضغط لفتحه</span></div>
         </div>
 
-        <!-- ONLINE + FRIENDS row -->
         <div class="room-actions">
           <button type="button" class="btn-room-action online" onclick="openOnlineLobby()">
             <span class="room-action-icon">🌐</span><span>لعب أونلاين</span>
@@ -444,7 +401,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
       </div>
     </div>
 
-    <!-- ========== WAITING (offline) ========== -->
     <div id="waitingView" class="view">
       <h2 class="section-title" id="waitingTitle">في انتظار اللاعبين</h2>
       <div class="waiting-container">
@@ -460,7 +416,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
       <button type="button" class="btn-cancel" onclick="leaveRoom()">خروج</button>
     </div>
 
-    <!-- ========== ONLINE LOBBY ========== -->
     <div id="onlineLobbyView" class="view">
       <h2 class="section-title">🌐 اللعب الأونلاين</h2>
       <div class="waiting-container">
@@ -477,7 +432,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
       </div>
     </div>
 
-    <!-- ========== ONLINE ROOM (waiting) ========== -->
     <div id="onlineRoomView" class="view">
       <h2 class="section-title" id="onlineRoomTitle">غرفة انتظار</h2>
       <div class="waiting-container">
@@ -489,7 +443,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
         <p class="waiting-text"><span id="onlinePlayersCount">1</span> / <span id="onlineMaxPlayers">3</span></p>
         <p class="waiting-hint" id="onlineWaitingHint">في انتظار لاعبين...</p>
         <div id="onlineRoomCode" class="room-code-small" style="display:none;"></div>
-
         <div class="mic-bar" id="onlineMicBar">
           <div class="mic-btn" id="micBtn" onclick="toggleMic()">🎤</div>
           <div class="mic-btn" id="speakerBtn" onclick="toggleSpeaker()">🔊</div>
@@ -499,24 +452,19 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
       <button type="button" class="btn-cancel" onclick="leaveOnlineRoom()">خروج</button>
     </div>
 
-    <!-- ========== ONLINE GAME ========== -->
     <div id="onlineGameView" class="view">
       <div class="timer-display">
         <span class="timer-icon">⏱️</span>
-        <span class="timer-value" id="onlineTimerValue">10</span>
+        <span class="timer-value" id="onlineTimerValue">12</span>
       </div>
       <h2 class="section-title">الجولة <span id="onlineRoundNum">1</span> / 5</h2>
-
       <div class="online-scores" id="onlineScores"></div>
-
       <div class="choices-grid" id="onlineChoicesGrid"></div>
-
       <div class="mic-bar" id="onlineGameMicBar" style="margin-top:14px">
         <div class="mic-btn" id="gameMicBtn" onclick="toggleMic()">🎤</div>
       </div>
     </div>
 
-    <!-- ========== ONLINE RESULT ========== -->
     <div id="onlineResultView" class="view">
       <div class="result-container" id="onlineResultContainer">
         <div class="result-icon" id="onlineResultIcon">🏆</div>
@@ -528,7 +476,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
       </div>
     </div>
 
-    <!-- ========== OFFLINE GAME ========== -->
     <div id="gameView" class="view">
       <div class="timer-display">
         <span class="timer-icon">⏱️</span>
@@ -538,7 +485,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
       <div class="choices-grid" id="choicesGrid"></div>
     </div>
 
-    <!-- ========== OFFLINE RESULT ========== -->
     <div id="resultView" class="view">
       <div class="result-container" id="resultContainer">
         <div class="result-icon" id="resultIcon">🏆</div>
@@ -567,21 +513,18 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
     </button>
   </nav>
 </section>
-
-<!-- ==================== MODALS ==================== -->
+<!-- ============ MODALS ============ -->
 
 <!-- Friends -->
 <div id="friendsModal" class="modal">
   <div class="modal-content wide">
     <button type="button" class="close-modal" onclick="closeModal('friendsModal')">&times;</button>
     <h2 class="neon-title">👥 أصدقائي</h2>
-
     <div class="input-group" style="margin-top:14px;max-width:100%">
       <label>🔍 ابحث عن صديق</label>
       <input type="text" id="friendSearchInput" placeholder="اكتب الاسم أو الرقم..." oninput="searchFriends()">
       <div id="friendSearchResults" class="friends-list" style="max-height:200px"></div>
     </div>
-
     <h3 style="margin-top:20px;color:#f0a0a0;font-size:15px">قائمة أصدقائي</h3>
     <div id="friendsList" class="friends-list">
       <p class="small-text">جاري التحميل...</p>
@@ -595,20 +538,17 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
     <button type="button" class="close-modal" onclick="closeModal('shareModal')">&times;</button>
     <h2 class="neon-title">📢 شارك واكسب</h2>
     <p class="small-text" style="margin-top:8px">كل صديق يسجل ويلعب 3 مباريات = <strong>10 نقاط</strong></p>
-
     <div class="share-box">
       <div style="font-size:50px">🎁</div>
       <p style="font-weight:800;font-size:16px;color:#f0a0a0;margin:8px 0">رابط المشاركة</p>
       <div class="share-url" id="shareUrl">https://neon-game-seven.vercel.app</div>
       <button type="button" class="share-btn" onclick="copyShareLink()">📋 نسخ الرابط</button>
     </div>
-
     <div style="text-align:center">
       <button type="button" class="share-btn wa" onclick="shareWhatsApp()">واتساب</button>
       <button type="button" class="share-btn tg" onclick="shareTelegram()">تيليجرام</button>
       <button type="button" class="share-btn" onclick="nativeShare()">مشاركة أخرى</button>
     </div>
-
     <div class="stat-row" style="margin-top:16px">
       <span>نقاطي من المشاركة اليوم</span>
       <span id="sharePointsToday">0 / 100</span>
@@ -686,7 +626,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
       <div class="profile-avatar-big" id="profileAvatar">?</div>
       <h3 id="profileName">لاعب</h3>
       <div id="primeStatus"></div>
-
       <div class="wallet-section">
         <h3 class="wallet-title">💰 محفظتي</h3>
         <div class="wallet-card">
@@ -700,7 +639,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
           </div>
         </div>
       </div>
-
       <div class="earnings-section">
         <h3 class="wallet-title">🎁 المبلغ المكتسب</h3>
         <div class="earnings-card">
@@ -711,7 +649,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
           <button type="button" class="wallet-btn transfer" onclick="transferEarningsToWallet()">💰 حوّل للمحفظة</button>
         </div>
       </div>
-
       <div class="stats-grid">
         <div class="stat-box"><span class="stat-value" id="profilePurchased">0</span><span class="stat-label">نقاط مدفوعة</span></div>
         <div class="stat-box"><span class="stat-value" id="profileEarned">0</span><span class="stat-label">نقاط مكتسبة</span></div>
@@ -787,7 +724,7 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
   </div>
 </div>
 
-<!-- Join Room (offline) -->
+<!-- Join Room Offline -->
 <div id="joinRoomModal" class="modal">
   <div class="modal-content">
     <button type="button" class="close-modal" onclick="closeModal('joinRoomModal')">&times;</button>
@@ -854,8 +791,10 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 </div>
 
 <div id="voiceIndicator" class="voice-indicator">🎤 بتتكلم دلوقتي</div>
+
+<script>
 /* ============================================
-   Neon Prediction v6 — Part 1: Core + Wallet + Offline Game
+   Neon Prediction v6 — Part 1 of JS: Core + Wallet + Offline
    ============================================ */
 
 var SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -939,30 +878,25 @@ function createDefaultUser() {
 
 function $(id){return document.getElementById(id);}
 function totalPoints(){return App.user.purchased + App.user.earned;}
-
 function addPoints(a,toEarned){
   if(isPrime()) a = Math.floor(a * 2);
   if(toEarned) App.user.earned += a;
   else App.user.purchased += a;
   checkPeakPoints();
 }
-
 function deductPoints(a){
   if(App.user.purchased >= a){App.user.purchased -= a;}
   else{var r = a - App.user.purchased; App.user.purchased = 0; App.user.earned = Math.max(0, App.user.earned - r);}
 }
-
 function checkPeakPoints(){
   var current = totalPoints();
   if(current > (App.user.peak_points || 0)) App.user.peak_points = current;
 }
-
 function isPrime(){
   if(!App.user.is_prime) return false;
   if(!App.user.prime_expires_at) return false;
   return new Date(App.user.prime_expires_at) > new Date();
 }
-
 function hasMultiplier(){
   if(!App.user.multiplier_2x_expires_at) return false;
   return new Date(App.user.multiplier_2x_expires_at) > new Date();
@@ -1088,7 +1022,7 @@ async function requestWithdraw(amount, phone) {
 function openDepositModal() {
   var a = $('depositAmount'); if (a) a.value = '';
   var t = $('depositTrans'); if (t) t.value = '';
-  closeModal('storeModal'); closeModal('paymentModal'); closeModal('profileModal');
+  closeModal('storeModal'); closeModal('profileModal');
   var m = $('depositModal'); if (m) m.classList.add('active');
 }
 
@@ -1237,7 +1171,6 @@ function login(){
 
   App.busy = true;
 
-  // اقرأ كود الإحالة من URL
   var urlParams = new URLSearchParams(window.location.search);
   var refCode = urlParams.get('ref');
   if (refCode) localStorage.setItem('neon_ref_code', refCode);
@@ -1278,7 +1211,6 @@ function login(){
           saveLocal();
           enterGame();
           showToast('أهلاً '+name+'! حصلت على '+CONFIG.STARTER_POINTS+' نقطة','success');
-          // سجل الإحالة
           if (nu.referred_by) registerReferral(nu.referred_by);
           App.busy = false;
         });
@@ -1423,7 +1355,6 @@ function checkDailyResets(){
     var diff = Math.floor((Date.now() - last.getTime())/86400000);
     if(diff > 1) App.user.dailyLoginStreak = 0;
   }
-  // إعادة تعيين عداد المشاركة اليومي
   if(App.user.last_share_date !== today){
     App.user.share_points_today = 0;
     App.user.last_share_date = today;
@@ -1531,9 +1462,7 @@ function syncUser(){
     prime_expires_at: App.user.prime_expires_at, multiplier_2x_expires_at: App.user.multiplier_2x_expires_at,
     peak_points: App.user.peak_points, claimed_milestones: App.user.claimed_milestones
   }).eq('id', App.user.id).then(function(res){ if(res.error) console.warn('Sync:', res.error); });
-}
-
-/* ============ OFFLINE ROOMS ============ */
+}/* ============ ROOMS (Offline) ============ */
 function createPrivateRoom(){
   if(App.busy) return;
   if(!useTicket()) return;
@@ -2149,16 +2078,10 @@ async function acceptSpecialOffer(){
   saveLocal(); updateAllUI(); syncUser(); checkMilestones();
   showToast('✅ تم شراء 300 نقطة', 'success');
   showCoinToast('+300 💎', '💎');
-}/* ============================================
-   Neon Prediction v6 — Part 2: Friends + Share + Online
-   ============================================ */
+}
 
-/* ============ FRIENDS SYSTEM ============ */
-var Friends = {
-  list: [],
-  searchResults: [],
-  searchDebounce: null
-};
+/* ============ FRIENDS ============ */
+var Friends = { list: [], searchResults: [], searchDebounce: null };
 
 async function openFriendsModal() {
   $('friendsModal').classList.add('active');
@@ -2171,12 +2094,10 @@ async function loadFriendsList() {
   var container = $('friendsList');
   if (!container) return;
   container.innerHTML = '<p class="small-text">جاري التحميل...</p>';
-
   if (!supabaseClient || !App.user.id || String(App.user.id).indexOf('local_') === 0) {
     container.innerHTML = '<p class="small-text">لازم تكون متصل بـ Supabase</p>';
     return;
   }
-
   try {
     var res = await supabaseClient
       .from('friendships')
@@ -2185,13 +2106,11 @@ async function loadFriendsList() {
       .eq('status', 'accepted');
 
     if (res.error) throw res.error;
-
     if (!res.data || res.data.length === 0) {
       container.innerHTML = '<p class="small-text">مفيش أصدقاء لسه — دوّر في الأعلى وضيف!</p>';
       Friends.list = [];
       return;
     }
-
     Friends.list = res.data;
     var html = '';
     for (var i = 0; i < res.data.length; i++) {
@@ -2224,12 +2143,10 @@ function searchFriends() {
   clearTimeout(Friends.searchDebounce);
   var q = $('friendSearchInput').value.trim();
   var container = $('friendSearchResults');
-
   if (!q || q.length < 2) {
     container.innerHTML = '';
     return;
   }
-
   Friends.searchDebounce = setTimeout(async function() {
     if (!supabaseClient || !App.user.id || String(App.user.id).indexOf('local_') === 0) return;
     try {
@@ -2241,12 +2158,10 @@ function searchFriends() {
         .limit(10);
 
       if (res.error) throw res.error;
-
       if (!res.data || res.data.length === 0) {
         container.innerHTML = '<p class="small-text">مفيش نتائج</p>';
         return;
       }
-
       var html = '';
       for (var i = 0; i < res.data.length; i++) {
         var u = res.data[i];
@@ -2265,16 +2180,13 @@ function searchFriends() {
         '</div>';
       }
       container.innerHTML = html;
-    } catch(e) {
-      console.error('searchFriends error:', e);
-    }
+    } catch(e) { console.error(e); }
   }, 400);
 }
 
 async function sendFriendRequest(friendId) {
   if (!supabaseClient || !App.user.id) return;
   try {
-    // تحقق لو فيه طلب موجود
     var existing = await supabaseClient
       .from('friendships')
       .select('id, status')
@@ -2282,15 +2194,10 @@ async function sendFriendRequest(friendId) {
       .maybeSingle();
 
     if (existing.data) {
-      if (existing.data.status === 'accepted') {
-        showToast('أنتم أصدقاء بالفعل', 'info');
-        return;
-      }
-      showToast('فيه طلب موجود بالفعل', 'info');
+      showToast(existing.data.status === 'accepted' ? 'أنتم أصدقاء بالفعل' : 'فيه طلب موجود بالفعل', 'info');
       return;
     }
 
-    // أضف الطلب
     var res = await supabaseClient.from('friendships').insert({
       user_id: App.user.id,
       friend_id: friendId,
@@ -2298,7 +2205,6 @@ async function sendFriendRequest(friendId) {
     });
 
     if (res.error) throw res.error;
-
     showToast('✅ تم إضافة الصديق', 'success');
     await loadFriendsList();
   } catch(e) {
@@ -2310,18 +2216,9 @@ async function sendFriendRequest(friendId) {
 async function removeFriend(friendId) {
   if (!supabaseClient || !App.user.id) return;
   if (!confirm('إزالة الصديق من القائمة؟')) return;
-
   try {
-    await supabaseClient.from('friendships')
-      .delete()
-      .eq('user_id', App.user.id)
-      .eq('friend_id', friendId);
-
-    await supabaseClient.from('friendships')
-      .delete()
-      .eq('user_id', friendId)
-      .eq('friend_id', App.user.id);
-
+    await supabaseClient.from('friendships').delete().eq('user_id', App.user.id).eq('friend_id', friendId);
+    await supabaseClient.from('friendships').delete().eq('user_id', friendId).eq('friend_id', App.user.id);
     showToast('تم إزالة الصديق', 'success');
     await loadFriendsList();
   } catch(e) {
@@ -2414,10 +2311,10 @@ function awardSharePoints() {
   }
   App.user.share_points_today = (App.user.share_points_today || 0) + CONFIG.SHARE_REWARD;
   addPoints(CONFIG.SHARE_REWARD);
-  saveLocal(); updateAllUI(); syncUser(); checkMilestones();
+  saveLocal(); updateAllUI(); syncUser();
   showCoinToast('+' + CONFIG.SHARE_REWARD + ' 💎', '📢');
   var pt = $('sharePointsToday');
-  if (pt) pt.textContent = App.user.share_points_today + ' / ' + CONFIG.SHARE_LIMIT || (App.user.share_points_today + ' / ' + CONFIG.SHARE_DAILY_LIMIT);
+  if (pt) pt.textContent = App.user.share_points_today + ' / ' + CONFIG.SHARE_DAILY_LIMIT;
   checkMilestones();
 }
 
@@ -2425,87 +2322,42 @@ async function registerReferral(refCode) {
   if (!refCode || !supabaseClient || !App.user.id) return;
   if (String(App.user.id).indexOf('local_') === 0) return;
   try {
-    // ابحث عن صاحب الكود
-    var res = await supabaseClient
-      .from('users')
-      .select('id, username')
-      .eq('referral_code', refCode)
-      .maybeSingle();
-
+    var res = await supabaseClient.from('users').select('id, username').eq('referral_code', refCode).maybeSingle();
     if (!res.data || res.data.id === App.user.id) return;
-
-    // أضف 5 جنيه لصاحب الكود (مكتسب)
     await supabaseClient.from('earnings').insert({
       user_id: res.data.id,
       amount: 5,
       source: 'referral_' + App.user.id,
       transferred: false
     });
-
-    // حدّث نفسه إنه اتحدد
-    await supabaseClient.from('users').update({
-      referred_by: refCode
-    }).eq('id', App.user.id);
-
+    await supabaseClient.from('users').update({ referred_by: refCode }).eq('id', App.user.id);
     console.log('✅ Referral registered:', refCode);
-  } catch(e) {
-    console.error('registerReferral error:', e);
-  }
+  } catch(e) { console.error('registerReferral error:', e); }
 }
 
-/* ============================================
-   ONLINE GAME (Realtime)
-   ============================================ */
+/* ============ ONLINE GAME ============ */
 var Online = {
-  room: null,
-  players: [],
-  answers: [],
-  roundData: null,
-  myChoice: null,
-  myAnswerTime: 0,
-  roundStartTime: 0,
-  timer: null,
-  channel: null,
-  isHost: false,
-  currentRound: 0,
-  isReady: false,
-  playing: false
+  room: null, players: [], answers: [], roundData: null,
+  myChoice: null, myAnswerTime: 0, roundStartTime: 0,
+  timer: null, channel: null, isHost: false,
+  currentRound: 0, isReady: false, playing: false
 };
 
-async function openOnlineLobby() {
-  showView('onlineLobbyView');
-}
+async function openOnlineLobby() { showView('onlineLobbyView'); }
 
 async function createOnlineRoom() {
-  if (!supabaseClient || !App.user.id) {
-    showToast('محتاج Supabase', 'error');
-    return;
-  }
-  if (String(App.user.id).indexOf('local_') === 0) {
-    showToast('سجّل من جديد', 'error');
-    return;
-  }
+  if (!supabaseClient || !App.user.id) { showToast('محتاج Supabase', 'error'); return; }
+  if (String(App.user.id).indexOf('local_') === 0) { showToast('سجّل من جديد', 'error'); return; }
+  if (totalPoints() < CONFIG.ONLINE_ENTRY) { showToast('محتاج ' + CONFIG.ONLINE_ENTRY + ' نقطة', 'error'); return; }
 
-  // تحقق من الرصيد
-  if (totalPoints() < CONFIG.ONLINE_ENTRY) {
-    showToast('محتاج ' + CONFIG.ONLINE_ENTRY + ' نقطة', 'error');
-    return;
-  }
-
-  // اخصم النقاط
   deductPoints(CONFIG.ONLINE_ENTRY);
   saveLocal(); updateAllUI();
 
   try {
     var code = generateRoomCode();
-    // غرفة في Supabase
     var res = await supabaseClient.from('online_rooms').insert({
-      code: code,
-      host_id: App.user.id,
-      category: 'football',
-      status: 'waiting',
-      max_players: 3,
-      entry_fee: CONFIG.ONLINE_ENTRY
+      code: code, host_id: App.user.id, category: 'football',
+      status: 'waiting', max_players: 3, entry_fee: CONFIG.ONLINE_ENTRY
     }).select().single();
 
     if (res.error) throw res.error;
@@ -2515,30 +2367,20 @@ async function createOnlineRoom() {
     Online.isReady = true;
     Online.currentRound = 0;
 
-    // أضف نفسه لاعب
     await supabaseClient.from('room_players').insert({
-      room_id: res.data.id,
-      user_id: App.user.id,
-      username: App.user.username,
-      is_host: true,
-      is_ready: true
+      room_id: res.data.id, user_id: App.user.id,
+      username: App.user.username, is_host: true, is_ready: true
     });
 
-    // افتح قناة realtime
     subscribeToRoom(res.data.id);
-
-    // سجل العملية
     await supabaseClient.from('transactions').insert({
-      user_id: App.user.id,
-      amount: -CONFIG.ONLINE_ENTRY,
-      type: 'online_entry',
-      description: 'دخول غرفة أونلاين ' + code
+      user_id: App.user.id, amount: -CONFIG.ONLINE_ENTRY,
+      type: 'online_entry', description: 'دخول غرفة أونلاين ' + code
     });
 
     enterOnlineRoomView(code);
   } catch(e) {
     console.error('createOnlineRoom error:', e);
-    // رجّع النقاط
     addPoints(CONFIG.ONLINE_ENTRY);
     saveLocal(); updateAllUI();
     showToast('خطأ: ' + e.message, 'error');
@@ -2554,26 +2396,13 @@ async function joinOnlineRoom() {
   var code = $('joinOnlineCodeInput').value.trim().toUpperCase();
   if (code.length !== 6) return showToast('الكود 6 حروف', 'error');
   if (!supabaseClient || !App.user.id) return;
-
-  if (totalPoints() < CONFIG.ONLINE_ENTRY) {
-    showToast('محتاج ' + CONFIG.ONLINE_ENTRY + ' نقطة', 'error');
-    return;
-  }
+  if (totalPoints() < CONFIG.ONLINE_ENTRY) { showToast('محتاج ' + CONFIG.ONLINE_ENTRY + ' نقطة', 'error'); return; }
 
   try {
-    // ابحث عن الغرفة
-    var res = await supabaseClient
-      .from('online_rooms')
-      .select('*')
-      .eq('code', code)
-      .eq('status', 'waiting')
-      .maybeSingle();
+    var res = await supabaseClient.from('online_rooms').select('*')
+      .eq('code', code).eq('status', 'waiting').maybeSingle();
+    if (!res.data) return showToast('مفيش غرفة بالكود ده', 'error');
 
-    if (!res.data) {
-      return showToast('مفيش غرفة بالكود ده', 'error');
-    }
-
-    // اخصم النقاط
     deductPoints(CONFIG.ONLINE_ENTRY);
     saveLocal(); updateAllUI();
 
@@ -2582,13 +2411,9 @@ async function joinOnlineRoom() {
     Online.isReady = false;
     Online.currentRound = 0;
 
-    // أضف نفسه لاعب
     await supabaseClient.from('room_players').insert({
-      room_id: res.data.id,
-      user_id: App.user.id,
-      username: App.user.username,
-      is_host: false,
-      is_ready: false
+      room_id: res.data.id, user_id: App.user.id,
+      username: App.user.username, is_host: false, is_ready: false
     });
 
     closeModal('joinOnlineModal');
@@ -2609,55 +2434,27 @@ function enterOnlineRoomView(code) {
   $('onlineRoomCode').style.display = 'block';
   $('onlineRoomCode').textContent = 'الكود: ' + code;
   $('onlineMaxPlayers').textContent = Online.room.max_players || 3;
-  updateOnlineRoomPlayers();
+  refreshOnlinePlayers();
 }
 
 function subscribeToRoom(roomId) {
   if (Online.channel) {
-    supabaseClient.removeChannel(Online.channel);
+    try { supabaseClient.removeChannel(Online.channel); } catch(e) {}
   }
 
   Online.channel = supabaseClient
     .channel('room_' + roomId)
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'room_players',
-      filter: 'room_id=eq.' + roomId
-    }, function(payload) {
-      console.log('Player update:', payload);
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_players', filter: 'room_id=eq.' + roomId }, function() {
       refreshOnlinePlayers();
     })
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'room_rounds',
-      filter: 'room_id=eq.' + roomId
-    }, function(payload) {
-      console.log('Round update:', payload);
-      if (payload.new && payload.new.round_number) {
-        startOnlineRound(payload.new);
-      }
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_rounds', filter: 'room_id=eq.' + roomId }, function(payload) {
+      if (payload.new && payload.new.round_number) startOnlineRound(payload.new);
     })
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'room_answers',
-      filter: 'room_id=eq.' + roomId
-    }, function(payload) {
-      console.log('Answer update:', payload);
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_answers', filter: 'room_id=eq.' + roomId }, function() {
       refreshOnlineAnswers();
     })
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'online_rooms',
-      filter: 'id=eq.' + roomId
-    }, function(payload) {
-      console.log('Room update:', payload);
-      if (payload.new.status === 'playing' && !Online.playing) {
-        startOnlineGame();
-      }
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'online_rooms', filter: 'id=eq.' + roomId }, function(payload) {
+      if (payload.new.status === 'playing' && !Online.playing) startOnlineGame();
     })
     .subscribe();
 }
@@ -2665,12 +2462,8 @@ function subscribeToRoom(roomId) {
 async function refreshOnlinePlayers() {
   if (!Online.room) return;
   try {
-    var res = await supabaseClient
-      .from('room_players')
-      .select('*')
-      .eq('room_id', Online.room.id)
-      .order('joined_at');
-
+    var res = await supabaseClient.from('room_players').select('*')
+      .eq('room_id', Online.room.id).order('joined_at');
     if (res.data) {
       Online.players = res.data;
       updateOnlineRoomPlayers();
@@ -2687,7 +2480,6 @@ function updateOnlineRoomPlayers() {
     el.classList.remove('filled');
     el.innerHTML = '';
   }
-
   for (var j = 0; j < Online.players.length && j < 3; j++) {
     var p = Online.players[j];
     var el = $(slots[j]);
@@ -2697,58 +2489,36 @@ function updateOnlineRoomPlayers() {
         '<span class="slot-name">' + p.username + (p.is_ready ? ' ✋' : '') + '</span>';
     }
   }
-
   $('onlinePlayersCount').textContent = Online.players.length;
-
-  if (Online.players.length >= 2) {
-    $('onlineWaitingHint').textContent = 'الجميع جاهز؟ اضغط "جاهز"';
-  }
+  if (Online.players.length >= 2) $('onlineWaitingHint').textContent = 'الجميع جاهز؟ اضغط "جاهز"';
 }
 
 async function toggleReady() {
   if (!Online.room) return;
   Online.isReady = !Online.isReady;
-
   try {
     await supabaseClient.from('room_players')
       .update({ is_ready: Online.isReady })
       .eq('room_id', Online.room.id)
       .eq('user_id', App.user.id);
-
     var btn = $('readyBtn');
-    if (Online.isReady) {
-      btn.textContent = '✓ جاهز';
-      btn.classList.add('ready');
-    } else {
-      btn.textContent = '✋ جاهز';
-      btn.classList.remove('ready');
-    }
-
+    if (Online.isReady) { btn.textContent = '✓ جاهز'; btn.classList.add('ready'); }
+    else { btn.textContent = '✋ جاهز'; btn.classList.remove('ready'); }
     await refreshOnlinePlayers();
-  } catch(e) {
-    console.error('toggleReady error:', e);
-  }
+  } catch(e) { console.error('toggleReady error:', e); }
 }
 
 async function checkAllReady() {
   if (!Online.room || !Online.isHost) return;
   if (Online.players.length < 2) return;
   if (Online.room.status !== 'waiting') return;
-
   var allReady = Online.players.every(function(p){ return p.is_ready; });
   if (!allReady) return;
-
-  // كل اللاعبين جاهزين → ابدأ
   try {
-    await supabaseClient.from('online_rooms')
-      .update({
-        status: 'playing',
-        started_at: new Date().toISOString()
-      })
-      .eq('id', Online.room.id);
-  } catch(e) {
-    console.error('start game error:', e);
-  }
+    await supabaseClient.from('online_rooms').update({
+      status: 'playing', started_at: new Date().toISOString()
+    }).eq('id', Online.room.id);
+  } catch(e) { console.error('start game error:', e); }
 }
 
 async function startOnlineGame() {
@@ -2756,32 +2526,20 @@ async function startOnlineGame() {
   Online.currentRound = 0;
   showView('onlineGameView');
   updateOnlineScores();
-  // انتظر شوية ثم ابدأ الجولة الأولى
   setTimeout(function() { nextOnlineRound(); }, 1500);
 }
 
 async function nextOnlineRound() {
   Online.currentRound++;
-  if (Online.currentRound > CONFIG.ONLINE_ROUNDS) {
-    endOnlineGame();
-    return;
-  }
-
-  if (!Online.isHost) return; // غير المضيف يستنى
-
-  // اختر الصحيح
+  if (Online.currentRound > CONFIG.ONLINE_ROUNDS) { endOnlineGame(); return; }
+  if (!Online.isHost) return;
   var correct = Math.floor(Math.random() * 5) + 1;
-
   try {
     await supabaseClient.from('room_rounds').insert({
-      room_id: Online.room.id,
-      round_number: Online.currentRound,
-      correct_choice: correct,
-      started_at: new Date().toISOString()
+      room_id: Online.room.id, round_number: Online.currentRound,
+      correct_choice: correct, started_at: new Date().toISOString()
     });
-  } catch(e) {
-    console.error('nextOnlineRound error:', e);
-  }
+  } catch(e) { console.error('nextOnlineRound error:', e); }
 }
 
 function startOnlineRound(round) {
@@ -2790,10 +2548,8 @@ function startOnlineRound(round) {
   Online.myChoice = null;
   Online.myAnswerTime = 0;
   Online.roundStartTime = Date.now();
-
   $('onlineRoundNum').textContent = round.round_number;
 
-  // اعرض الخيارات
   var cat = CATEGORIES[Online.room.category] || CATEGORIES.football;
   var grid = $('onlineChoicesGrid');
   grid.innerHTML = '';
@@ -2806,7 +2562,6 @@ function startOnlineRound(round) {
     grid.appendChild(btn);
   });
 
-  // ابدأ العداد
   startOnlineTimer(round);
   refreshOnlineAnswers();
 }
@@ -2831,48 +2586,35 @@ function startOnlineTimer(round) {
 async function makeOnlineChoice(num) {
   if (Online.myChoice !== null) return;
   if (!Online.roundData) return;
-
   Online.myChoice = num;
   Online.myAnswerTime = Date.now() - Online.roundStartTime;
 
-  // عطّل الأزرار
   var btns = document.querySelectorAll('#onlineChoicesGrid .choice-btn');
   for (var i = 0; i < btns.length; i++) {
     btns[i].disabled = true;
     if (i + 1 === num) btns[i].classList.add('selected');
   }
 
-  // أرسل لـ Supabase
   try {
     var isCorrect = num === Online.roundData.correct_choice;
     var points = 0;
     if (isCorrect) {
-      // نقاط أعلى = وقت أسرع
       var timeSec = Online.myAnswerTime / 1000;
       points = Math.max(50, Math.floor(100 - (timeSec * 4)));
     }
-
     await supabaseClient.from('room_answers').insert({
-      room_id: Online.room.id,
-      round_number: Online.currentRound,
-      user_id: App.user.id,
-      username: App.user.username,
-      choice: num,
-      answer_time: Online.myAnswerTime,
-      is_correct: isCorrect,
-      points_earned: points
+      room_id: Online.room.id, round_number: Online.currentRound,
+      user_id: App.user.id, username: App.user.username,
+      choice: num, answer_time: Online.myAnswerTime,
+      is_correct: isCorrect, points_earned: points
     });
-
-    // حدّث نقاطي في اللاعبين
     if (isCorrect) {
       await supabaseClient.from('room_players')
         .update({ score: getMyNewScore(points) })
         .eq('room_id', Online.room.id)
         .eq('user_id', App.user.id);
     }
-  } catch(e) {
-    console.error('makeOnlineChoice error:', e);
-  }
+  } catch(e) { console.error('makeOnlineChoice error:', e); }
 }
 
 function getMyNewScore(addedPoints) {
@@ -2887,12 +2629,8 @@ function getMyNewScore(addedPoints) {
 async function refreshOnlineAnswers() {
   if (!Online.room || !Online.roundData) return;
   try {
-    var res = await supabaseClient
-      .from('room_answers')
-      .select('*')
-      .eq('room_id', Online.room.id)
-      .eq('round_number', Online.currentRound);
-
+    var res = await supabaseClient.from('room_answers').select('*')
+      .eq('room_id', Online.room.id).eq('round_number', Online.currentRound);
     if (res.data) {
       Online.answers = res.data;
       updateOnlineScores();
@@ -2903,7 +2641,6 @@ async function refreshOnlineAnswers() {
 function updateOnlineScores() {
   var container = $('onlineScores');
   if (!container) return;
-
   var sorted = Online.players.slice().sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
   var html = '';
   for (var i = 0; i < sorted.length; i++) {
@@ -2912,7 +2649,6 @@ function updateOnlineScores() {
     var answer = Online.answers.find(function(a){ return a.user_id === p.user_id; });
     var cls = '';
     if (answer) cls = answer.is_correct ? 'correct' : 'wrong';
-
     html += '<div class="online-score-row ' + (isMe ? 'me ' : '') + cls + '">' +
       '<span class="online-score-rank">#' + (i+1) + '</span>' +
       '<span class="online-score-name">' + p.username + (isMe ? ' (أنت)' : '') + '</span>' +
@@ -2924,22 +2660,15 @@ function updateOnlineScores() {
 
 async function finishOnlineRound(round) {
   if (Online.timer) clearInterval(Online.timer);
-
-  // اعرض الصحيح
   var btns = document.querySelectorAll('#onlineChoicesGrid .choice-btn');
   for (var i = 0; i < btns.length; i++) {
     btns[i].disabled = true;
     if (i + 1 === round.correct_choice) btns[i].classList.add('correct');
     else if (i + 1 === Online.myChoice) btns[i].classList.add('wrong');
   }
-
   await refreshOnlineAnswers();
-
-  // استنى 3 ثواني ثم الجولة التالية
   setTimeout(function() {
-    if (Online.isHost) {
-      nextOnlineRound();
-    }
+    if (Online.isHost) nextOnlineRound();
   }, 3000);
 }
 
@@ -2948,24 +2677,18 @@ async function endOnlineGame() {
   if (Online.timer) clearInterval(Online.timer);
 
   try {
-    await supabaseClient.from('online_rooms')
-      .update({ status: 'finished', finished_at: new Date().toISOString() })
-      .eq('id', Online.room.id);
+    await supabaseClient.from('online_rooms').update({
+      status: 'finished', finished_at: new Date().toISOString()
+    }).eq('id', Online.room.id);
   } catch(e) {}
 
-  // احسب الفائز
   var sorted = Online.players.slice().sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
   var winner = sorted[0];
   var iWon = winner && winner.user_id === App.user.id;
 
-  // الجائزة
   var prizePoints = 0;
-  if (iWon) {
-    prizePoints = 30;
-    addPoints(prizePoints, true);
-  }
+  if (iWon) { prizePoints = 30; addPoints(prizePoints, true); }
 
-  // اعرض النتيجة
   var container = $('onlineResultContainer');
   container.className = 'result-container ' + (iWon ? 'winner' : 'loser');
   $('onlineResultIcon').textContent = iWon ? '🏆' : '😢';
@@ -2985,9 +2708,7 @@ async function endOnlineGame() {
   $('onlineFinalScores').innerHTML = finalHtml;
 
   showView('onlineResultView');
-
   saveLocal(); updateAllUI(); syncUser(); checkMilestones();
-
   if (iWon) showCoinToast('+30 💎', '🏆');
 }
 
@@ -2996,15 +2717,10 @@ async function leaveOnlineRoom() {
     try { supabaseClient.removeChannel(Online.channel); } catch(e) {}
     Online.channel = null;
   }
-
   if (Online.room) {
     try {
-      await supabaseClient.from('room_players')
-        .delete()
-        .eq('room_id', Online.room.id)
-        .eq('user_id', App.user.id);
-
-      // لو أنا آخر واحد، امسح الغرفة
+      await supabaseClient.from('room_players').delete()
+        .eq('room_id', Online.room.id).eq('user_id', App.user.id);
       var remaining = await supabaseClient.from('room_players')
         .select('id').eq('room_id', Online.room.id);
       if (!remaining.data || remaining.data.length === 0) {
@@ -3012,7 +2728,6 @@ async function leaveOnlineRoom() {
       }
     } catch(e) {}
   }
-
   Online.room = null;
   Online.players = [];
   Online.answers = [];
@@ -3021,10 +2736,8 @@ async function leaveOnlineRoom() {
   Online.isReady = false;
   Online.currentRound = 0;
   if (Online.timer) clearInterval(Online.timer);
-
   $('readyBtn').textContent = '✋ جاهز';
   $('readyBtn').classList.remove('ready');
-
   showView('onlineLobbyView');
   showToast('غادرت الغرفة', 'info');
 }
@@ -3035,24 +2748,15 @@ function playAgainOnline() {
 }
 
 /* ============ MIC SYSTEM ============ */
-var Voice = {
-  stream: null,
-  active: false,
-  muted: false,
-  speakerOn: true
-};
+var Voice = { stream: null, active: false, muted: false, speakerOn: true };
 
 async function toggleMic() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     showToast('المتصفح لا يدعم المايك', 'error');
     return;
   }
-
   if (Voice.active) {
-    // اقفل المايك
-    if (Voice.stream) {
-      Voice.stream.getTracks().forEach(function(t){ t.stop(); });
-    }
+    if (Voice.stream) Voice.stream.getTracks().forEach(function(t){ t.stop(); });
     Voice.active = false;
     Voice.stream = null;
     var btns = document.querySelectorAll('.mic-btn');
@@ -3060,21 +2764,14 @@ async function toggleMic() {
     showToast('تم إغلاق المايك', 'info');
     return;
   }
-
   try {
     Voice.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     Voice.active = true;
     Voice.muted = false;
-
-    // فعّل المظهر
     var btns = document.querySelectorAll('.mic-btn');
     btns.forEach(function(b){ b.classList.add('active'); });
-
     showVoiceIndicator();
-
-    // اكتشف النشاط
     detectVoiceActivity(Voice.stream);
-
     showToast('🎤 المايك شغال', 'success');
   } catch(e) {
     console.error('Mic error:', e);
@@ -3096,22 +2793,16 @@ function detectVoiceActivity(stream) {
     var analyser = audioContext.createAnalyser();
     analyser.fftSize = 512;
     source.connect(analyser);
-
     var data = new Uint8Array(analyser.frequencyBinCount);
-
     function check() {
       if (!Voice.active) return;
       analyser.getByteFrequencyData(data);
       var sum = 0;
       for (var i = 0; i < data.length; i++) sum += data[i];
       var avg = sum / data.length;
-
       var btns = document.querySelectorAll('.mic-btn');
-      if (avg > 30) {
-        btns.forEach(function(b){ b.classList.add('speaking'); });
-      } else {
-        btns.forEach(function(b){ b.classList.remove('speaking'); });
-      }
+      if (avg > 30) btns.forEach(function(b){ b.classList.add('speaking'); });
+      else btns.forEach(function(b){ b.classList.remove('speaking'); });
       requestAnimationFrame(check);
     }
     check();
@@ -3121,12 +2812,62 @@ function detectVoiceActivity(stream) {
 function toggleSpeaker() {
   Voice.speakerOn = !Voice.speakerOn;
   var btn = $('speakerBtn');
-  if (btn) {
-    btn.textContent = Voice.speakerOn ? '🔊' : '🔇';
-  }
+  if (btn) btn.textContent = Voice.speakerOn ? '🔊' : '🔇';
   showToast(Voice.speakerOn ? '🔊 الصوت شغال' : '🔇 الصوت مقفول', 'info');
 }
 
-/* ============================================
-   END OF PART 2
-   ============================================ */
+/* ============ EXPORTS ============ */
+window.login = login;
+window.closeWelcomeAd = closeWelcomeAd;
+window.claimDailyLogin = claimDailyLogin;
+window.claimDailyChest = claimDailyChest;
+window.createPrivateRoom = createPrivateRoom;
+window.openJoinModal = openJoinModal;
+window.joinRoomByCode = joinRoomByCode;
+window.copyRoomCode = copyRoomCode;
+window.start1v1 = start1v1;
+window.openLuckyWheel = openLuckyWheel;
+window.spinWheel = spinWheel;
+window.selectCategory = selectCategory;
+window.leaveRoom = leaveRoom;
+window.playAgain = playAgain;
+window.showView = showView;
+window.openStore = openStore;
+window.closeModal = closeModal;
+window.buyPackage = buyPackage;
+window.buyPrime = buyPrime;
+window.buyMultiplier = buyMultiplier;
+window.openProfile = openProfile;
+window.showLeaderboard = showLeaderboard;
+window.openLossRecovery = openLossRecovery;
+window.confirmLossRecovery = confirmLossRecovery;
+window.acceptSpecialOffer = acceptSpecialOffer;
+window.openDepositModal = openDepositModal;
+window.openWithdrawModal = openWithdrawModal;
+window.submitDeposit = submitDeposit;
+window.submitWithdraw = submitWithdraw;
+window.transferEarningsToWallet = transferEarningsToWallet;
+window.openMilestonesModal = openMilestonesModal;
+window.loadWallet = loadWallet;
+window.openOnlineLobby = openOnlineLobby;
+window.createOnlineRoom = createOnlineRoom;
+window.openJoinOnlineModal = openJoinOnlineModal;
+window.joinOnlineRoom = joinOnlineRoom;
+window.toggleReady = toggleReady;
+window.leaveOnlineRoom = leaveOnlineRoom;
+window.playAgainOnline = playAgainOnline;
+window.toggleMic = toggleMic;
+window.toggleSpeaker = toggleSpeaker;
+window.openFriendsModal = openFriendsModal;
+window.searchFriends = searchFriends;
+window.sendFriendRequest = sendFriendRequest;
+window.removeFriend = removeFriend;
+window.inviteFriendToRoom = inviteFriendToRoom;
+window.openShareModal = openShareModal;
+window.copyShareLink = copyShareLink;
+window.shareWhatsApp = shareWhatsApp;
+window.shareTelegram = shareTelegram;
+window.nativeShare = nativeShare;
+</script>
+</body>
+</html>
