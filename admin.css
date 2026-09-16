@@ -1433,4 +1433,13 @@ body {
   .login-box {
     padding: 30px 20px;
   }
+}/* ==================== Stat Icon Colors ==================== */
+.stat-icon-box.green { background: rgba(16, 185, 129, 0.15); }
+.stat-icon-box.purple { background: rgba(139, 92, 246, 0.15); }
+
+/* ==================== Extra badge styles ==================== */
+.user-level.wallet-badge {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
 }
+
