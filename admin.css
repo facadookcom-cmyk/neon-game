@@ -1,4 +1,4 @@
-/* ==================== Neon Prediction Admin Panel v3 ==================== */
+/* ==================== Neon Prediction Admin Panel v4 ==================== */
 
 :root {
   --bg: #0a0e1a;
@@ -143,6 +143,7 @@ body {
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .sidebar-brand {
@@ -164,6 +165,7 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  flex-shrink: 0;
 }
 
 .brand-name {
@@ -201,6 +203,7 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   text-align: right;
+  width: 100%;
 }
 
 .nav-item:hover {
@@ -241,6 +244,7 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 18px;
+  flex-shrink: 0;
 }
 
 .admin-name {
@@ -288,6 +292,8 @@ body {
   margin-bottom: 25px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
+  gap: 15px;
+  flex-wrap: wrap;
 }
 
 .page-title {
@@ -461,6 +467,8 @@ body {
   margin-bottom: 15px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .panel-header h3 {
@@ -524,7 +532,7 @@ body {
   font-weight: 700;
 }
 
-/* ==================== قائمة آخر النشاطات ==================== */
+/* ==================== آخر النشاطات ==================== */
 .recent-activity-list {
   display: flex;
   flex-direction: column;
@@ -547,12 +555,13 @@ body {
   flex-shrink: 0;
 }
 
-.activity-content { flex: 1; }
+.activity-content { flex: 1; min-width: 0; }
 
 .activity-text {
   font-size: 13px;
   color: var(--text);
   margin-bottom: 3px;
+  word-break: break-word;
 }
 
 .activity-time {
@@ -666,6 +675,8 @@ body {
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .user-header h3 {
@@ -764,6 +775,8 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .req-header h3 {
@@ -1027,6 +1040,8 @@ body {
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .history-item .amount {
@@ -1081,12 +1096,13 @@ body {
 .log-icon.loss { background: rgba(239, 68, 68, 0.15); }
 .log-icon.referral { background: rgba(139, 92, 246, 0.15); }
 
-.log-content { flex: 1; }
+.log-content { flex: 1; min-width: 0; }
 
 .log-text {
   font-size: 13px;
   color: var(--text);
   margin-bottom: 3px;
+  word-break: break-word;
 }
 
 .log-text strong {
@@ -1099,6 +1115,7 @@ body {
   gap: 15px;
   font-size: 11px;
   color: var(--muted);
+  flex-wrap: wrap;
 }
 
 .log-amount {
@@ -1139,6 +1156,8 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .room-header h3 {
@@ -1228,6 +1247,7 @@ body {
   font-size: 13px;
   color: var(--text-secondary);
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  gap: 10px;
 }
 
 .info-row:last-child { border-bottom: none; }
@@ -1324,22 +1344,32 @@ body {
     height: auto;
     position: relative;
     padding: 15px;
+    border-left: none;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .sidebar-brand {
+    padding: 0 0 15px;
+    margin-bottom: 15px;
   }
   
   .sidebar-nav {
     flex-direction: row;
     overflow-x: auto;
     padding-bottom: 10px;
+    gap: 6px;
   }
   
   .nav-item {
     white-space: nowrap;
     padding: 10px 15px;
+    width: auto;
   }
   
   .nav-item.active {
     border-right: none;
     border-bottom: 3px solid var(--gold);
+    background: rgba(240, 176, 80, 0.1);
   }
   
   .sidebar-footer {
@@ -1352,6 +1382,21 @@ body {
   
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .stat-card {
+    padding: 14px;
+  }
+  
+  .stat-value {
+    font-size: 20px;
+  }
+  
+  .stat-icon-box {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
   }
   
   .users-grid, .requests-grid, .rooms-grid {
@@ -1359,4 +1404,33 @@ body {
   }
   
   .page-title { font-size: 18px; }
+  
+  .transfer-panel {
+    padding: 18px;
+  }
+  
+  .transfer-actions {
+    flex-direction: column;
+  }
+  
+  .log-item {
+    padding: 12px;
+    gap: 10px;
+  }
+  
+  .log-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .login-box {
+    padding: 30px 20px;
+  }
 }
