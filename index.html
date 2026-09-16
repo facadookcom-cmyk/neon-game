@@ -206,6 +206,34 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
 .coin-toast-content{background:var(--card);border:1.5px solid rgba(220,80,80,.35);border-radius:12px;padding:11px 16px;display:flex;align-items:center;gap:9px;box-shadow:0 0 16px rgba(200,50,50,.25);font-weight:800;font-size:14px;color:#f5f0f0}
 .coin-toast-icon{font-size:20px}
 .coin-toast-text{font-weight:800}
+.wallet-section,.earnings-section{margin:20px 0;text-align:right}
+.wallet-title{font-size:15px;font-weight:900;color:#f0a0a0;margin-bottom:10px}
+.wallet-card,.earnings-card{padding:18px;background:linear-gradient(135deg,rgba(220,70,70,.1),rgba(180,50,50,.05));border:1.5px solid rgba(220,80,80,.35);border-radius:14px}
+.earnings-card{background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(5,150,105,.05));border-color:rgba(16,185,129,.4)}
+.wallet-balance{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08)}
+.wallet-label{color:#d4b8b8;font-size:13px;font-weight:700}
+.wallet-value{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:900;color:#f0a0a0}
+.wallet-value.earned{color:#00e676}
+.wallet-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.wallet-btn{padding:12px;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:900;cursor:pointer;transition:.2s}
+.wallet-btn.deposit{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
+.wallet-btn.withdraw{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff}
+.wallet-btn.transfer{width:100%;padding:14px;background:linear-gradient(135deg,#00c853,#00a040);color:#fff;font-size:15px;box-shadow:0 4px 15px rgba(0,200,83,.3)}
+.wallet-btn.transfer:disabled{opacity:.5;cursor:not-allowed}
+.wallet-btn:active{transform:scale(.97)}
+.milestones-modal{max-width:480px}
+.milestones-list{display:flex;flex-direction:column;gap:8px;margin-top:16px;max-height:60vh;overflow-y:auto;padding:4px}
+.milestone-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(220,70,70,.06);border:1px solid rgba(220,80,80,.2);border-radius:12px;transition:.2s}
+.milestone-item.ready{background:rgba(240,176,80,.12);border-color:rgba(240,176,80,.5);box-shadow:0 0 15px rgba(240,176,80,.2)}
+.milestone-item.done{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.4);opacity:.7}
+.ms-icon{font-size:24px;flex-shrink:0}
+.ms-info{flex:1;text-align:right}
+.ms-points{font-size:14px;font-weight:800;color:#f5f0f0;margin-bottom:3px}
+.ms-money{font-size:13px;font-weight:900;color:#f0b050;font-family:'Orbitron',sans-serif}
+.ms-status{font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;flex-shrink:0}
+.ms-status.done{background:rgba(16,185,129,.2);color:#00e676}
+.ms-status.ready{background:rgba(240,176,80,.25);color:#f0b050;animation:pulse 1.5s infinite}
+.ms-status.locked{background:rgba(160,128,128,.2);color:#a08080}
 </style>
 </head>
 <body>
@@ -232,7 +260,7 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
   <div id="welcomeAd" class="welcome-ad hidden">
     <div class="ad-content">
       <h2>مسابقة الجوائز الكبرى</h2>
-      <p class="prize-intro">كل ما تكسب نقاط مكتسبة أكتر، الجايزة تزيد!</p>
+      <p class="prize-intro">كل ما تكسب نقاط، الجايزة تزيد!</p>
       <div class="prize-table" id="welcomePrizeTable"></div>
       <p class="prize-note">الجوائز تتحول فودافون كاش بعد التحقق</p>
       <button type="button" class="btn-close-ad" onclick="closeWelcomeAd()">تمام، فهمت</button>
@@ -274,6 +302,14 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
           </div>
         </div>
         <div class="room-actions">
+          <button type="button" class="btn-room-action" onclick="openMilestonesModal()">
+            <span class="room-action-icon">🏆</span><span>الجوائز المادية</span>
+          </button>
+          <button type="button" class="btn-room-action" onclick="openLuckyWheel()">
+            <span class="room-action-icon">🎡</span><span>عجلة الحظ</span>
+          </button>
+        </div>
+        <div class="room-actions">
           <button type="button" class="btn-room-action" onclick="createPrivateRoom()">
             <span class="room-action-icon">🔒</span><span>غرفة خاصة</span>
           </button>
@@ -285,8 +321,8 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
           <button type="button" class="btn-room-action" onclick="start1v1()">
             <span class="room-action-icon">⚔️</span><span>1 ضد 1</span>
           </button>
-          <button type="button" class="btn-room-action" onclick="openLuckyWheel()">
-            <span class="room-action-icon">🎡</span><span>عجلة الحظ</span>
+          <button type="button" class="btn-room-action" onclick="openProfile()">
+            <span class="room-action-icon">💰</span><span>محفظتي</span>
           </button>
         </div>
       </div>
@@ -389,7 +425,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
         <div class="pkg-info"><span class="pkg-points">1000 نقطة</span><span class="pkg-price">140 جنيه</span></div>
       </button>
     </div>
-
     <div class="prime-section">
       <h3 class="prime-title">⭐ عروض البرايم</h3>
       <button type="button" class="prime-card" onclick="buyPrime()">
@@ -409,7 +444,6 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
         <div class="prime-price">15 ج</div>
       </button>
     </div>
-
     <p class="small-text">التحويل على فودافون كاش: <strong>01091602772</strong></p>
   </div>
 </div>
@@ -444,6 +478,34 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
       <div class="profile-avatar-big" id="profileAvatar">?</div>
       <h3 id="profileName">لاعب</h3>
       <div id="primeStatus"></div>
+
+      <div class="wallet-section">
+        <h3 class="wallet-title">💰 محفظتي</h3>
+        <div class="wallet-card">
+          <div class="wallet-balance">
+            <span class="wallet-label">الرصيد الحالي</span>
+            <span class="wallet-value" id="walletBalance">0.00 ج</span>
+          </div>
+          <div class="wallet-actions">
+            <button type="button" class="wallet-btn deposit" onclick="openDepositModal()">➕ إيداع</button>
+            <button type="button" class="wallet-btn withdraw" onclick="openWithdrawModal()">➖ سحب</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="earnings-section">
+        <h3 class="wallet-title">🎁 المبلغ المكتسب</h3>
+        <div class="earnings-card">
+          <div class="wallet-balance">
+            <span class="wallet-label">أرباحك من الألعاب</span>
+            <span class="wallet-value earned" id="walletEarned">0.00 ج</span>
+          </div>
+          <button type="button" class="wallet-btn transfer" onclick="transferEarningsToWallet()">
+            💰 حوّل للمحفظة
+          </button>
+        </div>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-box"><span class="stat-value" id="profilePurchased">0</span><span class="stat-label">نقاط مدفوعة</span></div>
         <div class="stat-box"><span class="stat-value" id="profileEarned">0</span><span class="stat-label">نقاط مكتسبة</span></div>
@@ -456,6 +518,57 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
       <div class="stat-row"><span>تذاكر متبقية</span><span id="profileTickets">5</span></div>
       <div class="stat-row"><span>رقم التليفون</span><span id="profilePhone">--</span></div>
     </div>
+  </div>
+</div>
+
+<div id="depositModal" class="modal">
+  <div class="modal-content">
+    <button type="button" class="close-modal" onclick="closeModal('depositModal')">&times;</button>
+    <h2 class="neon-title">➕ إيداع</h2>
+    <p class="small-text">حوّل على فودافون كاش ثم اكتب رقم العملية</p>
+    <div class="payment-instructions">
+      <h3>فودافون كاش</h3>
+      <div class="vodafone-number">01091602772</div>
+    </div>
+    <div class="input-group">
+      <label>المبلغ (بالجنيه)</label>
+      <input type="number" id="depositAmount" placeholder="10" min="10" inputmode="numeric">
+    </div>
+    <div class="input-group">
+      <label>رقم العملية</label>
+      <input type="text" id="depositTrans" placeholder="123456789" inputmode="numeric">
+    </div>
+    <button type="button" class="btn-neon" onclick="submitDeposit()">إرسال طلب الإيداع</button>
+  </div>
+</div>
+
+<div id="withdrawModal" class="modal">
+  <div class="modal-content">
+    <button type="button" class="close-modal" onclick="closeModal('withdrawModal')">&times;</button>
+    <h2 class="neon-title">➖ سحب</h2>
+    <p class="small-text">الحد الأدنى 50 جنيه</p>
+    <div class="payment-info">
+      <div class="stat-row"><span>رصيدك المتاح</span><span id="withdrawBalance">0 ج</span></div>
+    </div>
+    <div class="input-group">
+      <label>المبلغ</label>
+      <input type="number" id="withdrawAmount" placeholder="50" min="50" inputmode="numeric">
+    </div>
+    <div class="input-group">
+      <label>رقم فودافون كاش</label>
+      <input type="tel" id="withdrawPhone" placeholder="01xxxxxxxxx" maxlength="11" inputmode="numeric">
+    </div>
+    <button type="button" class="btn-neon" onclick="submitWithdraw()">إرسال طلب السحب</button>
+    <p class="small-text" style="margin-top:12px;">هيتم التحويل خلال 24 ساعة</p>
+  </div>
+</div>
+
+<div id="milestonesModal" class="modal">
+  <div class="modal-content milestones-modal">
+    <button type="button" class="close-modal" onclick="closeModal('milestonesModal')">&times;</button>
+    <h2 class="neon-title">🏆 الجوائز المادية</h2>
+    <p class="small-text">كل ما توصل لنقاط أكتر، الجايزة تزيد</p>
+    <div class="milestones-list" id="milestonesList"></div>
   </div>
 </div>
 
@@ -539,14 +652,11 @@ body{font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--t
     <span id="toastIcon">ℹ️</span>
     <span id="toastText">رسالة</span>
   </div>
-</div>
-
-<script>
+</div><script>
 /* ============================================
-   Neon Prediction — Supabase + Wheel + Prime
+   Neon Prediction — v6 (Wallet + Milestones)
    ============================================ */
 
-// ⚠️ استبدل ده بالمفتاح الكامل من Supabase
 var SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_vgUfkb0u8FIx7GFR_FF3bw_jE357yJD';
 
@@ -563,7 +673,7 @@ var CONFIG = {
   ENTRY_FEE: 12, WIN_REWARD: 28, COMMISSION: 2,
   CHOICE_TIMEOUT: 10, STARTER_POINTS: 60, TIMEOUT_PENALTY: 6,
   MAX_TICKETS: 5, TICKET_REGEN_HOURS: 2,
-  WHEEL_COST: 20, LOSS_RECOVERY_COST: 8, LOSS_RECOVERY_BONUS: 10,
+  WHEEL_COST: 5, LOSS_RECOVERY_COST: 8, LOSS_RECOVERY_BONUS: 10,
   PRIME_PRICE: 99, PRIME_DAYS: 30,
   MULTIPLIER_PRICE: 15, MULTIPLIER_HOURS: 24,
   LEVELS_PER_GAMES: 15,
@@ -571,6 +681,15 @@ var CONFIG = {
   PRIZES: [
     {threshold:150,money:20},{threshold:300,money:55},
     {threshold:500,money:135},{threshold:800,money:330},{threshold:1200,money:650}
+  ],
+  MILESTONES: [
+    {points:100,money:5},{points:250,money:12},{points:500,money:25},
+    {points:750,money:37},{points:1000,money:50},{points:1500,money:90},
+    {points:2000,money:125},{points:2750,money:165},{points:3500,money:210},
+    {points:4500,money:270},{points:5500,money:330},{points:7000,money:420},
+    {points:8500,money:510},{points:10000,money:625},{points:12500,money:780},
+    {points:15000,money:940},{points:20000,money:1250},{points:25000,money:1560},
+    {points:35000,money:2190},{points:50000,money:3125}
   ],
   DAILY_LOGIN_REWARDS: [15,20,30,40,55,70,100],
   DAILY_CHEST_REWARDS: [15,20,25,30,40]
@@ -584,7 +703,8 @@ var CATEGORIES = {
 };
 
 var BOT_NAMES = ['أحمد','محمود','سارة','ياسين','نور','عمر','لينا','كريم','هدى','يوسف','مريم','علي'];
-var STORAGE_KEY = 'neon_user_v5';
+var STORAGE_KEY = 'neon_user_v6';
+var WALLET_KEY_PREFIX = 'neon_wallet_v6_';
 
 var App = {
   user: createDefaultUser(),
@@ -595,6 +715,10 @@ var App = {
   pendingPurchase: null,
   specialOfferTimeout: null,
   busy: false
+};
+
+var Wallet = {
+  balance: 0, earned: 0, totalDeposited: 0, totalWon: 0, totalWithdrawn: 0
 };
 
 function createDefaultUser() {
@@ -608,29 +732,265 @@ function createDefaultUser() {
     missions:null, lastMissionDate:null,
     lastLossAmount:0, adShown:false, lastSpecialOffer:null,
     is_prime:false, prime_expires_at:null,
-    multiplier_2x_expires_at:null
+    multiplier_2x_expires_at:null,
+    peak_points:0,
+    claimed_milestones:[]
   };
 }
 
 function $(id){return document.getElementById(id);}
 function totalPoints(){return App.user.purchased + App.user.earned;}
+
 function addPoints(a,toEarned){
-  if(App.user.is_prime) a = Math.floor(a * 2);
+  if(isPrime()) a = Math.floor(a * 2);
   if(toEarned) App.user.earned += a;
   else App.user.purchased += a;
+  checkPeakPoints();
 }
+
 function deductPoints(a){
   if(App.user.purchased >= a){App.user.purchased -= a;}
   else{var r = a - App.user.purchased; App.user.purchased = 0; App.user.earned = Math.max(0, App.user.earned - r);}
 }
+
+function checkPeakPoints(){
+  var current = totalPoints();
+  if(current > (App.user.peak_points || 0)){
+    App.user.peak_points = current;
+  }
+}
+
 function isPrime(){
   if(!App.user.is_prime) return false;
   if(!App.user.prime_expires_at) return false;
   return new Date(App.user.prime_expires_at) > new Date();
 }
+
 function hasMultiplier(){
   if(!App.user.multiplier_2x_expires_at) return false;
   return new Date(App.user.multiplier_2x_expires_at) > new Date();
+}
+
+/* ============================================
+   WALLET SYSTEM
+   ============================================ */
+
+async function loadWallet() {
+  if (!App.user.id) return;
+  if (!supabaseClient || String(App.user.id).indexOf('local_') === 0) {
+    try {
+      var saved = JSON.parse(localStorage.getItem(WALLET_KEY_PREFIX + App.user.id) || '{}');
+      Wallet.balance = saved.balance || 0;
+      Wallet.earned = saved.earned || 0;
+      Wallet.totalDeposited = saved.totalDeposited || 0;
+      Wallet.totalWon = saved.totalWon || 0;
+      Wallet.totalWithdrawn = saved.totalWithdrawn || 0;
+    } catch(e) {}
+    updateWalletUI();
+    return;
+  }
+  try {
+    var res = await supabaseClient.from('wallets').select('*').eq('user_id', App.user.id).maybeSingle();
+    if (res.data) {
+      Wallet.balance = parseFloat(res.data.balance) || 0;
+      Wallet.totalDeposited = parseFloat(res.data.total_deposited) || 0;
+      Wallet.totalWon = parseFloat(res.data.total_won) || 0;
+      Wallet.totalWithdrawn = parseFloat(res.data.total_withdrawn) || 0;
+    } else {
+      await supabaseClient.from('wallets').insert({ user_id: App.user.id, balance: 0 });
+    }
+    var earningsRes = await supabaseClient.from('earnings')
+      .select('amount').eq('user_id', App.user.id).eq('transferred', false);
+    if (earningsRes.data) {
+      Wallet.earned = earningsRes.data.reduce(function(sum, e) {
+        return sum + parseFloat(e.amount || 0);
+      }, 0);
+    }
+    updateWalletUI();
+  } catch(e) { console.error('loadWallet error:', e); }
+}
+
+function saveWallet() {
+  if (!App.user.id) return;
+  try { localStorage.setItem(WALLET_KEY_PREFIX + App.user.id, JSON.stringify(Wallet)); } catch(e) {}
+  updateWalletUI();
+}
+
+function updateWalletUI() {
+  var balanceEl = $('walletBalance'), earnedEl = $('walletEarned'), withdrawBal = $('withdrawBalance');
+  if (balanceEl) balanceEl.textContent = Wallet.balance.toFixed(2) + ' ج';
+  if (earnedEl) earnedEl.textContent = Wallet.earned.toFixed(2) + ' ج';
+  if (withdrawBal) withdrawBal.textContent = Wallet.balance.toFixed(2) + ' ج';
+  var tb = document.querySelector('.wallet-btn.transfer');
+  if (tb) { tb.disabled = Wallet.earned <= 0; tb.style.opacity = Wallet.earned > 0 ? '1' : '0.5'; }
+}
+
+async function addEarning(amount, source) {
+  if (amount <= 0) return;
+  Wallet.earned += amount;
+  saveWallet();
+  if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
+    try {
+      await supabaseClient.from('earnings').insert({
+        user_id: App.user.id, amount: amount, source: source || 'game', transferred: false
+      });
+    } catch(e) {}
+  }
+  updateWalletUI();
+}
+
+async function transferEarningsToWallet() {
+  if (Wallet.earned <= 0) return showToast('مفيش مبلغ مكتسب لتحويله', 'error');
+  var amount = Wallet.earned;
+  Wallet.balance += amount;
+  Wallet.earned = 0;
+  Wallet.totalWon = (Wallet.totalWon || 0) + amount;
+  saveWallet();
+  if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
+    try {
+      await supabaseClient.from('wallets').upsert({
+        user_id: App.user.id, balance: Wallet.balance,
+        total_won: Wallet.totalWon, updated_at: new Date().toISOString()
+      });
+      await supabaseClient.from('earnings').update({ transferred: true })
+        .eq('user_id', App.user.id).eq('transferred', false);
+    } catch(e) {}
+  }
+  showToast('✅ تم تحويل ' + amount.toFixed(2) + ' جنيه للمحفظة', 'success');
+  showCoinToast('+' + amount.toFixed(2) + ' ج', '💰');
+  updateWalletUI();
+}
+
+async function deductFromWallet(amount) {
+  if (Wallet.balance < amount) { showToast('رصيد المحفظة غير كافٍ', 'error'); return false; }
+  Wallet.balance -= amount;
+  saveWallet();
+  if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
+    try {
+      await supabaseClient.from('wallets').update({
+        balance: Wallet.balance, updated_at: new Date().toISOString()
+      }).eq('user_id', App.user.id);
+    } catch(e) {}
+  }
+  return true;
+}
+
+async function requestDeposit(amount, transNumber) {
+  if (amount < 10) { showToast('الحد الأدنى 10 جنيه', 'error'); return false; }
+  if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
+    try {
+      var res = await supabaseClient.from('deposit_requests').insert({
+        user_id: App.user.id, amount: amount, trans_number: transNumber, status: 'pending'
+      });
+      if (res.error) throw res.error;
+      showToast('✅ تم إرسال طلب الإيداع', 'success');
+      return true;
+    } catch(e) { showToast('خطأ: ' + e.message, 'error'); return false; }
+  }
+  showToast('✅ تم إرسال الطلب (محلي)', 'success');
+  return true;
+}
+
+async function requestWithdraw(amount, phone) {
+  if (amount < 50) { showToast('الحد الأدنى 50 جنيه', 'error'); return false; }
+  if (Wallet.balance < amount) { showToast('رصيد غير كافٍ', 'error'); return false; }
+  if (!phone || phone.length < 11) { showToast('رقم غير صحيح', 'error'); return false; }
+  if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
+    try {
+      var res = await supabaseClient.from('withdraw_requests').insert({
+        user_id: App.user.id, amount: amount, phone: phone, status: 'pending'
+      });
+      if (res.error) throw res.error;
+      showToast('✅ تم إرسال طلب السحب', 'success');
+      return true;
+    } catch(e) { showToast('خطأ: ' + e.message, 'error'); return false; }
+  }
+  showToast('✅ تم إرسال الطلب (محلي)', 'success');
+  return true;
+}
+
+function openDepositModal() {
+  var a = $('depositAmount'); if (a) a.value = '';
+  var t = $('depositTrans'); if (t) t.value = '';
+  var m = $('depositModal'); if (m) m.classList.add('active');
+}
+
+function openWithdrawModal() {
+  var a = $('withdrawAmount'); if (a) a.value = '';
+  var p = $('withdrawPhone'); if (p) p.value = App.user.phone || '';
+  updateWalletUI();
+  var m = $('withdrawModal'); if (m) m.classList.add('active');
+}
+
+async function submitDeposit() {
+  var amount = parseFloat($('depositAmount').value);
+  var trans = $('depositTrans').value.trim();
+  if (!amount || amount < 10) return showToast('الحد الأدنى 10 جنيه', 'error');
+  if (trans.length < 6) return showToast('رقم العملية قصير', 'error');
+  var btn = document.querySelector('#depositModal .btn-neon');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري الإرسال...'; }
+  var ok = await requestDeposit(amount, trans);
+  if (ok) closeModal('depositModal');
+  if (btn) { btn.disabled = false; btn.textContent = 'إرسال طلب الإيداع'; }
+}
+
+async function submitWithdraw() {
+  var amount = parseFloat($('withdrawAmount').value);
+  var phone = $('withdrawPhone').value.trim();
+  if (!amount || amount < 50) return showToast('الحد الأدنى 50 جنيه', 'error');
+  if (Wallet.balance < amount) return showToast('رصيد غير كافٍ', 'error');
+  if (!phone || phone.length < 11) return showToast('رقم غير صحيح', 'error');
+  var btn = document.querySelector('#withdrawModal .btn-neon');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري الإرسال...'; }
+  var ok = await requestWithdraw(amount, phone);
+  if (ok) closeModal('withdrawModal');
+  if (btn) { btn.disabled = false; btn.textContent = 'إرسال طلب السحب'; }
+}
+
+/* ============================================
+   MILESTONES
+   ============================================ */
+function checkMilestones() {
+  var peak = App.user.peak_points || 0;
+  if (!App.user.claimed_milestones) App.user.claimed_milestones = [];
+  for (var i = 0; i < CONFIG.MILESTONES.length; i++) {
+    var m = CONFIG.MILESTONES[i];
+    if (peak >= m.points && App.user.claimed_milestones.indexOf(m.points) === -1) {
+      App.user.claimed_milestones.push(m.points);
+      addEarning(m.money, 'milestone_' + m.points);
+      showToast('🏆 مبروك! وصلت ' + m.points + ' نقطة — ربحت ' + m.money + ' جنيه', 'success');
+      showCoinToast('+' + m.money + ' ج', '🏆');
+    }
+  }
+  saveLocal(); syncUser(); updateMilestonesUI();
+}
+
+function updateMilestonesUI() {
+  var container = $('milestonesList');
+  if (!container) return;
+  var peak = App.user.peak_points || 0;
+  var claimed = App.user.claimed_milestones || [];
+  var html = '';
+  for (var i = 0; i < CONFIG.MILESTONES.length; i++) {
+    var m = CONFIG.MILESTONES[i];
+    var done = claimed.indexOf(m.points) !== -1;
+    var available = peak >= m.points;
+    var progress = Math.min(100, Math.floor((peak / m.points) * 100));
+    var status = done ? '<span class="ms-status done">✅ مُستلم</span>'
+      : (available ? '<span class="ms-status ready">🎁 متاح</span>'
+      : '<span class="ms-status locked">🔒 ' + progress + '%</span>');
+    html += '<div class="milestone-item ' + (done ? 'done' : available ? 'ready' : '') + '">' +
+      '<div class="ms-icon">' + (done ? '✅' : available ? '🎁' : '🔒') + '</div>' +
+      '<div class="ms-info"><div class="ms-points">' + m.points.toLocaleString() + ' نقطة</div>' +
+      '<div class="ms-money">' + m.money + ' جنيه</div></div>' + status + '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function openMilestonesModal() {
+  updateMilestonesUI();
+  var m = $('milestonesModal');
+  if (m) m.classList.add('active');
 }
 
 /* ========== Background ========== */
@@ -672,7 +1032,6 @@ function startTriangleBackground(){
   })();
 }
 
-/* ========== Session ========== */
 function restoreSession(){
   var saved = localStorage.getItem(STORAGE_KEY);
   if(!saved) return;
@@ -683,6 +1042,7 @@ function restoreSession(){
     App.user = m;
     if(!App.user.missions) App.user.missions = getDefaultMissions();
     if(!Array.isArray(App.user.claimedPrizes)) App.user.claimedPrizes = [];
+    if(!Array.isArray(App.user.claimed_milestones)) App.user.claimed_milestones = [];
     if(App.user.username){
       setTimeout(function(){enterGame(); maybeShowSpecialOffer();},300);
     }
@@ -693,7 +1053,6 @@ function saveLocal(){
   try{localStorage.setItem(STORAGE_KEY, JSON.stringify(App.user));}catch(e){}
 }
 
-/* ========== Login ========== */
 function login(){
   if(App.busy) return;
   var nameEl = $('usernameInput'), phoneEl = $('phoneInput');
@@ -704,17 +1063,14 @@ function login(){
 
   App.busy = true;
 
-  // حاول تسجيل الدخول من Supabase
   if(supabaseClient){
     supabaseClient.from('users').select('*').eq('phone', phone).maybeSingle().then(function(res){
       if(res.data){
-        // موجود → حمل بياناته
         loadUserFromDB(res.data);
         showToast('أهلاً بيك تاني '+name,'success');
         enterGame();
         App.busy = false;
       } else {
-        // جديد → سجله
         var newUser = createDefaultUser();
         newUser.username = name;
         newUser.phone = phone;
@@ -732,7 +1088,6 @@ function login(){
           last_mission_date: newUser.lastMissionDate
         }).select().single().then(function(ins){
           if(ins.error){
-            console.warn('Insert failed, working locally:', ins.error);
             App.user = newUser;
             App.user.id = 'local_'+Date.now();
           } else if(ins.data){
@@ -745,8 +1100,6 @@ function login(){
         });
       }
     }).catch(function(err){
-      console.warn('Supabase login error:', err);
-      // fallback: شغّل محلياً
       App.user = createDefaultUser();
       App.user.id = 'local_'+Date.now();
       App.user.username = name;
@@ -762,7 +1115,6 @@ function login(){
       App.busy = false;
     });
   } else {
-    // Supabase مش متصل → محلي
     App.user = createDefaultUser();
     App.user.id = 'local_'+Date.now();
     App.user.username = name;
@@ -804,13 +1156,17 @@ function loadUserFromDB(row){
   App.user.is_prime = row.is_prime || false;
   App.user.prime_expires_at = row.prime_expires_at;
   App.user.multiplier_2x_expires_at = row.multiplier_2x_expires_at;
+  App.user.peak_points = row.peak_points || 0;
+  App.user.claimed_milestones = row.claimed_milestones || [];
   saveLocal();
+  loadWallet();
 }
 
 function enterGame(){
   $('loginScreen').classList.remove('active');
   $('mainScreen').classList.add('active');
   updateAllUI();
+  loadWallet();
   if(!App.user.adShown){
     $('welcomeAd').classList.remove('hidden');
   }
@@ -837,9 +1193,9 @@ function updateAllUI(){
   updateDailyLoginUI();
   updateChestUI();
   updateMissionsUI();
+  updateWalletUI();
 }
 
-/* ========== Tickets ========== */
 function regenTickets(){
   if(!App.user.id) return;
   if(isPrime()){ App.user.tickets = CONFIG.MAX_TICKETS; updateAllUI(); return; }
@@ -867,7 +1223,6 @@ function useTicket(){
   return true;
 }
 
-/* ========== Daily ========== */
 function checkDailyResets(){
   if(!App.user.id) return;
   var today = new Date().toDateString();
@@ -910,6 +1265,7 @@ function claimDailyLogin(){
   saveLocal(); updateAllUI();
   showCoinToast('+'+reward+' دخول يومي (يوم '+App.user.dailyLoginStreak+')','📅');
   syncUser();
+  checkMilestones();
 }
 
 function updateChestUI(){
@@ -937,9 +1293,9 @@ function claimDailyChest(){
   saveLocal(); updateAllUI();
   showCoinToast('+'+reward+' من الصندوق','🎁');
   syncUser();
+  checkMilestones();
 }
 
-/* ========== Missions ========== */
 function getDefaultMissions(){
   return {
     play3:{progress:0,target:3,reward:25,done:false},
@@ -974,9 +1330,9 @@ function updateMissionProgress(type, won){
     if(m.play1v1.progress >= m.play1v1.target){m.play1v1.done = true; addPoints(m.play1v1.reward); showCoinToast('+'+m.play1v1.reward+' مهمة مكتملة','🎯');}
   }
   saveLocal(); updateMissionsUI(); updateAllUI();
+  checkMilestones();
 }
 
-/* ========== Sync User to Supabase ========== */
 function syncUser(){
   if(!supabaseClient || !App.user.id) return;
   if(String(App.user.id).indexOf('local_') === 0) return;
@@ -999,13 +1355,14 @@ function syncUser(){
     ad_shown: App.user.adShown,
     is_prime: App.user.is_prime,
     prime_expires_at: App.user.prime_expires_at,
-    multiplier_2x_expires_at: App.user.multiplier_2x_expires_at
+    multiplier_2x_expires_at: App.user.multiplier_2x_expires_at,
+    peak_points: App.user.peak_points,
+    claimed_milestones: App.user.claimed_milestones
   }).eq('id', App.user.id).then(function(res){
     if(res.error) console.warn('Sync error:', res.error);
   });
 }
 
-/* ========== Private Rooms ========== */
 function generateRoomCode(){
   var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', code = '';
   for(var i=0;i<6;i++) code += chars.charAt(Math.floor(Math.random()*chars.length));
@@ -1092,7 +1449,6 @@ function copyRoomCode(){
   else showToast('انسخ يدوياً: '+code,'info');
 }
 
-/* ========== Category / 1v1 ========== */
 function selectCategory(category){
   if(App.busy) return;
   if(!useTicket()) return;
@@ -1128,7 +1484,6 @@ function start1v1(){
   setTimeout(function(){$('playersCount').textContent='2';$('slot2').classList.add('filled');$('slot2').textContent=BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)].charAt(0);$('waitingHint').textContent='تم العثور على خصم!';setTimeout(startGame,800);},1600);
 }
 
-/* ========== Game ========== */
 function startGame(){
   App.room.status = 'playing';
   App.myChoice = null;
@@ -1216,6 +1571,7 @@ function showResult(){
     showCoinToast('-'+cost,'💸');
   }
   saveLocal(); updateAllUI(); syncUser();
+  checkMilestones();
   $('resultIcon').textContent = won ? '🏆' : '😢';
   $('resultTitle').textContent = won ? 'مبروك! فزت' : 'للأسف خسرت';
   $('resultText').innerHTML = 'الصحيح: <strong>'+correctName+'</strong><br>اختيارك: <strong>'+myName+'</strong>';
@@ -1240,7 +1596,6 @@ function checkPrizes(){
   }
 }
 
-/* ========== Loss Recovery ========== */
 function openLossRecovery(){
   var amount = App.user.lastLossAmount || 14;
   $('lossRecoveryText').textContent = 'هترجعلك '+amount+' نقطة + '+CONFIG.LOSS_RECOVERY_BONUS+' إضافية مقابل '+CONFIG.LOSS_RECOVERY_COST+' جنيه';
@@ -1254,30 +1609,27 @@ function confirmLossRecovery(){
   showCoinToast('تم استرجاع '+(amount + CONFIG.LOSS_RECOVERY_BONUS)+' نقطة','✅');
   closeModal('lossRecoveryModal');
   $('lossRecoveryBtn').style.display = 'none';
+  checkMilestones();
 }
 
 /* ============================================
-   LUCKY WHEEL - Advanced
+   LUCKY WHEEL — بالجنيه من المحفظة
    ============================================ */
 var WHEEL_PRIZES = [
-  {value:5,   weight:30, color:'#2a1a1a', text:'5',   label:'5 نقاط'},
-  {value:10,  weight:20, color:'#e85a5a', text:'10',  label:'10 نقاط'},
-  {value:15,  weight:15, color:'#2a1a1a', text:'15',  label:'15 نقطة'},
-  {value:25,  weight:12, color:'#e85a5a', text:'25',  label:'25 نقطة'},
-  {value:30,  weight:10, color:'#2a1a1a', text:'30',  label:'30 نقطة'},
-  {value:50,  weight:8,  color:'#e85a5a', text:'50',  label:'50 نقطة'},
-  {value:100, weight:1,  color:'#ffcc00', text:'100', label:'100 نقطة ⭐'},
-  {value:0,   weight:4,  color:'#1a1010', text:'❌',  label:'حظ أوفر'}
+  {value:0,   weight:25,  color:'#1a1010', text:'0',    label:'حظ أوفر'},
+  {value:1,   weight:20,  color:'#2a1a1a', text:'1 ج',  label:'1 جنيه'},
+  {value:2,   weight:18,  color:'#3a2424', text:'2 ج',  label:'2 جنيه'},
+  {value:3,   weight:12,  color:'#e85a5a', text:'3 ج',  label:'3 جنيه'},
+  {value:5,   weight:10,  color:'#d44a4a', text:'5 ج',  label:'5 جنيه'},
+  {value:10,  weight:7,   color:'#f0b050', text:'10 ج', label:'10 جنيه'},
+  {value:15,  weight:4,   color:'#e8a040', text:'15 ج', label:'15 جنيه'},
+  {value:25,  weight:2.5, color:'#00c853', text:'25 ج', label:'25 جنيه'},
+  {value:50,  weight:1,   color:'#00a040', text:'50 ج', label:'50 جنيه'},
+  {value:100, weight:0.5, color:'#ffd700', text:'100 ج',label:'100 جنيه ⭐'}
 ];
 
-var MONEY_PRIZE = {
-  value:100, color:'#00c853', text:'100ج',
-  label:'100 جنيه 💵', appearance:0.5
-};
-
 var wheelState = {
-  spinning:false, currentAngle:0,
-  audioCtx:null, whir:null, hub:null
+  spinning:false, currentAngle:0, audioCtx:null, whir:null
 };
 
 function drawWheel(segs){
@@ -1288,7 +1640,6 @@ function drawWheel(segs){
   var cx = W/2, cy = H/2, R = W/2 - 15;
   var n = segs.length, arc = (Math.PI*2)/n;
   ctx.clearRect(0,0,W,H);
-  // Outer ring
   ctx.beginPath(); ctx.arc(cx,cy,R+6,0,Math.PI*2);
   ctx.fillStyle = '#0c0a0a'; ctx.fill();
   for(var i=0;i<n;i++){
@@ -1297,10 +1648,9 @@ function drawWheel(segs){
     ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,a1,a2); ctx.closePath();
     ctx.fillStyle = s.color; ctx.fill();
     ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 3; ctx.stroke();
-    // Text
     ctx.save(); ctx.translate(cx,cy); ctx.rotate(a1 + arc/2);
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = s.color === '#ffcc00' ? '#000' : '#fff';
+    ctx.fillStyle = s.color === '#ffd700' ? '#000' : '#fff';
     ctx.font = 'bold 34px "Cairo", sans-serif';
     ctx.fillText(s.text, R - 30, 0);
     ctx.restore();
@@ -1310,29 +1660,21 @@ function drawWheel(segs){
 }
 
 function pickWinner(){
-  var includeMoney = Math.random() < MONEY_PRIZE.appearance;
-  var pool = WHEEL_PRIZES.slice();
-  if(includeMoney){
-    pool.push({value:MONEY_PRIZE.value, weight:null, color:MONEY_PRIZE.color, text:MONEY_PRIZE.text, label:MONEY_PRIZE.label, isMoney:true});
-  }
-  var total = 0, weights = [];
-  for(var i=0;i<pool.length;i++){
-    var w = pool[i].weight != null ? pool[i].weight : 10;
-    weights.push(w); total += w;
-  }
+  var total = 0;
+  for(var i=0;i<WHEEL_PRIZES.length;i++) total += WHEEL_PRIZES[i].weight;
   var r = Math.random() * total, acc = 0;
-  for(var j=0;j<pool.length;j++){
-    acc += weights[j];
-    if(r < acc) return {index:j, segment:pool[j], segments:pool};
+  for(var j=0;j<WHEEL_PRIZES.length;j++){
+    acc += WHEEL_PRIZES[j].weight;
+    if(r < acc) return {index:j, segment:WHEEL_PRIZES[j]};
   }
-  return {index:0, segment:pool[0], segments:pool};
+  return {index:0, segment:WHEEL_PRIZES[0]};
 }
 
 function openLuckyWheel(){
   var today = new Date().toDateString();
   var btn = $('spinBtn'), info = $('wheelInfo');
   if(App.user.lastWheelSpin === today){
-    btn.textContent = 'لف العجلة ('+CONFIG.WHEEL_COST+' نقطة)';
+    btn.textContent = 'لف العجلة ('+CONFIG.WHEEL_COST+' ج)';
     info.textContent = 'خلصت المرة المجانية النهاردة';
   } else {
     btn.textContent = 'لف العجلة (مجاناً)';
@@ -1357,25 +1699,22 @@ function buildWheelLegend(){
     var pct = ((p.weight/total)*100).toFixed(1);
     html += '<div class="legend-item"><span class="legend-dot" style="background:'+p.color+';border:1px solid #fff"></span><span>'+p.label+' ('+pct+'%)</span></div>';
   }
-  html += '<div class="legend-item"><span class="legend-dot" style="background:'+MONEY_PRIZE.color+'"></span><span>'+MONEY_PRIZE.label+' ('+(MONEY_PRIZE.appearance*100)+'% فرصة)</span></div>';
   el.innerHTML = html;
 }
 
-/* Audio */
 function initAudio(){
   if(wheelState.audioCtx) return;
   try{
     var AC = window.AudioContext || window.webkitAudioContext;
     wheelState.audioCtx = new AC();
-  }catch(e){console.warn('Audio not supported');}
+  }catch(e){}
 }
 
 function startWhir(){
   if(!wheelState.audioCtx) return;
   stopWhir();
   var ctx = wheelState.audioCtx;
-  var osc = ctx.createOscillator();
-  osc.type = 'sawtooth'; osc.frequency.value = 70;
+  var osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 70;
   var lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 15;
   var lfoGain = ctx.createGain(); lfoGain.gain.value = 30;
   lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
@@ -1450,7 +1789,6 @@ function moneySound(){
   });
 }
 
-/* Spin */
 function spinWheel(){
   if(wheelState.spinning) return;
   var today = new Date().toDateString();
@@ -1458,8 +1796,10 @@ function spinWheel(){
   var btn = $('spinBtn'), canvas = $('wheelCanvas');
 
   if(!isFree){
-    if(totalPoints() < CONFIG.WHEEL_COST) return showToast('محتاج '+CONFIG.WHEEL_COST+' نقطة عشان تلف','error');
-    deductPoints(CONFIG.WHEEL_COST);
+    if(Wallet.balance < CONFIG.WHEEL_COST){
+      return showToast('محتاج '+CONFIG.WHEEL_COST+' جنيه في المحفظة','error');
+    }
+    deductFromWallet(CONFIG.WHEEL_COST);
   }
 
   wheelState.spinning = true;
@@ -1469,9 +1809,7 @@ function spinWheel(){
   $('wheelResult').classList.remove('reveal');
 
   var winner = pickWinner();
-  drawWheel(winner.segments);
-
-  var n = winner.segments.length;
+  var n = WHEEL_PRIZES.length;
   var segAngle = 360 / n;
   var centerAngle = winner.index * segAngle + segAngle / 2;
   var jitter = (Math.random() - 0.5) * (segAngle * 0.5);
@@ -1516,36 +1854,61 @@ function spinWheel(){
 function finishSpin(reward){
   var el = $('wheelResult');
   el.classList.add('reveal');
-  var isMoney = reward.isMoney;
   var actualValue = reward.value;
-  if(App.user.is_prime) actualValue *= 2;
+  if(isPrime()) actualValue *= 2;
 
-  if(isMoney){
-    el.textContent = '🎉 مبروك! ربحت ' + actualValue + ' جنيه!';
-    moneySound();
-    showCoinToast('+'+actualValue+' جنيه! 💵','💰');
-    showToast('كلم الدعم لاستلام '+actualValue+' جنيه','success');
-    if(supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0){
-      supabaseClient.from('wheel_spins').insert({user_id:App.user.id, reward_type:'money', reward_value:actualValue}).then(function(){});
-    }
-  } else if(reward.value > 0){
-    addPoints(actualValue);
-    el.textContent = '🎉 كسبت ' + actualValue + ' نقطة!';
-    winSound();
-    showCoinToast('+'+actualValue+' من العجلة','🎡');
+  if(actualValue > 0){
+    addEarning(actualValue, 'wheel');
+    el.textContent = '🎉 كسبت ' + actualValue + ' جنيه!';
+    if(actualValue >= 25) moneySound();
+    else winSound();
+    showCoinToast('+' + actualValue + ' ج', '🎡');
   } else {
     el.textContent = 'حظ أوفر المرة الجاية 😢';
-    showToast('حظ أوفر المرة الجاية','info');
+    showToast('حظ أوفر', 'info');
   }
 
-  saveLocal(); updateAllUI(); syncUser();
+  saveLocal(); updateAllUI();
   $('spinBtn').disabled = false;
-  $('spinBtn').textContent = 'لف العجلة ('+CONFIG.WHEEL_COST+' نقطة)';
+  $('spinBtn').textContent = 'لف العجلة ('+CONFIG.WHEEL_COST+' ج)';
   $('wheelInfo').textContent = 'خلصت المرة المجانية النهاردة';
   wheelState.spinning = false;
 }
 
-/* ========== Navigation ========== */
+function maybeShowSpecialOffer(){
+  var today = new Date().toDateString();
+  if (totalPoints() >= 40) return;
+  if (App.user.lastSpecialOffer === today) return;
+  App.user.lastSpecialOffer = today;
+  saveLocal();
+  setTimeout(function(){
+    $('offerText').textContent = '300 نقطة بـ 35 جنيه فقط!';
+    $('specialOfferModal').classList.add('active');
+    startOfferTimer(15 * 60);
+  }, 2000);
+}
+
+function startOfferTimer(seconds){
+  var el = $('offerTimer');
+  var left = seconds;
+  if (App.specialOfferTimeout) clearInterval(App.specialOfferTimeout);
+  function update(){
+    var m = Math.floor(left / 60);
+    var s = left % 60;
+    el.textContent = 'ينتهي خلال ' + m + ':' + (s < 10 ? '0' + s : s);
+    if (left <= 0){ clearInterval(App.specialOfferTimeout); closeModal('specialOfferModal'); }
+    left--;
+  }
+  update();
+  App.specialOfferTimeout = setInterval(update, 1000);
+}
+
+function acceptSpecialOffer(){
+  closeModal('specialOfferModal');
+  if (App.specialOfferTimeout) clearInterval(App.specialOfferTimeout);
+  buyPackage(300, 35);
+}
+
 function playAgain(){
   $('slot2').classList.remove('filled');
   $('slot3').classList.remove('filled');
@@ -1573,7 +1936,6 @@ function showView(viewId){
   if(nav) nav.classList.toggle('hidden', viewId !== 'categoryView');
 }
 
-/* ========== Store & Payment ========== */
 function openStore(){$('storeModal').classList.add('active');}
 function closeModal(id){var m = $(id); if(m) m.classList.remove('active');}
 
@@ -1613,7 +1975,7 @@ function submitPayment(){
 
   var req = {
     user_id: (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) ? App.user.id : null,
-    points: App.pendingPurchase.type === 'points' ? App.pendingPurchase.points : (App.pendingPurchase.type === 'prime' ? 0 : 0),
+    points: App.pendingPurchase.type === 'points' ? App.pendingPurchase.points : 0,
     price_egp: App.pendingPurchase.price,
     trans_number: num,
     status: 'pending'
@@ -1623,17 +1985,21 @@ function submitPayment(){
     supabaseClient.from('purchase_requests').insert(req).then(function(res){
       if(btn){btn.disabled = false; btn.textContent = 'إرسال الطلب';}
       if(res.error){
-        console.warn(res.error);
-        return showToast('خطأ في الإرسال: '+res.error.message,'error');
+        if(res.error.message && res.error.message.indexOf('foreign key') >= 0){
+          showToast('⚠️ جلسة قديمة! جاري إعادة التسجيل...','error');
+          setTimeout(function(){localStorage.clear(); location.reload();}, 2000);
+          return;
+        }
+        return showToast('خطأ: '+res.error.message,'error');
       }
-      showToast('✅ تم إرسال الطلب! هيتم التحقق خلال 24 ساعة','success');
+      showToast('✅ تم إرسال الطلب!','success');
       closeModal('paymentModal');
       App.pendingPurchase = null;
       if(inp) inp.value = '';
     });
   } else {
     setTimeout(function(){
-      showToast('✅ تم إرسال الطلب (محلياً). هيتم التحقق يدوياً','success');
+      showToast('✅ تم إرسال الطلب (محلياً)','success');
       closeModal('paymentModal');
       App.pendingPurchase = null;
       if(inp) inp.value = '';
@@ -1642,7 +2008,6 @@ function submitPayment(){
   }
 }
 
-/* ========== Profile ========== */
 function openProfile(){
   $('profileName').textContent = App.user.username;
   $('profilePhone').textContent = App.user.phone || '--';
@@ -1671,10 +2036,10 @@ function openProfile(){
   } else {
     ps.innerHTML = '';
   }
+  loadWallet();
   $('profileModal').classList.add('active');
 }
 
-/* ========== Prize Table ========== */
 function buildPrizeTables(){
   var html = '';
   for(var i=0;i<CONFIG.PRIZES.length;i++){
@@ -1685,7 +2050,6 @@ function buildPrizeTables(){
   if(el) el.innerHTML = html;
 }
 
-/* ========== Leaderboard ========== */
 function showLeaderboard(){
   var list = $('leaderboardList');
   list.innerHTML = '<p class="small-text">جاري التحميل...</p>';
@@ -1709,7 +2073,6 @@ function showLeaderboard(){
   });
 }
 
-/* ========== Toasts ========== */
 function showToast(msg, type){
   var t = $('toast');
   if(!t) return;
@@ -1731,7 +2094,6 @@ function showCoinToast(msg, icon){
   setTimeout(function(){t.classList.remove('show');},2800);
 }
 
-/* ========== Global exports ========== */
 window.login = login;
 window.closeWelcomeAd = closeWelcomeAd;
 window.claimDailyLogin = claimDailyLogin;
@@ -1758,6 +2120,13 @@ window.showLeaderboard = showLeaderboard;
 window.openLossRecovery = openLossRecovery;
 window.confirmLossRecovery = confirmLossRecovery;
 window.acceptSpecialOffer = function(){closeModal('specialOfferModal'); buyPackage(300,35);};
+window.openDepositModal = openDepositModal;
+window.openWithdrawModal = openWithdrawModal;
+window.submitDeposit = submitDeposit;
+window.submitWithdraw = submitWithdraw;
+window.transferEarningsToWallet = transferEarningsToWallet;
+window.openMilestonesModal = openMilestonesModal;
+window.loadWallet = loadWallet;
 </script>
 </body>
 </html>
