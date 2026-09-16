@@ -18,10 +18,10 @@
       <p class="brand-subtitle">لوحة التحكم الإدارية</p>
       <div class="login-form">
         <label>كلمة السر</label>
-        <input type="password" id="passwordInput" placeholder="••••••••" onkeypress="if(event.key==='Enter') loginAdmin()">
-        <button onclick="loginAdmin()">🔓 دخول آمن</button>
+        <input type="password" id="passwordInput" placeholder="••••••••">
+        <button type="button" onclick="loginAdmin()">🔓 دخول آمن</button>
       </div>
-      <p class="login-footer">© 2026 Neon Prediction - Admin Panel v3.0</p>
+      <p class="login-footer">© 2026 Neon Prediction - Admin Panel v4</p>
     </div>
   </div>
 
@@ -39,27 +39,27 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-item active" onclick="showTab('dashboardTab', event)">
+        <button type="button" class="nav-item active" onclick="showTab('dashboardTab', event)">
           <span class="nav-icon">📊</span>
           <span>لوحة المعلومات</span>
         </button>
-        <button class="nav-item" onclick="showTab('usersTab', event)">
+        <button type="button" class="nav-item" onclick="showTab('usersTab', event)">
           <span class="nav-icon">👥</span>
           <span>المستخدمين</span>
         </button>
-        <button class="nav-item" onclick="showTab('requestsTab', event)">
+        <button type="button" class="nav-item" onclick="showTab('requestsTab', event)">
           <span class="nav-icon">🛒</span>
           <span>طلبات الشراء</span>
         </button>
-        <button class="nav-item" onclick="showTab('transferTab', event)">
+        <button type="button" class="nav-item" onclick="showTab('transferTab', event)">
           <span class="nav-icon">💸</span>
           <span>تحويل النقاط</span>
         </button>
-        <button class="nav-item" onclick="showTab('logsTab', event)">
+        <button type="button" class="nav-item" onclick="showTab('logsTab', event)">
           <span class="nav-icon">📝</span>
           <span>سجل النشاط</span>
         </button>
-        <button class="nav-item" onclick="showTab('roomsTab', event)">
+        <button type="button" class="nav-item" onclick="showTab('roomsTab', event)">
           <span class="nav-icon">🎮</span>
           <span>الغرف النشطة</span>
         </button>
@@ -73,7 +73,7 @@
             <div class="admin-status">● متصل</div>
           </div>
         </div>
-        <button class="btn-logout" onclick="logoutAdmin()">🚪 خروج</button>
+        <button type="button" class="btn-logout" onclick="logoutAdmin()">🚪 خروج</button>
       </div>
     </aside>
 
@@ -87,8 +87,8 @@
           <p class="page-date" id="pageDate">--</p>
         </div>
         <div class="header-actions">
-          <button class="btn-icon" onclick="refreshAll()" title="تحديث">🔄</button>
-          <button class="btn-icon" onclick="toggleFullscreen()" title="شاشة كاملة">⛶</button>
+          <button type="button" class="btn-icon" onclick="refreshAll()" title="تحديث">🔄</button>
+          <button type="button" class="btn-icon" onclick="toggleFullscreen()" title="شاشة كاملة">⛶</button>
         </div>
       </header>
 
@@ -102,7 +102,7 @@
             <div class="stat-content">
               <div class="stat-label">إجمالي المستخدمين</div>
               <div class="stat-value" id="statUsers">0</div>
-              <div class="stat-change positive" id="statUsersChange">+0%</div>
+              <div class="stat-change positive">مسجلين بالكامل</div>
             </div>
           </div>
 
@@ -111,7 +111,7 @@
             <div class="stat-content">
               <div class="stat-label">طلبات معلقة</div>
               <div class="stat-value" id="statRequests">0</div>
-              <div class="stat-change" id="statRequestsChange">بحاجة لمراجعة</div>
+              <div class="stat-change">بحاجة لمراجعة</div>
             </div>
           </div>
 
@@ -174,7 +174,7 @@
         <div class="toolbar">
           <div class="search-input-wrapper">
             <span class="search-icon">🔍</span>
-            <input type="text" id="searchUsers" placeholder="ابحث بالاسم، الرقم، أو المستوى..." oninput="filterUsers()">
+            <input type="text" id="searchUsers" placeholder="ابحث بالاسم، الرقم..." oninput="filterUsers()">
           </div>
           <select id="filterLevel" class="filter-select" onchange="filterUsers()">
             <option value="">كل المستويات</option>
@@ -192,7 +192,7 @@
             <option value="points_asc">الأقل نقاطاً</option>
             <option value="games_desc">الأكثر لعباً</option>
           </select>
-          <button class="btn-export" onclick="exportUsers()">📥 تصدير CSV</button>
+          <button type="button" class="btn-export" onclick="exportUsers()">📥 تصدير CSV</button>
         </div>
         <div id="usersList" class="users-grid">
           <p class="loading">جاري التحميل...</p>
@@ -202,9 +202,9 @@
       <!-- تاب طلبات الشراء -->
       <div id="requestsTab" class="tab-content">
         <div class="filter-tabs">
-          <button class="filter-btn active" onclick="filterRequests('pending', event)">⏳ معلقة</button>
-          <button class="filter-btn" onclick="filterRequests('approved', event)">✅ مقبولة</button>
-          <button class="filter-btn" onclick="filterRequests('rejected', event)">❌ مرفوضة</button>
+          <button type="button" class="filter-btn active" onclick="filterRequests('pending', event)">⏳ معلقة</button>
+          <button type="button" class="filter-btn" onclick="filterRequests('approved', event)">✅ مقبولة</button>
+          <button type="button" class="filter-btn" onclick="filterRequests('rejected', event)">❌ مرفوضة</button>
         </div>
         <div id="requestsList" class="requests-grid">
           <p class="loading">جاري التحميل...</p>
@@ -236,13 +236,13 @@
 
             <div class="form-group">
               <label>💎 عدد النقاط</label>
-              <input type="number" id="transferAmount" placeholder="مثلاً: 100" min="1">
+              <input type="number" id="transferAmount" placeholder="مثلاً: 100" min="1" oninput="updateTransferSummary()">
               <div class="quick-amounts">
-                <button onclick="setTransferAmount(50)">+50</button>
-                <button onclick="setTransferAmount(100)">+100</button>
-                <button onclick="setTransferAmount(200)">+200</button>
-                <button onclick="setTransferAmount(500)">+500</button>
-                <button onclick="setTransferAmount(1000)">+1000</button>
+                <button type="button" onclick="setTransferAmount(50)">+50</button>
+                <button type="button" onclick="setTransferAmount(100)">+100</button>
+                <button type="button" onclick="setTransferAmount(200)">+200</button>
+                <button type="button" onclick="setTransferAmount(500)">+500</button>
+                <button type="button" onclick="setTransferAmount(1000)">+1000</button>
               </div>
             </div>
 
@@ -267,8 +267,8 @@
             </div>
 
             <div class="transfer-actions">
-              <button class="btn-primary" onclick="executeTransfer()">💸 تنفيذ التحويل</button>
-              <button class="btn-secondary" onclick="resetTransfer()">🔄 إعادة تعيين</button>
+              <button type="button" class="btn-primary" onclick="executeTransfer()">💸 تنفيذ التحويل</button>
+              <button type="button" class="btn-secondary" onclick="resetTransfer()">🔄 إعادة تعيين</button>
             </div>
           </div>
 
@@ -296,9 +296,8 @@
             <option value="transfer">تحويلات</option>
             <option value="win">ألعاب فائزة</option>
             <option value="loss">ألعاب خاسرة</option>
-            <option value="referral">إحالات</option>
           </select>
-          <button class="btn-export" onclick="exportLogs()">📥 تصدير CSV</button>
+          <button type="button" class="btn-export" onclick="exportLogs()">📥 تصدير CSV</button>
         </div>
         <div id="logsList" class="logs-list">
           <p class="loading">جاري التحميل...</p>
@@ -328,10 +327,10 @@
         <div class="info-row"><span>⭐ المكتسبة:</span> <strong id="modalEarnedPoints">0</strong></div>
       </div>
       <div class="quick-amounts">
-        <button onclick="setAmount(10)">+10</button>
-        <button onclick="setAmount(50)">+50</button>
-        <button onclick="setAmount(100)">+100</button>
-        <button onclick="setAmount(500)">+500</button>
+        <button type="button" onclick="setAmount(10)">+10</button>
+        <button type="button" onclick="setAmount(50)">+50</button>
+        <button type="button" onclick="setAmount(100)">+100</button>
+        <button type="button" onclick="setAmount(500)">+500</button>
       </div>
       <div class="form-group">
         <label>💎 عدد النقاط</label>
@@ -342,8 +341,8 @@
         <input type="text" id="pointsReason" placeholder="مثلاً: مكافأة">
       </div>
       <div class="modal-buttons">
-        <button class="btn-add" onclick="addPoints()">➕ إضافة</button>
-        <button class="btn-remove" onclick="removePoints()">➖ خصم</button>
+        <button type="button" class="btn-add" onclick="addPoints()">➕ إضافة</button>
+        <button type="button" class="btn-remove" onclick="removePoints()">➖ خصم</button>
       </div>
     </div>
   </div>
