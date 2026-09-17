@@ -1160,14 +1160,14 @@ function leaveRoom(){
    ============================================ */
 
 var WHEEL_PRIZES = [
-  { value:1,  weight:22,   color:'#1a1010', text:'1 ج',  label:'1 جنيه',      tier:'common'    },
-  { value:2,  weight:26,   color:'#2a1a1a', text:'2 ج',  label:'2 جنيه',      tier:'common'    },
+  { value:1,  weight:20,   color:'#1a1010', text:'1 ج',  label:'1 جنيه',      tier:'common'    },
+  { value:2,  weight:25,   color:'#2a1a1a', text:'2 ج',  label:'2 جنيه',      tier:'common'    },
   { value:3,  weight:25,   color:'#3a2424', text:'3 ج',  label:'3 جنيه',      tier:'common'    },
-  { value:4,  weight:14,   color:'#e85a5a', text:'4 ج',  label:'4 جنيه',      tier:'rare'      },
-  { value:5,  weight:9.5,  color:'#d44a4a', text:'5 ج',  label:'5 جنيه',      tier:'rare'      },
-  { value:8,  weight:3,    color:'#f0b050', text:'8 ج',  label:'8 جنيه',      tier:'epic'      },
-  { value:15, weight:0.48, color:'#ffd700', text:'15 ج', label:'15 جنيه ⭐',  tier:'legendary' },
-  { value:25, weight:0.02, color:'#ff00ff', text:'25 ج', label:'25 جنيه 💎',  tier:'jackpot'   }
+  { value:4,  weight:15,   color:'#e85a5a', text:'4 ج',  label:'4 جنيه',      tier:'rare'      },
+  { value:5,  weight:10,   color:'#d44a4a', text:'5 ج',  label:'5 جنيه',      tier:'rare'      },
+  { value:8,  weight:4,    color:'#f0b050', text:'8 ج',  label:'8 جنيه',      tier:'epic'      },
+  { value:15, weight:0.9,  color:'#ffd700', text:'15 ج', label:'15 جنيه ⭐',  tier:'legendary' },
+  { value:25, weight:0.1,  color:'#ff00ff', text:'25 ج', label:'25 جنيه 💎',  tier:'jackpot'   }
 ];
 
 var wheelState = { spinning: false, currentAngle: 0 };
