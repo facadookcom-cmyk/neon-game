@@ -1,5 +1,5 @@
 /* ============================================
-   Neon Prediction v9 — Script.js FINAL
+   Neon Prediction v10 — FINAL COMPLETE
    كل الإصلاحات النهائية
    ============================================ */
 
@@ -25,7 +25,7 @@ var CONFIG = {
   LEVELS_PER_GAMES: 15,
   ONLINE_ENTRY: 14,
   ONLINE_ROUNDS: 5,
-  ONLINE_TIMEOUT: 12,
+  ONLINE_TIMEOUT: 10,
   SHARE_REWARD: 10,
   SHARE_DAILY_LIMIT: 100,
   LEVEL_NAMES: {1:'مبتدئ 🌱',2:'هاوي 🥉',3:'محترف 🥈',4:'خبير 🥇',5:'أسطورة 💎',6:'نخبة 👑',7:'أسطوري 🏆'},
@@ -70,8 +70,8 @@ var CATEGORIES = {
 };
 
 var BOT_NAMES = ['أحمد','محمود','سارة','ياسين','نور','عمر','لينا','كريم','هدى','يوسف','مريم','علي'];
-var STORAGE_KEY = 'neon_user_v9';
-var WALLET_KEY_PREFIX = 'neon_wallet_v9_';
+var STORAGE_KEY = 'neon_user_v10';
+var WALLET_KEY_PREFIX = 'neon_wallet_v10_';
 
 var App = {
   user: createDefaultUser(),
@@ -1607,7 +1607,7 @@ async function registerReferral(refCode) {
 }
 
 /* ============================================
-   ONLINE GAME — النسخة النهائية
+   ONLINE GAME — v10 FINAL
    ============================================ */
 var Online = {
   room: null, players: [], answers: [], roundData: null,
@@ -1673,13 +1673,11 @@ function openCreateRoomModal() {
   RoomSettings.choiceTime = 10;
   RoomSettings.category = 'football';
   RoomSettings.privacy = 'public';
-  
   var groups = document.querySelectorAll('#createRoomModal .setting-group');
   if (groups[0]) groups[0].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', [2,3,5][i] === 3); });
   if (groups[1]) groups[1].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', [5,10,15,20][i] === 10); });
   if (groups[2]) groups[2].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', ['football','fruits','animals','colors'][i] === 'football'); });
   if (groups[3]) groups[3].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', ['public','private'][i] === 'public'); });
-  
   $('createRoomModal').classList.add('active');
 }
 
@@ -1793,7 +1791,7 @@ function generateRoomCode(){
   return code;
 }
 
-/* ✅ subscribeToRoom — مع Polling كامل */
+/* ✅ subscribeToRoom — Realtime + Polling كامل */
 function subscribeToRoom(roomId) {
   if (Online.channel) {
     try { supabaseClient.removeChannel(Online.channel); } catch(e) {}
@@ -1807,6 +1805,7 @@ function subscribeToRoom(roomId) {
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'room_rounds', filter: 'room_id=eq.' + roomId }, function(payload) {
       console.log('📢 Round change:', payload.new);
+      // ✅ النقلة دي بتخلي الـ guest يستقبل الجولة
       if (payload.new && payload.new.round_number && payload.new.round_number !== Online.currentRound) {
         startOnlineRound(payload.new);
       }
@@ -1822,7 +1821,7 @@ function subscribeToRoom(roomId) {
       console.log('📡 Realtime status:', status);
     });
 
-  // Polling للاعبين + حالة الغرفة
+  // ✅ Polling 1: اللاعبين + حالة الغرفة
   if (Online.pollInterval) clearInterval(Online.pollInterval);
   Online.pollInterval = setInterval(function() {
     if (!Online.room) return;
@@ -1837,7 +1836,7 @@ function subscribeToRoom(roomId) {
     }
   }, 2000);
 
-  // ✅ Polling للجولات — كل اللاعبين
+  // ✅ Polling 2: الجولات (لضمان وصولها للكل)
   if (Online.roundPollInterval) clearInterval(Online.roundPollInterval);
   Online.roundPollInterval = setInterval(function() {
     if (!Online.playing || !Online.room) return;
@@ -1940,41 +1939,65 @@ async function startOnlineGame() {
   }, 1000);
 }
 
+/* ✅✅✅ الإصلاح الرئيسي: startOnlineRound للنفس بعد الـ insert */
 async function nextOnlineRound() {
   Online.currentRound++;
-  if (Online.currentRound > CONFIG.ONLINE_ROUNDS) { endOnlineGame(); return; }
+  if (Online.currentRound > CONFIG.ONLINE_ROUNDS) {
+    endOnlineGame();
+    return;
+  }
   if (!Online.isHost) return;
+
   var correct = Math.floor(Math.random() * 5) + 1;
   console.log('📤 Creating round', Online.currentRound, 'correct:', correct);
+
   try {
     var res = await supabaseClient.from('room_rounds').insert({
-      room_id: Online.room.id, round_number: Online.currentRound,
-      correct_choice: correct, started_at: new Date().toISOString()
+      room_id: Online.room.id,
+      round_number: Online.currentRound,
+      correct_choice: correct,
+      started_at: new Date().toISOString()
     }).select().single();
+
     if (res.error) {
       console.error('Round insert error:', res.error);
-      setTimeout(function() { Online.currentRound--; nextOnlineRound(); }, 1500);
-    } else {
-      console.log('✅ Round inserted:', res.data);
+      setTimeout(function() { 
+        Online.currentRound--; 
+        nextOnlineRound(); 
+      }, 1500);
+      return;
     }
-  } catch(e) { console.error('nextOnlineRound catch:', e); }
+
+    console.log('✅ Round inserted:', res.data);
+
+    // ✅✅✅ الإصلاح — استدعي startOnlineRound مباشرة للـ host
+    startOnlineRound(res.data);
+
+  } catch(e) {
+    console.error('nextOnlineRound catch:', e);
+  }
 }
 
 function startOnlineRound(round) {
   console.log('🎯 startOnlineRound:', round.round_number);
+  
+  // ✅ لو نفس الجولة، مترجعش
   if (Online.roundData && Online.roundData.id === round.id && Online.currentRound === round.round_number) {
     console.log('⚠️ Same round, skip');
     return;
   }
+  
   Online.roundData = round;
   Online.currentRound = round.round_number;
   Online.myChoice = null;
   Online.myAnswerTime = 0;
   Online.roundStartTime = Date.now();
   $('onlineRoundNum').textContent = round.round_number;
+  
   var cat = CATEGORIES[Online.category] || CATEGORIES.football;
   var grid = $('onlineChoicesGrid');
   if (!grid) { console.error('❌ grid not found'); return; }
+  
   grid.innerHTML = '';
   cat.choices.forEach(function(c, i) {
     var btn = document.createElement('button');
@@ -1998,7 +2021,10 @@ function startOnlineTimer() {
     timeLeft--;
     $('onlineTimerValue').textContent = timeLeft;
     if (timeLeft <= 3) $('onlineTimerValue').classList.add('danger');
-    if (timeLeft <= 0) { clearInterval(Online.timer); finishOnlineRound(Online.roundData); }
+    if (timeLeft <= 0) {
+      clearInterval(Online.timer);
+      finishOnlineRound(Online.roundData);
+    }
   }, 1000);
 }
 
@@ -2075,7 +2101,7 @@ async function finishOnlineRound(round) {
   await refreshOnlineAnswers();
   setTimeout(function() {
     if (Online.isHost) nextOnlineRound();
-  }, 3000);
+  }, 2000);
 }
 
 async function endOnlineGame() {
@@ -2086,17 +2112,23 @@ async function endOnlineGame() {
   var sorted = Online.players.slice().sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
   var winner = sorted[0];
   var iWon = winner && winner.user_id === App.user.id;
+  
   if (iWon) {
-    addPoints(30, true);
+    addPoints(CONFIG.WIN_REWARD, true);
     updateMissionProgress('win_online', true);
     SoundSystem.playBigWin(); Vibration.onBigPrize();
     showWinOverlay('🏆', 'مبروك! فزت', 3000);
-  } else { SoundSystem.playLoss(); Vibration.onLoss(); }
+  } else {
+    deductPoints(CONFIG.ENTRY_FEE + CONFIG.COMMISSION);
+    SoundSystem.playLoss(); Vibration.onLoss();
+  }
+  
   var container = $('onlineResultContainer');
   container.className = 'result-container ' + (iWon ? 'winner' : 'loser');
   $('onlineResultIcon').textContent = iWon ? '🏆' : '😢';
   $('onlineResultTitle').textContent = iWon ? 'مبروك! فزت' : 'للأسف خسرت';
-  $('onlineResultReward').textContent = iWon ? '+30 نقطة' : 'حظ أوفر';
+  $('onlineResultReward').textContent = iWon ? '+' + CONFIG.WIN_REWARD + ' نقطة' : '-' + (CONFIG.ENTRY_FEE + CONFIG.COMMISSION) + ' نقطة';
+  
   var finalHtml = '';
   sorted.forEach(function(p, j) {
     var isMe = p.user_id === App.user.id;
