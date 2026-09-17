@@ -1,5 +1,5 @@
 /* ============================================
-   Neon Prediction v7 — Script.js الكامل
+   Neon Prediction v8 — Script.js (Fixed)
    ============================================ */
 
 var SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -69,8 +69,8 @@ var CATEGORIES = {
 };
 
 var BOT_NAMES = ['أحمد','محمود','سارة','ياسين','نور','عمر','لينا','كريم','هدى','يوسف','مريم','علي'];
-var STORAGE_KEY = 'neon_user_v7';
-var WALLET_KEY_PREFIX = 'neon_wallet_v7_';
+var STORAGE_KEY = 'neon_user_v8';
+var WALLET_KEY_PREFIX = 'neon_wallet_v8_';
 
 var App = {
   user: createDefaultUser(),
@@ -144,7 +144,7 @@ function hasActiveTicket(){
   return true;
 }
 
-/* ============ SOUND SYSTEM ============ */
+/* ============ SOUND ============ */
 var SoundSystem = {
   ctx: null, enabled: true,
   init: function() {
@@ -282,7 +282,7 @@ async function signupNew() {
   var phone = $('signupPhone').value.trim();
   var password = $('signupPassword').value.trim();
 
-  if (name.length < 2) return showToast('اكتب اسم صحيح (حرفين على الأقل)', 'error');
+  if (name.length < 2) return showToast('اكتب اسم صحيح', 'error');
   if (!phone || phone.length < 11 || phone.indexOf('01') !== 0) return showToast('رقم تليفون غير صحيح', 'error');
   if (password.length < 6) return showToast('كلمة السر 6 أحرف على الأقل', 'error');
 
@@ -290,20 +290,17 @@ async function signupNew() {
 
   try {
     var nameCheck = await supabaseClient.from('users').select('id').eq('username', name).maybeSingle();
-    if (nameCheck.data) { App.busy = false; return showToast('❌ الاسم ده مستخدم بالفعل — اختار اسم تاني', 'error'); }
+    if (nameCheck.data) { App.busy = false; return showToast('❌ الاسم مستخدم — اختار تاني', 'error'); }
 
     var phoneCheck = await supabaseClient.from('users').select('id').eq('phone', phone).maybeSingle();
-    if (phoneCheck.data) { App.busy = false; return showToast('❌ الرقم ده مسجل قبل كده', 'error'); }
+    if (phoneCheck.data) { App.busy = false; return showToast('❌ الرقم مسجل قبل كده', 'error'); }
 
     var urlParams = new URLSearchParams(window.location.search);
     var refCode = urlParams.get('ref') || localStorage.getItem('neon_ref_code');
 
     var nu = createDefaultUser();
-    nu.username = name;
-    nu.phone = phone;
-    nu.password = password;
-    nu.purchased = CONFIG.STARTER_POINTS;
-    nu.tickets = CONFIG.MAX_TICKETS;
+    nu.username = name; nu.phone = phone; nu.password = password;
+    nu.purchased = CONFIG.STARTER_POINTS; nu.tickets = CONFIG.MAX_TICKETS;
     nu.lastTicketRegen = new Date().toISOString();
     nu.missions = getDefaultMissions();
     nu.lastMissionDate = new Date().toDateString();
@@ -320,16 +317,14 @@ async function signupNew() {
     if (ins.error) throw ins.error;
 
     loadUserFromDB(ins.data);
-    saveLocal();
-    enterGame();
+    saveLocal(); enterGame();
     SoundSystem.playReward(); Vibration.onReward();
-    showToast('🎉 أهلاً ' + name + '! حصلت على ' + CONFIG.STARTER_POINTS + ' نقطة', 'success');
+    showToast('🎉 أهلاً ' + name + '!', 'success');
 
     if (nu.referred_by) registerReferral(nu.referred_by);
     App.busy = false;
   } catch(e) {
-    console.error('signup error:', e);
-    App.busy = false;
+    console.error(e); App.busy = false;
     showToast('خطأ: ' + e.message, 'error');
   }
 }
@@ -340,56 +335,38 @@ async function loginExisting() {
   if (App.busy) return;
   var phone = $('loginPhone').value.trim();
   var password = $('loginPassword').value.trim();
-
   if (!phone || phone.length < 11) return showToast('اكتب رقم التليفون', 'error');
   if (!password) return showToast('اكتب كلمة السر', 'error');
-
   App.busy = true;
-
   try {
     var res = await supabaseClient.from('users').select('*').eq('phone', phone).maybeSingle();
-
-    if (!res.data) { App.busy = false; return showToast('❌ الرقم ده مش مسجل — اعمل حساب جديد', 'error'); }
-
+    if (!res.data) { App.busy = false; return showToast('❌ الرقم مش مسجل', 'error'); }
     var user = res.data;
-
-    if (!user.password || user.password === '' || user.password === null) {
+    if (!user.password) {
       App.busy = false;
       pendingLegacyUser = user;
       $('setPasswordModal').classList.add('active');
       return;
     }
-
     if (user.password !== password) { App.busy = false; return showToast('❌ كلمة السر غلط', 'error'); }
-
-    loadUserFromDB(user);
-    saveLocal();
-    enterGame();
-    showToast('أهلاً بيك تاني ' + user.username, 'success');
+    loadUserFromDB(user); saveLocal(); enterGame();
+    showToast('أهلاً بيك ' + user.username, 'success');
     App.busy = false;
-  } catch(e) {
-    console.error('login error:', e);
-    App.busy = false;
-    showToast('خطأ: ' + e.message, 'error');
-  }
+  } catch(e) { App.busy = false; showToast('خطأ: ' + e.message, 'error'); }
 }
 
 async function saveNewPassword() {
   if (!pendingLegacyUser) return;
   var p1 = $('newPasswordInput').value.trim();
   var p2 = $('confirmPasswordInput').value.trim();
-
   if (p1.length < 6) return showToast('كلمة السر 6 أحرف على الأقل', 'error');
   if (p1 !== p2) return showToast('كلمتين السر مش متطابقتين', 'error');
-
   try {
     var res = await supabaseClient.from('users').update({ password: p1 }).eq('id', pendingLegacyUser.id);
     if (res.error) throw res.error;
     pendingLegacyUser.password = p1;
     loadUserFromDB(pendingLegacyUser);
-    saveLocal();
-    closeModal('setPasswordModal');
-    enterGame();
+    saveLocal(); closeModal('setPasswordModal'); enterGame();
     SoundSystem.playSuccess(); Vibration.onReward();
     showToast('✅ تم تحديد كلمة السر', 'success');
     pendingLegacyUser = null;
@@ -404,17 +381,12 @@ function generateReferralCode(){
 
 function loadUserFromDB(row){
   App.user = createDefaultUser();
-  App.user.id = row.id;
-  App.user.username = row.username;
-  App.user.phone = row.phone;
-  App.user.password = row.password || '';
-  App.user.purchased = row.purchased || 0;
-  App.user.earned = row.earned || 0;
+  App.user.id = row.id; App.user.username = row.username;
+  App.user.phone = row.phone; App.user.password = row.password || '';
+  App.user.purchased = row.purchased || 0; App.user.earned = row.earned || 0;
   App.user.level = row.level || 1;
-  App.user.games_played = row.games_played || 0;
-  App.user.wins = row.wins || 0;
-  App.user.streak = row.streak || 0;
-  App.user.bestStreak = row.best_streak || 0;
+  App.user.games_played = row.games_played || 0; App.user.wins = row.wins || 0;
+  App.user.streak = row.streak || 0; App.user.bestStreak = row.best_streak || 0;
   App.user.tickets = row.tickets != null ? row.tickets : CONFIG.MAX_TICKETS;
   App.user.lastTicketRegen = row.last_ticket_regen;
   App.user.claimedPrizes = row.claimed_prizes || [];
@@ -435,12 +407,11 @@ function loadUserFromDB(row){
   App.user.active_ticket = row.active_ticket || null;
   App.user.ticket_expires_at = row.ticket_expires_at || null;
   App.user.ticket_uses_left = row.ticket_uses_left || 0;
-  saveLocal();
-  loadWallet();
+  saveLocal(); loadWallet();
 }
 
 function logoutUser() {
-  if (!confirm('متأكد إنك عايز تسجل خروج؟')) return;
+  if (!confirm('متأكد؟')) return;
   localStorage.removeItem(STORAGE_KEY);
   App.user = createDefaultUser();
   Wallet = { balance: 0, earned: 0, totalDeposited: 0, totalWon: 0, totalWithdrawn: 0 };
@@ -453,16 +424,11 @@ function logoutUser() {
 function enterGame(){
   $('loginScreen').classList.remove('active');
   $('mainScreen').classList.add('active');
-  updateAllUI();
-  loadWallet();
+  updateAllUI(); loadWallet();
   if(!App.user.adShown) $('welcomeAd').classList.remove('hidden');
 }
 
-function closeWelcomeAd(){
-  $('welcomeAd').classList.add('hidden');
-  App.user.adShown = true;
-  saveLocal();
-}
+function closeWelcomeAd(){ $('welcomeAd').classList.add('hidden'); App.user.adShown = true; saveLocal(); }
 
 function updateAllUI(){
   if(!App.user || !App.user.username) return;
@@ -476,16 +442,11 @@ function updateAllUI(){
     av.textContent = App.user.username.charAt(0).toUpperCase();
     if(isPrime()) av.classList.add('prime'); else av.classList.remove('prime');
   }
-  updateDailyLoginUI();
-  updateChestUI();
-  updateMissionsUI();
-  updateWalletUI();
-  updateMissionsDate();
+  updateDailyLoginUI(); updateChestUI(); updateMissionsUI(); updateWalletUI(); updateMissionsDate();
 }
 
 function updateMissionsDate(){
-  var el = $('missionsDate');
-  if (!el) return;
+  var el = $('missionsDate'); if (!el) return;
   var today = new Date();
   var days = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   el.textContent = '(' + days[today.getDay()] + ')';
@@ -549,7 +510,7 @@ function updateMissionProgress(type, won, extra){
         mission.done = true;
         addPoints(mission.reward);
         SoundSystem.playReward(); Vibration.onReward();
-        showCoinToast('+' + mission.reward + ' مهمة مكتملة', '🎯');
+        showCoinToast('+' + mission.reward + ' مهمة', '🎯');
       }
     }
   });
@@ -682,7 +643,7 @@ async function addEarning(amount, source) {
 }
 
 async function transferEarningsToWallet() {
-  if (Wallet.earned <= 0) return showToast('مفيش مبلغ مكتسب لتحويله', 'error');
+  if (Wallet.earned <= 0) return showToast('مفيش مبلغ مكتسب', 'error');
   var amount = Wallet.earned;
   Wallet.balance += amount;
   Wallet.earned = 0;
@@ -696,7 +657,7 @@ async function transferEarningsToWallet() {
   }
   SoundSystem.playBigWin(); Vibration.onBigPrize();
   showWinOverlay('💰', '+' + amount.toFixed(2) + ' ج', 2500);
-  showToast('✅ تم تحويل ' + amount.toFixed(2) + ' ج للمحفظة', 'success');
+  showToast('✅ تم تحويل ' + amount.toFixed(2) + ' ج', 'success');
   updateWalletUI();
 }
 
@@ -805,7 +766,7 @@ function useTicket(){
     saveLocal(); updateAllUI();
     return true;
   }
-  if(App.user.tickets <= 0){ showToast('معندكش تذاكر! اشتري من متجر التذاكر', 'error'); setTimeout(function(){ openTicketStore(); }, 1200); return false; }
+  if(App.user.tickets <= 0){ showToast('معندكش تذاكر!', 'error'); setTimeout(function(){ openTicketStore(); }, 1200); return false; }
   App.user.tickets--;
   saveLocal(); updateAllUI();
   return true;
@@ -1070,7 +1031,7 @@ async function confirmLossRecovery(){
   var price = CONFIG.LOSS_RECOVERY_COST;
   if(Wallet.balance < price){
     closeModal('lossRecoveryModal');
-    return showToast('❌ محتاج '+price+' جنيه في المحفظة','error');
+    return showToast('❌ محتاج '+price+' جنيه','error');
   }
   var ok = await deductFromWallet(price);
   if(!ok) return;
@@ -1167,7 +1128,7 @@ function openLuckyWheel(){
   SoundSystem.init();
   var today = new Date().toDateString();
   var btn = $('spinBtn'), info = $('wheelInfo');
-  if(App.user.lastWheelSpin === today){ btn.textContent = 'لف العجلة ('+CONFIG.WHEEL_COST+' ج)'; info.textContent = 'خلصت المرة المجانية النهاردة'; }
+  if(App.user.lastWheelSpin === today){ btn.textContent = 'لف العجلة ('+CONFIG.WHEEL_COST+' ج)'; info.textContent = 'خلصت المرة المجانية'; }
   else { btn.textContent = 'لف العجلة (مجاناً)'; info.textContent = 'مرة واحدة مجاناً كل يوم'; }
   btn.disabled = false;
   $('wheelResult').textContent = 'اضغط لف العجلة';
@@ -1196,7 +1157,7 @@ function spinWheel(){
   var isFree = App.user.lastWheelSpin !== today;
   var btn = $('spinBtn'), canvas = $('wheelCanvas');
   if(!isFree){
-    if(Wallet.balance < CONFIG.WHEEL_COST) return showToast('محتاج '+CONFIG.WHEEL_COST+' جنيه في المحفظة','error');
+    if(Wallet.balance < CONFIG.WHEEL_COST) return showToast('محتاج '+CONFIG.WHEEL_COST+' جنيه','error');
     deductFromWallet(CONFIG.WHEEL_COST);
   }
   wheelState.spinning = true;
@@ -1204,7 +1165,6 @@ function spinWheel(){
   App.user.wheel_spins_total = (App.user.wheel_spins_total || 0) + 1;
   btn.disabled = true;
   $('wheelResult').textContent = 'بلف...';
-  $('wheelResult').classList.remove('reveal');
   var winner = pickWinnerSmart();
   var n = WHEEL_PRIZES.length;
   var segAngle = 360 / n;
@@ -1233,7 +1193,6 @@ function spinWheel(){
 
 function finishSpin(reward){
   var el = $('wheelResult');
-  el.classList.add('reveal');
   var val = reward.value;
   if(isPrime()) val *= 2;
   if(val > 0){
@@ -1243,7 +1202,7 @@ function finishSpin(reward){
     else { SoundSystem.playReward(); Vibration.onReward(); showWinOverlay('🎉', '+' + val + ' ج', 1800); }
     showCoinToast('+' + val + ' ج', '🎡');
   } else {
-    el.textContent = 'حظ أوفر المرة الجاية 😢';
+    el.textContent = 'حظ أوفر 😢';
     SoundSystem.playLoss(); Vibration.onLoss();
   }
   updateMissionProgress('wheel');
@@ -1291,8 +1250,8 @@ async function buyTicket(ticketId) {
   var ticket = TICKETS.find(function(t) { return t.id === ticketId; });
   if (!ticket) return;
   if (Wallet.balance < ticket.price) {
-    showToast('❌ محتاج ' + (ticket.price - Wallet.balance).toFixed(2) + ' ج إضافية', 'error');
-    setTimeout(function() { if (confirm('رصيدك: ' + Wallet.balance.toFixed(2) + ' ج\nالمطلوب: ' + ticket.price + ' ج\n\nتروح للإيداع؟')) { closeModal('ticketStoreModal'); openDepositModal(); } }, 800);
+    showToast('❌ محتاج ' + (ticket.price - Wallet.balance).toFixed(2) + ' ج', 'error');
+    setTimeout(function() { if (confirm('تروح للإيداع؟')) { closeModal('ticketStoreModal'); openDepositModal(); } }, 800);
     return;
   }
   if (!confirm('شراء ' + ticket.name + ' بـ ' + ticket.price + ' جنيه؟')) return;
@@ -1317,13 +1276,10 @@ async function buyPackage(points, price){
     setTimeout(function(){ if (confirm('تروح للإيداع؟')){ closeModal('storeModal'); openDepositModal(); }}, 800);
     return;
   }
-  if (!confirm('شراء ' + points + ' نقطة بـ ' + price + ' جنيه من المحفظة؟')) return;
+  if (!confirm('شراء ' + points + ' نقطة بـ ' + price + ' جنيه؟')) return;
   var ok = await deductFromWallet(price);
   if (!ok) return;
   addPoints(points);
-  if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
-    try { await supabaseClient.from('transactions').insert({ user_id: App.user.id, amount: points, type: 'purchase', description: 'شراء ' + points + ' نقطة' }); } catch(e) {}
-  }
   saveLocal(); updateAllUI(); syncUser(); checkMilestones();
   SoundSystem.playReward(); Vibration.onReward();
   showToast('✅ تم شراء ' + points + ' نقطة!', 'success');
@@ -1334,7 +1290,7 @@ async function buyPackage(points, price){
 async function buyPrime(){
   var price = CONFIG.PRIME_PRICE;
   if (Wallet.balance < price) {
-    showToast('❌ محتاج ' + (price - Wallet.balance).toFixed(2) + ' ج إضافية', 'error');
+    showToast('❌ محتاج ' + (price - Wallet.balance).toFixed(2) + ' ج', 'error');
     setTimeout(function(){ if (confirm('تروح للإيداع؟')){ closeModal('storeModal'); openDepositModal(); }}, 800);
     return;
   }
@@ -1347,7 +1303,7 @@ async function buyPrime(){
   saveLocal(); updateAllUI(); syncUser();
   SoundSystem.playBigWin(); Vibration.onBigPrize();
   showWinOverlay('👑', 'مبروك البرايم!', 3000);
-  showToast('👑 برايم مفعّل — كل المكافآت مضاعفة!', 'success');
+  showToast('👑 برايم مفعّل!', 'success');
   closeModal('storeModal');
 }
 
@@ -1390,7 +1346,7 @@ async function submitDeposit() {
   try {
     var res = await supabaseClient.from('deposit_requests').insert({ user_id: App.user.id, amount: amount, trans_number: trans, status: 'pending' });
     if (res.error) throw res.error;
-    showToast('✅ تم إرسال طلب الإيداع', 'success');
+    showToast('✅ تم إرسال الطلب', 'success');
     closeModal('depositModal');
   } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
   if (btn) { btn.disabled = false; btn.textContent = 'إرسال طلب الإيداع'; }
@@ -1407,7 +1363,7 @@ async function submitWithdraw() {
   try {
     var res = await supabaseClient.from('withdraw_requests').insert({ user_id: App.user.id, amount: amount, phone: phone, status: 'pending' });
     if (res.error) throw res.error;
-    showToast('✅ تم إرسال طلب السحب', 'success');
+    showToast('✅ تم إرسال الطلب', 'success');
     closeModal('withdrawModal');
   } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
   if (btn) { btn.disabled = false; btn.textContent = 'إرسال طلب السحب'; }
@@ -1497,8 +1453,8 @@ async function acceptSpecialOffer(){
   closeModal('specialOfferModal');
   if (App.specialOfferTimeout) clearInterval(App.specialOfferTimeout);
   var price = 35, points = 300;
-  if (Wallet.balance < price) { showToast('❌ محتاج ' + (price - Wallet.balance).toFixed(2) + ' ج إضافية', 'error'); openDepositModal(); return; }
-  if (!confirm('300 نقطة بـ 35 جنيه من محفظتك؟')) return;
+  if (Wallet.balance < price) { showToast('❌ محتاج ' + (price - Wallet.balance).toFixed(2) + ' ج', 'error'); openDepositModal(); return; }
+  if (!confirm('300 نقطة بـ 35 جنيه؟')) return;
   var ok = await deductFromWallet(price);
   if (!ok) return;
   addPoints(points);
@@ -1540,7 +1496,7 @@ async function loadFriendsList() {
     container.innerHTML = html;
   } catch(e) {
     console.error('loadFriends error:', e);
-    container.innerHTML = '<p class="small-text">خطأ: تأكد من جدول friendships في Supabase</p>';
+    container.innerHTML = '<p class="small-text">خطأ: تأكد من جدول friendships</p>';
   }
 }
 
@@ -1587,14 +1543,6 @@ async function removeFriend(friendId) {
   } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
 }
 
-function inviteFriendToRoom(friendId, friendName) {
-  if (!App.user.referral_code) return;
-  var link = window.location.origin + '?invite=' + App.user.referral_code;
-  var text = '🎮 ' + App.user.username + ' بيدعوك يلعب Neon Prediction!\n\n' + link;
-  if (navigator.share) navigator.share({ title: 'Neon Prediction', text: text }).catch(function(){});
-  else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function(){ showToast('تم نسخ الدعوة!', 'success'); });
-}
-
 /* ============ SHARE ============ */
 function openShareModal() {
   var today = new Date().toDateString();
@@ -1610,13 +1558,13 @@ function getShareUrl() { return window.location.origin + '?ref=' + (App.user.ref
 
 function copyShareLink() {
   var url = getShareUrl();
-  var text = '🎮 العب معايا Neon Prediction واكسب فلوس!\n\n' + url;
-  if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function() { showToast('✅ تم نسخ الرابط!', 'success'); awardSharePoints(); }); }
+  var text = '🎮 العب معايا Neon Prediction!\n\n' + url;
+  if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function() { showToast('✅ تم النسخ!', 'success'); awardSharePoints(); }); }
 }
 
 function shareWhatsApp() {
   var url = getShareUrl();
-  window.open('https://wa.me/?text=' + encodeURIComponent('🎮 العب معايا Neon Prediction واكسب فلوس!\n\n' + url), '_blank');
+  window.open('https://wa.me/?text=' + encodeURIComponent('🎮 العب معايا Neon Prediction!\n\n' + url), '_blank');
   awardSharePoints();
 }
 
@@ -1628,7 +1576,7 @@ function shareTelegram() {
 
 function nativeShare() {
   var url = getShareUrl();
-  if (navigator.share) { navigator.share({ title: 'Neon Prediction', text: '🎮 العب معايا Neon Prediction!', url: url }).then(function() { awardSharePoints(); }).catch(function() {}); }
+  if (navigator.share) { navigator.share({ title: 'Neon Prediction', text: '🎮 العب معايا!', url: url }).then(function() { awardSharePoints(); }).catch(function() {}); }
   else { copyShareLink(); }
 }
 
@@ -1658,13 +1606,24 @@ async function registerReferral(refCode) {
   } catch(e) { console.error('registerReferral:', e); }
 }
 
-/* ============ ONLINE GAME ============ */
+/* ============================================
+   ONLINE GAME — الإصلاحات الرئيسية
+   ============================================ */
 var Online = {
   room: null, players: [], answers: [], roundData: null,
   myChoice: null, myAnswerTime: 0, roundStartTime: 0,
-  timer: null, channel: null, isHost: false,
+  timer: null, channel: null, pollInterval: null,
+  isHost: false,
   currentRound: 0, isReady: false, playing: false,
   maxPlayers: 3, choiceTime: 10, category: 'football', privacy: 'public'
+};
+
+/* متغيرات إعدادات الغرفة المؤقتة */
+var RoomSettings = {
+  maxPlayers: 3,
+  choiceTime: 10,
+  category: 'football',
+  privacy: 'public'
 };
 
 function openOnlineLobby() { showView('onlineLobbyView'); }
@@ -1676,7 +1635,7 @@ async function openPublicRooms() {
   try {
     var res = await supabaseClient.from('online_rooms').select('*').eq('status', 'waiting').eq('privacy', 'public').order('created_at', { ascending: false }).limit(20);
     if (res.error) throw res.error;
-    if (!res.data || res.data.length === 0) { list.innerHTML = '<p class="small-text" style="text-align:center">مفيش غرف عامة دلوقتي — اعمل واحدة!</p>'; return; }
+    if (!res.data || res.data.length === 0) { list.innerHTML = '<p class="small-text" style="text-align:center">مفيش غرف عامة دلوقتي</p>'; return; }
     var html = '';
     res.data.forEach(function(r) {
       html += '<div class="package-item" onclick="joinPublicRoom(\'' + r.id + '\')" style="cursor:pointer"><span class="pkg-icon">🌐</span><div class="pkg-info"><span class="pkg-points">غرفة ' + r.code + '</span><span class="pkg-price">' + (CATEGORIES[r.category] ? CATEGORIES[r.category].name : 'كرة القدم') + ' • ' + r.max_players + ' لاعبين</span><span class="pkg-details">⏱️ ' + r.choice_time + ' ثواني للاختيار</span></div><span style="color:#00c853;font-weight:900">دخول →</span></div>';
@@ -1703,60 +1662,141 @@ async function joinPublicRoom(roomId) {
     Online.choiceTime = r.data.choice_time;
     Online.category = r.data.category;
     Online.currentRound = 0;
-    await supabaseClient.from('room_players').insert({ room_id: r.data.id, user_id: App.user.id, username: App.user.username, is_host: false, is_ready: false });
+    await supabaseClient.from('room_players').insert({ room_id: r.data.id, user_id: App.user.id, username: App.user.username, is_host: false, is_ready: false, score: 0 });
     subscribeToRoom(r.data.id);
     enterOnlineRoomView(r.data.code);
     showToast('✅ انضممت للغرفة!', 'success');
   } catch(e) { console.error(e); showToast('خطأ: ' + e.message, 'error'); }
 }
 
+/* ✅ فتح إعدادات الغرفة */
 function openCreateRoomModal() {
-  Online.maxPlayers = 3;
-  Online.choiceTime = 10;
-  Online.category = 'football';
-  Online.privacy = 'public';
+  RoomSettings.maxPlayers = 3;
+  RoomSettings.choiceTime = 10;
+  RoomSettings.category = 'football';
+  RoomSettings.privacy = 'public';
+  
+  // ✅ ريّح الاختيارات في الواجهة
+  var groups = document.querySelectorAll('#createRoomModal .setting-group');
+  if (groups[0]) {
+    groups[0].querySelectorAll('.setting-option').forEach(function(b, i) {
+      b.classList.toggle('active', [2,3,5][i] === 3);
+    });
+  }
+  if (groups[1]) {
+    groups[1].querySelectorAll('.setting-option').forEach(function(b, i) {
+      b.classList.toggle('active', [5,10,15,20][i] === 10);
+    });
+  }
+  if (groups[2]) {
+    groups[2].querySelectorAll('.setting-option').forEach(function(b, i) {
+      b.classList.toggle('active', ['football','fruits','animals','colors'][i] === 'football');
+    });
+  }
+  if (groups[3]) {
+    groups[3].querySelectorAll('.setting-option').forEach(function(b, i) {
+      b.classList.toggle('active', ['public','private'][i] === 'public');
+    });
+  }
+  
   $('createRoomModal').classList.add('active');
 }
 
+/* ✅ الإصلاح الرئيسي — setRoomPlayers وsetRoomTime وsetRoomCategory وsetRoomPrivacy */
 function setRoomPlayers(n) {
-  Online.maxPlayers = n;
-  document.querySelectorAll('#createRoomModal .setting-group:nth-child(2) .setting-option').forEach(function(b, i) { b.classList.toggle('active', [2,3,5][i] === n); });
+  RoomSettings.maxPlayers = n;
+  var groups = document.querySelectorAll('#createRoomModal .setting-group');
+  if (groups[0]) {
+    var opts = groups[0].querySelectorAll('.setting-option');
+    opts.forEach(function(b, i) {
+      b.classList.toggle('active', [2,3,5][i] === n);
+    });
+  }
+  console.log('👥 Players set to:', n);
 }
 
 function setRoomTime(t) {
-  Online.choiceTime = t;
-  document.querySelectorAll('#createRoomModal .setting-group:nth-child(3) .setting-option').forEach(function(b, i) { b.classList.toggle('active', [5,10,15,20][i] === t); });
+  RoomSettings.choiceTime = t;
+  var groups = document.querySelectorAll('#createRoomModal .setting-group');
+  if (groups[1]) {
+    var opts = groups[1].querySelectorAll('.setting-option');
+    opts.forEach(function(b, i) {
+      b.classList.toggle('active', [5,10,15,20][i] === t);
+    });
+  }
+  console.log('⏱️ Time set to:', t);
 }
 
 function setRoomCategory(c) {
-  Online.category = c;
-  var opts = ['football','fruits','animals','colors'];
-  document.querySelectorAll('#createRoomModal .setting-group:nth-child(4) .setting-option').forEach(function(b, i) { b.classList.toggle('active', opts[i] === c); });
+  RoomSettings.category = c;
+  var groups = document.querySelectorAll('#createRoomModal .setting-group');
+  if (groups[2]) {
+    var opts = groups[2].querySelectorAll('.setting-option');
+    opts.forEach(function(b, i) {
+      b.classList.toggle('active', ['football','fruits','animals','colors'][i] === c);
+    });
+  }
+  console.log('🎮 Category set to:', c);
 }
 
 function setRoomPrivacy(p) {
-  Online.privacy = p;
-  document.querySelectorAll('#createRoomModal .setting-group:nth-child(5) .setting-option').forEach(function(b, i) { b.classList.toggle('active', ['public','private'][i] === p); });
+  RoomSettings.privacy = p;
+  var groups = document.querySelectorAll('#createRoomModal .setting-group');
+  if (groups[3]) {
+    var opts = groups[3].querySelectorAll('.setting-option');
+    opts.forEach(function(b, i) {
+      b.classList.toggle('active', ['public','private'][i] === p);
+    });
+  }
+  console.log('🔒 Privacy set to:', p);
 }
 
 async function createOnlineRoomWithSettings() {
+  console.log('🎮 Creating room with settings:', RoomSettings);
   closeModal('createRoomModal');
+  
   if (!supabaseClient || !App.user.id) { showToast('محتاج Supabase', 'error'); return; }
   if (String(App.user.id).indexOf('local_') === 0) { showToast('سجّل من جديد', 'error'); return; }
   if (totalPoints() < CONFIG.ONLINE_ENTRY) { showToast('محتاج ' + CONFIG.ONLINE_ENTRY + ' نقطة', 'error'); return; }
+  
   deductPoints(CONFIG.ONLINE_ENTRY);
   saveLocal(); updateAllUI();
+  
   try {
     var code = generateRoomCode();
-    var res = await supabaseClient.from('online_rooms').insert({ code: code, host_id: App.user.id, category: Online.category, status: 'waiting', max_players: Online.maxPlayers, choice_time: Online.choiceTime, privacy: Online.privacy, entry_fee: CONFIG.ONLINE_ENTRY }).select().single();
+    var res = await supabaseClient.from('online_rooms').insert({
+      code: code,
+      host_id: App.user.id,
+      category: RoomSettings.category,
+      status: 'waiting',
+      max_players: RoomSettings.maxPlayers,
+      choice_time: RoomSettings.choiceTime,
+      privacy: RoomSettings.privacy,
+      entry_fee: CONFIG.ONLINE_ENTRY
+    }).select().single();
+
     if (res.error) throw res.error;
+
     Online.room = res.data;
     Online.isHost = true;
     Online.isReady = true;
+    Online.maxPlayers = RoomSettings.maxPlayers;
+    Online.choiceTime = RoomSettings.choiceTime;
+    Online.category = RoomSettings.category;
     Online.currentRound = 0;
-    await supabaseClient.from('room_players').insert({ room_id: res.data.id, user_id: App.user.id, username: App.user.username, is_host: true, is_ready: true });
+
+    await supabaseClient.from('room_players').insert({
+      room_id: res.data.id,
+      user_id: App.user.id,
+      username: App.user.username,
+      is_host: true,
+      is_ready: true,
+      score: 0
+    });
+
     subscribeToRoom(res.data.id);
     enterOnlineRoomView(code);
+    console.log('✅ Room created:', code);
   } catch(e) {
     console.error('createOnlineRoom error:', e);
     addPoints(CONFIG.ONLINE_ENTRY);
@@ -1786,7 +1826,7 @@ async function joinOnlineRoom() {
     Online.choiceTime = res.data.choice_time;
     Online.category = res.data.category;
     Online.currentRound = 0;
-    await supabaseClient.from('room_players').insert({ room_id: res.data.id, user_id: App.user.id, username: App.user.username, is_host: false, is_ready: false });
+    await supabaseClient.from('room_players').insert({ room_id: res.data.id, user_id: App.user.id, username: App.user.username, is_host: false, is_ready: false, score: 0 });
     closeModal('joinOnlineModal');
     subscribeToRoom(res.data.id);
     enterOnlineRoomView(code);
@@ -1814,22 +1854,73 @@ function generateRoomCode(){
   return code;
 }
 
+/* ✅ subscribeToRoom — مع Polling */
 function subscribeToRoom(roomId) {
-  if (Online.channel) { try { supabaseClient.removeChannel(Online.channel); } catch(e) {} }
-  Online.channel = supabaseClient.channel('room_' + roomId)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_players', filter: 'room_id=eq.' + roomId }, function() { refreshOnlinePlayers(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_rounds', filter: 'room_id=eq.' + roomId }, function(payload) { if (payload.new && payload.new.round_number) startOnlineRound(payload.new); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_answers', filter: 'room_id=eq.' + roomId }, function() { refreshOnlineAnswers(); })
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'online_rooms', filter: 'id=eq.' + roomId }, function(payload) { if (payload.new.status === 'playing' && !Online.playing) startOnlineGame(); })
-    .subscribe();
+  if (Online.channel) {
+    try { supabaseClient.removeChannel(Online.channel); } catch(e) {}
+  }
+
+  Online.channel = supabaseClient
+    .channel('room_' + roomId)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_players', filter: 'room_id=eq.' + roomId }, function(payload) {
+      console.log('📢 Player change:', payload.eventType);
+      refreshOnlinePlayers();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_rounds', filter: 'room_id=eq.' + roomId }, function(payload) {
+      console.log('📢 Round change:', payload.new);
+      if (payload.new && payload.new.round_number) startOnlineRound(payload.new);
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_answers', filter: 'room_id=eq.' + roomId }, function(payload) {
+      console.log('📢 Answer change');
+      refreshOnlineAnswers();
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'online_rooms', filter: 'id=eq.' + roomId }, function(payload) {
+      console.log('📢 Room update:', payload.new.status);
+      if (payload.new.status === 'playing' && !Online.playing) startOnlineGame();
+    })
+    .subscribe(function(status) {
+      console.log('📡 Realtime status:', status);
+    });
+
+  // ✅ Polling احتياطي
+  if (Online.pollInterval) clearInterval(Online.pollInterval);
+  Online.pollInterval = setInterval(function() {
+    if (Online.room && Online.room.status === 'waiting') {
+      refreshOnlinePlayers();
+    }
+    if (Online.room && !Online.playing) {
+      supabaseClient.from('online_rooms').select('status').eq('id', Online.room.id).maybeSingle().then(function(r) {
+        if (r.data && r.data.status === 'playing' && !Online.playing) {
+          console.log('🎮 Room became playing — starting game');
+          startOnlineGame();
+        }
+      });
+    }
+  }, 3000);
 }
 
+/* ✅ refreshOnlinePlayers — مع Logs */
 async function refreshOnlinePlayers() {
   if (!Online.room) return;
   try {
-    var res = await supabaseClient.from('room_players').select('*').eq('room_id', Online.room.id).order('joined_at');
-    if (res.data) { Online.players = res.data; updateOnlineRoomPlayers(); checkAllReady(); }
-  } catch(e) { console.error(e); }
+    var res = await supabaseClient
+      .from('room_players')
+      .select('*')
+      .eq('room_id', Online.room.id)
+      .order('joined_at', { ascending: true });
+    
+    if (res.error) {
+      console.error('refreshOnlinePlayers error:', res.error);
+      return;
+    }
+    
+    if (res.data) {
+      Online.players = res.data;
+      console.log('👥 Players:', res.data.length, res.data.map(function(p) { return p.username + (p.is_ready ? ' ✋' : ''); }).join(', '));
+      updateOnlineRoomPlayers();
+      checkAllReady();
+    }
+  } catch(e) { console.error('refreshOnlinePlayers catch:', e); }
 }
 
 function updateOnlineRoomPlayers() {
@@ -1844,6 +1935,7 @@ function updateOnlineRoomPlayers() {
     var el = $(slots[j]);
     if (el) {
       el.classList.add('filled');
+      // فحص البرايم
       supabaseClient.from('users').select('is_prime').eq('id', p.user_id).maybeSingle().then(function(r) {
         if (r.data && r.data.is_prime) el.classList.add('prime-slot');
       });
@@ -1854,32 +1946,71 @@ function updateOnlineRoomPlayers() {
   if (Online.players.length >= 2) $('onlineWaitingHint').textContent = 'الجميع جاهز؟ اضغط "جاهز"';
 }
 
+/* ✅ toggleReady — مع تحديث فوري */
 async function toggleReady() {
   if (!Online.room) return;
+  
   Online.isReady = !Online.isReady;
+  var btn = $('readyBtn');
+  if (Online.isReady) {
+    btn.textContent = '✓ جاهز';
+    btn.classList.add('ready');
+  } else {
+    btn.textContent = '✋ جاهز';
+    btn.classList.remove('ready');
+  }
+  
   try {
-    await supabaseClient.from('room_players').update({ is_ready: Online.isReady }).eq('room_id', Online.room.id).eq('user_id', App.user.id);
-    var btn = $('readyBtn');
-    if (Online.isReady) { btn.textContent = '✓ جاهز'; btn.classList.add('ready'); }
-    else { btn.textContent = '✋ جاهز'; btn.classList.remove('ready'); }
-    await refreshOnlinePlayers();
-  } catch(e) { console.error(e); }
+    var res = await supabaseClient
+      .from('room_players')
+      .update({ is_ready: Online.isReady })
+      .eq('room_id', Online.room.id)
+      .eq('user_id', App.user.id);
+    
+    if (res.error) {
+      console.error('toggleReady error:', res.error);
+      return;
+    }
+    console.log('✅ Ready status:', Online.isReady);
+    
+    setTimeout(function() { refreshOnlinePlayers(); }, 300);
+  } catch(e) { console.error('toggleReady error:', e); }
 }
 
+/* ✅ checkAllReady — بدون قيد الـ host */
 async function checkAllReady() {
-  if (!Online.room || !Online.isHost) return;
-  if (Online.players.length < 2) return;
+  if (!Online.room) return;
   if (Online.room.status !== 'waiting') return;
-  var allReady = Online.players.every(function(p){ return p.is_ready; });
+  if (Online.players.length < 2) return;
+  
+  var allReady = Online.players.every(function(p) { return p.is_ready === true; });
+  console.log('🔍 Check ready:', Online.players.length, 'players, allReady:', allReady);
+  
   if (!allReady) return;
-  try { await supabaseClient.from('online_rooms').update({ status: 'playing', started_at: new Date().toISOString() }).eq('id', Online.room.id); } catch(e) { console.error(e); }
+  
+  try {
+    console.log('🚀 Starting game...');
+    var res = await supabaseClient
+      .from('online_rooms')
+      .update({ status: 'playing', started_at: new Date().toISOString() })
+      .eq('id', Online.room.id)
+      .eq('status', 'waiting');
+    
+    if (res.error) {
+      console.error('Start game error:', res.error);
+    } else {
+      console.log('✅ Room set to playing');
+    }
+  } catch(e) { console.error('checkAllReady error:', e); }
 }
 
 async function startOnlineGame() {
+  if (Online.playing) return;
   Online.playing = true;
   Online.currentRound = 0;
   showView('onlineGameView');
   updateOnlineScores();
+  console.log('🎮 Game started, waiting for round...');
   setTimeout(function() { if (Online.isHost) nextOnlineRound(); }, 1500);
 }
 
@@ -1888,16 +2019,26 @@ async function nextOnlineRound() {
   if (Online.currentRound > CONFIG.ONLINE_ROUNDS) { endOnlineGame(); return; }
   if (!Online.isHost) return;
   var correct = Math.floor(Math.random() * 5) + 1;
-  try { await supabaseClient.from('room_rounds').insert({ room_id: Online.room.id, round_number: Online.currentRound, correct_choice: correct, started_at: new Date().toISOString() }); } catch(e) { console.error(e); }
+  console.log('📤 Creating round', Online.currentRound, 'correct:', correct);
+  try {
+    await supabaseClient.from('room_rounds').insert({
+      room_id: Online.room.id,
+      round_number: Online.currentRound,
+      correct_choice: correct,
+      started_at: new Date().toISOString()
+    });
+  } catch(e) { console.error('nextOnlineRound error:', e); }
 }
 
 function startOnlineRound(round) {
+  console.log('🎯 Round started:', round.round_number);
   Online.roundData = round;
   Online.currentRound = round.round_number;
   Online.myChoice = null;
   Online.myAnswerTime = 0;
   Online.roundStartTime = Date.now();
   $('onlineRoundNum').textContent = round.round_number;
+  
   var cat = CATEGORIES[Online.category] || CATEGORIES.football;
   var grid = $('onlineChoicesGrid');
   grid.innerHTML = '';
@@ -1922,7 +2063,10 @@ function startOnlineTimer() {
     timeLeft--;
     $('onlineTimerValue').textContent = timeLeft;
     if (timeLeft <= 3) $('onlineTimerValue').classList.add('danger');
-    if (timeLeft <= 0) { clearInterval(Online.timer); finishOnlineRound(Online.roundData); }
+    if (timeLeft <= 0) {
+      clearInterval(Online.timer);
+      finishOnlineRound(Online.roundData);
+    }
   }, 1000);
 }
 
@@ -1943,12 +2087,23 @@ async function makeOnlineChoice(num) {
       var timeSec = Online.myAnswerTime / 1000;
       points = Math.max(50, Math.floor(100 - (timeSec * 4)));
     }
-    await supabaseClient.from('room_answers').insert({ room_id: Online.room.id, round_number: Online.currentRound, user_id: App.user.id, username: App.user.username, choice: num, answer_time: Online.myAnswerTime, is_correct: isCorrect, points_earned: points });
+    await supabaseClient.from('room_answers').insert({
+      room_id: Online.room.id,
+      round_number: Online.currentRound,
+      user_id: App.user.id,
+      username: App.user.username,
+      choice: num,
+      answer_time: Online.myAnswerTime,
+      is_correct: isCorrect,
+      points_earned: points
+    });
     if (isCorrect) {
       var newScore = getMyNewScore(points);
-      await supabaseClient.from('room_players').update({ score: newScore }).eq('room_id', Online.room.id).eq('user_id', App.user.id);
+      await supabaseClient.from('room_players').update({ score: newScore })
+        .eq('room_id', Online.room.id)
+        .eq('user_id', App.user.id);
     }
-  } catch(e) { console.error(e); }
+  } catch(e) { console.error('makeOnlineChoice error:', e); }
 }
 
 function getMyNewScore(addedPoints) {
@@ -1961,8 +2116,13 @@ function getMyNewScore(addedPoints) {
 async function refreshOnlineAnswers() {
   if (!Online.room || !Online.roundData) return;
   try {
-    var res = await supabaseClient.from('room_answers').select('*').eq('room_id', Online.room.id).eq('round_number', Online.currentRound);
-    if (res.data) { Online.answers = res.data; updateOnlineScores(); }
+    var res = await supabaseClient.from('room_answers').select('*')
+      .eq('room_id', Online.room.id)
+      .eq('round_number', Online.currentRound);
+    if (res.data) {
+      Online.answers = res.data;
+      updateOnlineScores();
+    }
   } catch(e) { console.error(e); }
 }
 
@@ -1976,7 +2136,11 @@ function updateOnlineScores() {
     var answer = Online.answers.find(function(a){ return a.user_id === p.user_id; });
     var cls = '';
     if (answer) cls = answer.is_correct ? 'correct' : 'wrong';
-    html += '<div class="online-score-row ' + (isMe ? 'me ' : '') + cls + '"><span class="online-score-rank">#' + (i+1) + '</span><span class="online-score-name">' + p.username + (isMe ? ' (أنت)' : '') + '</span><span class="online-score-points">' + (p.score || 0) + '</span></div>';
+    html += '<div class="online-score-row ' + (isMe ? 'me ' : '') + cls + '">' +
+      '<span class="online-score-rank">#' + (i+1) + '</span>' +
+      '<span class="online-score-name">' + p.username + (isMe ? ' (أنت)' : '') + '</span>' +
+      '<span class="online-score-points">' + (p.score || 0) + '</span>' +
+    '</div>';
   }
   container.innerHTML = html;
 }
@@ -1992,13 +2156,17 @@ async function finishOnlineRound(round) {
   if (Online.myChoice === round.correct_choice) { SoundSystem.playSuccess(); Vibration.onWin(); }
   else { SoundSystem.playLoss(); Vibration.onLoss(); }
   await refreshOnlineAnswers();
-  setTimeout(function() { if (Online.isHost) nextOnlineRound(); }, 3000);
+  setTimeout(function() {
+    if (Online.isHost) nextOnlineRound();
+  }, 3000);
 }
 
 async function endOnlineGame() {
   Online.playing = false;
   if (Online.timer) clearInterval(Online.timer);
-  try { await supabaseClient.from('online_rooms').update({ status: 'finished', finished_at: new Date().toISOString() }).eq('id', Online.room.id); } catch(e) {}
+  try {
+    await supabaseClient.from('online_rooms').update({ status: 'finished', finished_at: new Date().toISOString() }).eq('id', Online.room.id);
+  } catch(e) {}
   updateMissionProgress('online');
   var sorted = Online.players.slice().sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
   var winner = sorted[0];
@@ -2017,7 +2185,11 @@ async function endOnlineGame() {
   var finalHtml = '';
   sorted.forEach(function(p, j) {
     var isMe = p.user_id === App.user.id;
-    finalHtml += '<div class="online-score-row ' + (isMe ? 'me' : '') + '"><span class="online-score-rank">#' + (j+1) + '</span><span class="online-score-name">' + p.username + (isMe ? ' (أنت)' : '') + '</span><span class="online-score-points">' + (p.score || 0) + '</span></div>';
+    finalHtml += '<div class="online-score-row ' + (isMe ? 'me' : '') + '">' +
+      '<span class="online-score-rank">#' + (j+1) + '</span>' +
+      '<span class="online-score-name">' + p.username + (isMe ? ' (أنت)' : '') + '</span>' +
+      '<span class="online-score-points">' + (p.score || 0) + '</span>' +
+    '</div>';
   });
   $('onlineFinalScores').innerHTML = finalHtml;
   showView('onlineResultView');
@@ -2025,16 +2197,26 @@ async function endOnlineGame() {
 }
 
 async function leaveOnlineRoom() {
-  if (Online.channel) { try { supabaseClient.removeChannel(Online.channel); } catch(e) {} Online.channel = null; }
+  if (Online.channel) {
+    try { supabaseClient.removeChannel(Online.channel); } catch(e) {}
+    Online.channel = null;
+  }
+  if (Online.pollInterval) {
+    clearInterval(Online.pollInterval);
+    Online.pollInterval = null;
+  }
   if (Online.room) {
     try {
       await supabaseClient.from('room_players').delete().eq('room_id', Online.room.id).eq('user_id', App.user.id);
       var remaining = await supabaseClient.from('room_players').select('id').eq('room_id', Online.room.id);
-      if (!remaining.data || remaining.data.length === 0) await supabaseClient.from('online_rooms').delete().eq('id', Online.room.id);
+      if (!remaining.data || remaining.data.length === 0) {
+        await supabaseClient.from('online_rooms').delete().eq('id', Online.room.id);
+      }
     } catch(e) {}
   }
   Online.room = null; Online.players = []; Online.answers = [];
-  Online.playing = false; Online.isHost = false; Online.isReady = false; Online.currentRound = 0;
+  Online.playing = false; Online.isHost = false; Online.isReady = false;
+  Online.currentRound = 0;
   if (Online.timer) clearInterval(Online.timer);
   $('readyBtn').textContent = '✋ جاهز';
   $('readyBtn').classList.remove('ready');
@@ -2116,7 +2298,6 @@ window.openFriendsModal = openFriendsModal;
 window.searchFriends = searchFriends;
 window.sendFriendRequest = sendFriendRequest;
 window.removeFriend = removeFriend;
-window.inviteFriendToRoom = inviteFriendToRoom;
 window.openShareModal = openShareModal;
 window.copyShareLink = copyShareLink;
 window.shareWhatsApp = shareWhatsApp;
