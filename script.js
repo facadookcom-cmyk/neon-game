@@ -1,6 +1,5 @@
 /* ============================================
-   Neon Prediction — v6
-   Wallet + Milestones + Wheel + All Features
+   Neon Prediction v7 — Script.js الكامل
    ============================================ */
 
 var SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -23,38 +22,43 @@ var CONFIG = {
   PRIME_PRICE: 99, PRIME_DAYS: 30,
   MULTIPLIER_PRICE: 15, MULTIPLIER_HOURS: 24,
   LEVELS_PER_GAMES: 15,
-  MIN_DEPOSIT: 10,
-  MIN_WITHDRAW: 50,
+  ONLINE_ENTRY: 14,
+  ONLINE_ROUNDS: 5,
+  ONLINE_TIMEOUT: 12,
+  SHARE_REWARD: 10,
+  SHARE_DAILY_LIMIT: 100,
   LEVEL_NAMES: {1:'مبتدئ 🌱',2:'هاوي 🥉',3:'محترف 🥈',4:'خبير 🥇',5:'أسطورة 💎',6:'نخبة 👑',7:'أسطوري 🏆'},
-  PRIZES: [
-    {threshold:150,money:20},{threshold:300,money:55},
-    {threshold:500,money:135},{threshold:800,money:330},{threshold:1200,money:650}
-  ],
-  // 20 تحدي مادي
+  PRIZES: [{threshold:150,money:20},{threshold:300,money:55},{threshold:500,money:135},{threshold:800,money:330},{threshold:1200,money:650}],
   MILESTONES: [
-    {points:100,money:5},
-    {points:250,money:12},
-    {points:500,money:25},
-    {points:750,money:37},
-    {points:1000,money:50},
-    {points:1500,money:90},
-    {points:2000,money:125},
-    {points:2750,money:165},
-    {points:3500,money:210},
-    {points:4500,money:270},
-    {points:5500,money:330},
-    {points:7000,money:420},
-    {points:8500,money:510},
-    {points:10000,money:625},
-    {points:12500,money:780},
-    {points:15000,money:940},
-    {points:20000,money:1250},
-    {points:25000,money:1560},
-    {points:35000,money:2190},
-    {points:50000,money:3125}
+    {points:100,money:5},{points:250,money:12},{points:500,money:25},{points:750,money:37},{points:1000,money:50},
+    {points:1500,money:90},{points:2000,money:125},{points:2750,money:165},{points:3500,money:210},{points:4500,money:270},
+    {points:5500,money:330},{points:7000,money:420},{points:8500,money:510},{points:10000,money:625},{points:12500,money:780},
+    {points:15000,money:940},{points:20000,money:1250},{points:25000,money:1560},{points:35000,money:2190},{points:50000,money:3125}
   ],
   DAILY_LOGIN_REWARDS: [15,20,30,40,55,70,100],
-  DAILY_CHEST_REWARDS: [15,20,25,30,40]
+  DAILY_CHEST_REWARDS: [15,20,25,30,40],
+  MISSION_POOL: [
+    {id:'play_3', type:'play', target:3, reward:25, text:'العب 3 مباريات'},
+    {id:'play_5', type:'play', target:5, reward:40, text:'العب 5 مباريات'},
+    {id:'play_10', type:'play', target:10, reward:70, text:'العب 10 مباريات'},
+    {id:'win_2', type:'win', target:2, reward:35, text:'اكسب مباراتين'},
+    {id:'win_3', type:'win', target:3, reward:50, text:'اكسب 3 مباريات'},
+    {id:'win_5', type:'win', target:5, reward:80, text:'اكسب 5 مباريات'},
+    {id:'streak_3', type:'streak', target:3, reward:60, text:'حقق سلسلة 3 انتصارات'},
+    {id:'play_1v1_2', type:'1v1', target:2, reward:30, text:'العب مباراتين 1 ضد 1'},
+    {id:'play_1v1_5', type:'1v1', target:5, reward:60, text:'العب 5 مباريات 1 ضد 1'},
+    {id:'wheel_2', type:'wheel', target:2, reward:20, text:'لف العجلة مرتين'},
+    {id:'wheel_5', type:'wheel', target:5, reward:45, text:'لف العجلة 5 مرات'},
+    {id:'online_1', type:'online', target:1, reward:40, text:'العب مباراة أونلاين'},
+    {id:'online_3', type:'online', target:3, reward:90, text:'العب 3 مباريات أونلاين'},
+    {id:'chest', type:'chest', target:1, reward:15, text:'افتح الصندوق اليومي'},
+    {id:'play_football', type:'category_football', target:3, reward:35, text:'العب 3 مباريات كرة قدم'},
+    {id:'play_fruits', type:'category_fruits', target:3, reward:35, text:'العب 3 مباريات فواكه'},
+    {id:'play_animals', type:'category_animals', target:3, reward:35, text:'العب 3 مباريات حيوانات'},
+    {id:'play_colors', type:'category_colors', target:3, reward:35, text:'العب 3 مباريات ألوان'},
+    {id:'share_1', type:'share', target:1, reward:15, text:'شارك الموقع مع صديق'},
+    {id:'win_online_2', type:'win_online', target:2, reward:100, text:'اكسب مباراتين أونلاين'}
+  ]
 };
 
 var CATEGORIES = {
@@ -65,8 +69,8 @@ var CATEGORIES = {
 };
 
 var BOT_NAMES = ['أحمد','محمود','سارة','ياسين','نور','عمر','لينا','كريم','هدى','يوسف','مريم','علي'];
-var STORAGE_KEY = 'neon_user_v6';
-var WALLET_KEY_PREFIX = 'neon_wallet_v6_';
+var STORAGE_KEY = 'neon_user_v7';
+var WALLET_KEY_PREFIX = 'neon_wallet_v7_';
 
 var App = {
   user: createDefaultUser(),
@@ -79,17 +83,11 @@ var App = {
   busy: false
 };
 
-var Wallet = {
-  balance: 0,
-  earned: 0,
-  totalDeposited: 0,
-  totalWon: 0,
-  totalWithdrawn: 0
-};
+var Wallet = { balance: 0, earned: 0, totalDeposited: 0, totalWon: 0, totalWithdrawn: 0 };
 
 function createDefaultUser() {
   return {
-    id:null, username:'', phone:'',
+    id:null, username:'', phone:'', password:'',
     purchased:0, earned:0, level:1,
     games_played:0, wins:0, streak:0, bestStreak:0,
     tickets:5, lastTicketRegen:null, claimedPrizes:[],
@@ -99,15 +97,18 @@ function createDefaultUser() {
     lastLossAmount:0, adShown:false, lastSpecialOffer:null,
     is_prime:false, prime_expires_at:null,
     multiplier_2x_expires_at:null,
-    peak_points:0,
-    claimed_milestones:[]
+    peak_points:0, claimed_milestones:[],
+    referral_code:null, referred_by:null,
+    share_points_today:0, last_share_date:null,
+    wheel_spins_total:0,
+    active_ticket:null, ticket_expires_at:null, ticket_uses_left:0
   };
 }
 
 function $(id){return document.getElementById(id);}
 function totalPoints(){return App.user.purchased + App.user.earned;}
 
-function addPoints(a, toEarned){
+function addPoints(a,toEarned){
   if(isPrime()) a = Math.floor(a * 2);
   if(toEarned) App.user.earned += a;
   else App.user.purchased += a;
@@ -121,9 +122,7 @@ function deductPoints(a){
 
 function checkPeakPoints(){
   var current = totalPoints();
-  if(current > (App.user.peak_points || 0)){
-    App.user.peak_points = current;
-  }
+  if(current > (App.user.peak_points || 0)) App.user.peak_points = current;
 }
 
 function isPrime(){
@@ -137,13 +136,496 @@ function hasMultiplier(){
   return new Date(App.user.multiplier_2x_expires_at) > new Date();
 }
 
-/* ============================================
-   WALLET
-   ============================================ */
+function hasActiveTicket(){
+  if(!App.user.active_ticket) return false;
+  if(!App.user.ticket_expires_at) return false;
+  if(new Date(App.user.ticket_expires_at) < new Date()) return false;
+  if(App.user.ticket_uses_left === 0) return false;
+  return true;
+}
+
+/* ============ SOUND SYSTEM ============ */
+var SoundSystem = {
+  ctx: null, enabled: true,
+  init: function() {
+    if (this.ctx) return;
+    try { var AC = window.AudioContext || window.webkitAudioContext; this.ctx = new AC(); } catch(e) {}
+  },
+  playSuccess: function() {
+    if (!this.enabled || !this.ctx) return;
+    var ctx = this.ctx;
+    [523.25, 659.25, 783.99].forEach(function(freq, i) {
+      var osc = ctx.createOscillator(); var gain = ctx.createGain();
+      osc.type = 'sine'; osc.frequency.value = freq;
+      var t = ctx.currentTime + i * 0.08;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.5);
+    });
+  },
+  playBigWin: function() {
+    if (!this.enabled || !this.ctx) return;
+    var ctx = this.ctx;
+    var bell = ctx.createOscillator(); var bGain = ctx.createGain();
+    bell.type = 'triangle'; bell.frequency.value = 1046.5;
+    bGain.gain.setValueAtTime(0, ctx.currentTime);
+    bGain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.02);
+    bGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+    bell.connect(bGain); bGain.connect(ctx.destination);
+    bell.start(); bell.stop(ctx.currentTime + 1.3);
+    [1318.5, 1567.98, 2093, 2637, 3136].forEach(function(freq, i) {
+      var o = ctx.createOscillator(); var g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      var t = ctx.currentTime + i * 0.06;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.15, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t + 0.35);
+    });
+  },
+  playReward: function() {
+    if (!this.enabled || !this.ctx) return;
+    var ctx = this.ctx;
+    [880, 1174.66, 1396.91, 1760, 2093].forEach(function(freq, i) {
+      var o = ctx.createOscillator(); var g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      var t = ctx.currentTime + i * 0.05;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.18, t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t + 0.4);
+    });
+  },
+  playLevelUp: function() {
+    if (!this.enabled || !this.ctx) return;
+    var ctx = this.ctx;
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach(function(freq, i) {
+      var o = ctx.createOscillator(); var g = ctx.createGain();
+      o.type = 'square'; o.frequency.value = freq;
+      var t = ctx.currentTime + i * 0.1;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.12, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t + 0.45);
+    });
+  },
+  playLoss: function() {
+    if (!this.enabled || !this.ctx) return;
+    var ctx = this.ctx;
+    var o = ctx.createOscillator(); var g = ctx.createGain();
+    o.type = 'sawtooth'; o.frequency.value = 200;
+    g.gain.setValueAtTime(0, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    o.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.5);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.55);
+  },
+  playTick: function() {
+    if (!this.enabled || !this.ctx) return;
+    var ctx = this.ctx;
+    var o = ctx.createOscillator(); var g = ctx.createGain();
+    o.type = 'square'; o.frequency.value = 1200 + Math.random() * 400;
+    g.gain.setValueAtTime(0.08, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.05);
+  }
+};
+
+/* ============ VIBRATION ============ */
+var Vibration = {
+  enabled: true,
+  vibrate: function(pattern) {
+    if (!this.enabled) return;
+    if (!navigator.vibrate) return;
+    try { navigator.vibrate(pattern); } catch(e) {}
+  },
+  onWin: function() { this.vibrate([100, 50, 100, 50, 200]); },
+  onBigPrize: function() { this.vibrate([200, 100, 200, 100, 300, 100, 500]); },
+  onLoss: function() { this.vibrate(200); },
+  onReward: function() { this.vibrate([50, 30, 100]); }
+};
+
+function showWinOverlay(icon, text, duration) {
+  var overlay = $('winOverlay');
+  if (!overlay) return;
+  $('winOverlayIcon').textContent = icon || '🏆';
+  $('winOverlayText').textContent = text || 'مبروك!';
+  overlay.classList.add('show');
+  setTimeout(function() { overlay.classList.remove('show'); }, duration || 2000);
+}
+
+/* ============ AUTH ============ */
+function switchAuthTab(tab) {
+  if (tab === 'login') {
+    $('tabLogin').classList.add('active');
+    $('tabSignup').classList.remove('active');
+    $('loginForm').style.display = 'block';
+    $('signupForm').style.display = 'none';
+  } else {
+    $('tabLogin').classList.remove('active');
+    $('tabSignup').classList.add('active');
+    $('loginForm').style.display = 'none';
+    $('signupForm').style.display = 'block';
+  }
+}
+
+async function signupNew() {
+  if (App.busy) return;
+  var name = $('signupName').value.trim();
+  var phone = $('signupPhone').value.trim();
+  var password = $('signupPassword').value.trim();
+
+  if (name.length < 2) return showToast('اكتب اسم صحيح (حرفين على الأقل)', 'error');
+  if (!phone || phone.length < 11 || phone.indexOf('01') !== 0) return showToast('رقم تليفون غير صحيح', 'error');
+  if (password.length < 6) return showToast('كلمة السر 6 أحرف على الأقل', 'error');
+
+  App.busy = true;
+
+  try {
+    var nameCheck = await supabaseClient.from('users').select('id').eq('username', name).maybeSingle();
+    if (nameCheck.data) { App.busy = false; return showToast('❌ الاسم ده مستخدم بالفعل — اختار اسم تاني', 'error'); }
+
+    var phoneCheck = await supabaseClient.from('users').select('id').eq('phone', phone).maybeSingle();
+    if (phoneCheck.data) { App.busy = false; return showToast('❌ الرقم ده مسجل قبل كده', 'error'); }
+
+    var urlParams = new URLSearchParams(window.location.search);
+    var refCode = urlParams.get('ref') || localStorage.getItem('neon_ref_code');
+
+    var nu = createDefaultUser();
+    nu.username = name;
+    nu.phone = phone;
+    nu.password = password;
+    nu.purchased = CONFIG.STARTER_POINTS;
+    nu.tickets = CONFIG.MAX_TICKETS;
+    nu.lastTicketRegen = new Date().toISOString();
+    nu.missions = getDefaultMissions();
+    nu.lastMissionDate = new Date().toDateString();
+    nu.referral_code = generateReferralCode();
+    nu.referred_by = refCode || null;
+
+    var ins = await supabaseClient.from('users').insert({
+      username: name, phone: phone, password: password,
+      purchased: CONFIG.STARTER_POINTS, tickets: CONFIG.MAX_TICKETS,
+      missions: nu.missions, last_mission_date: nu.lastMissionDate,
+      referral_code: nu.referral_code, wheel_spins_total: 0
+    }).select().single();
+
+    if (ins.error) throw ins.error;
+
+    loadUserFromDB(ins.data);
+    saveLocal();
+    enterGame();
+    SoundSystem.playReward(); Vibration.onReward();
+    showToast('🎉 أهلاً ' + name + '! حصلت على ' + CONFIG.STARTER_POINTS + ' نقطة', 'success');
+
+    if (nu.referred_by) registerReferral(nu.referred_by);
+    App.busy = false;
+  } catch(e) {
+    console.error('signup error:', e);
+    App.busy = false;
+    showToast('خطأ: ' + e.message, 'error');
+  }
+}
+
+var pendingLegacyUser = null;
+
+async function loginExisting() {
+  if (App.busy) return;
+  var phone = $('loginPhone').value.trim();
+  var password = $('loginPassword').value.trim();
+
+  if (!phone || phone.length < 11) return showToast('اكتب رقم التليفون', 'error');
+  if (!password) return showToast('اكتب كلمة السر', 'error');
+
+  App.busy = true;
+
+  try {
+    var res = await supabaseClient.from('users').select('*').eq('phone', phone).maybeSingle();
+
+    if (!res.data) { App.busy = false; return showToast('❌ الرقم ده مش مسجل — اعمل حساب جديد', 'error'); }
+
+    var user = res.data;
+
+    if (!user.password || user.password === '' || user.password === null) {
+      App.busy = false;
+      pendingLegacyUser = user;
+      $('setPasswordModal').classList.add('active');
+      return;
+    }
+
+    if (user.password !== password) { App.busy = false; return showToast('❌ كلمة السر غلط', 'error'); }
+
+    loadUserFromDB(user);
+    saveLocal();
+    enterGame();
+    showToast('أهلاً بيك تاني ' + user.username, 'success');
+    App.busy = false;
+  } catch(e) {
+    console.error('login error:', e);
+    App.busy = false;
+    showToast('خطأ: ' + e.message, 'error');
+  }
+}
+
+async function saveNewPassword() {
+  if (!pendingLegacyUser) return;
+  var p1 = $('newPasswordInput').value.trim();
+  var p2 = $('confirmPasswordInput').value.trim();
+
+  if (p1.length < 6) return showToast('كلمة السر 6 أحرف على الأقل', 'error');
+  if (p1 !== p2) return showToast('كلمتين السر مش متطابقتين', 'error');
+
+  try {
+    var res = await supabaseClient.from('users').update({ password: p1 }).eq('id', pendingLegacyUser.id);
+    if (res.error) throw res.error;
+    pendingLegacyUser.password = p1;
+    loadUserFromDB(pendingLegacyUser);
+    saveLocal();
+    closeModal('setPasswordModal');
+    enterGame();
+    SoundSystem.playSuccess(); Vibration.onReward();
+    showToast('✅ تم تحديد كلمة السر', 'success');
+    pendingLegacyUser = null;
+  } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
+}
+
+function generateReferralCode(){
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', code = '';
+  for(var i=0;i<6;i++) code += chars.charAt(Math.floor(Math.random()*chars.length));
+  return code;
+}
+
+function loadUserFromDB(row){
+  App.user = createDefaultUser();
+  App.user.id = row.id;
+  App.user.username = row.username;
+  App.user.phone = row.phone;
+  App.user.password = row.password || '';
+  App.user.purchased = row.purchased || 0;
+  App.user.earned = row.earned || 0;
+  App.user.level = row.level || 1;
+  App.user.games_played = row.games_played || 0;
+  App.user.wins = row.wins || 0;
+  App.user.streak = row.streak || 0;
+  App.user.bestStreak = row.best_streak || 0;
+  App.user.tickets = row.tickets != null ? row.tickets : CONFIG.MAX_TICKETS;
+  App.user.lastTicketRegen = row.last_ticket_regen;
+  App.user.claimedPrizes = row.claimed_prizes || [];
+  App.user.lastDailyChest = row.last_daily_chest;
+  App.user.lastDailyLogin = row.last_daily_login;
+  App.user.dailyLoginStreak = row.daily_login_streak || 0;
+  App.user.lastWheelSpin = row.last_wheel_spin;
+  App.user.missions = row.missions || getDefaultMissions();
+  App.user.lastMissionDate = row.last_mission_date;
+  App.user.adShown = row.ad_shown || false;
+  App.user.is_prime = row.is_prime || false;
+  App.user.prime_expires_at = row.prime_expires_at;
+  App.user.multiplier_2x_expires_at = row.multiplier_2x_expires_at;
+  App.user.peak_points = row.peak_points || 0;
+  App.user.claimed_milestones = row.claimed_milestones || [];
+  App.user.referral_code = row.referral_code || generateReferralCode();
+  App.user.wheel_spins_total = row.wheel_spins_total || 0;
+  App.user.active_ticket = row.active_ticket || null;
+  App.user.ticket_expires_at = row.ticket_expires_at || null;
+  App.user.ticket_uses_left = row.ticket_uses_left || 0;
+  saveLocal();
+  loadWallet();
+}
+
+function logoutUser() {
+  if (!confirm('متأكد إنك عايز تسجل خروج؟')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  App.user = createDefaultUser();
+  Wallet = { balance: 0, earned: 0, totalDeposited: 0, totalWon: 0, totalWithdrawn: 0 };
+  $('mainScreen').classList.remove('active');
+  $('loginScreen').classList.add('active');
+  closeModal('profileModal');
+  showToast('👋 تم تسجيل الخروج', 'info');
+}
+
+function enterGame(){
+  $('loginScreen').classList.remove('active');
+  $('mainScreen').classList.add('active');
+  updateAllUI();
+  loadWallet();
+  if(!App.user.adShown) $('welcomeAd').classList.remove('hidden');
+}
+
+function closeWelcomeAd(){
+  $('welcomeAd').classList.add('hidden');
+  App.user.adShown = true;
+  saveLocal();
+}
+
+function updateAllUI(){
+  if(!App.user || !App.user.username) return;
+  $('userName').textContent = App.user.username;
+  $('userPoints').textContent = totalPoints();
+  $('userLevel').textContent = CONFIG.LEVEL_NAMES[App.user.level] || 'مبتدئ';
+  $('streakValue').textContent = App.user.streak;
+  $('ticketValue').textContent = hasActiveTicket() ? '∞' : App.user.tickets;
+  var av = $('userAvatar');
+  if(av){
+    av.textContent = App.user.username.charAt(0).toUpperCase();
+    if(isPrime()) av.classList.add('prime'); else av.classList.remove('prime');
+  }
+  updateDailyLoginUI();
+  updateChestUI();
+  updateMissionsUI();
+  updateWalletUI();
+  updateMissionsDate();
+}
+
+function updateMissionsDate(){
+  var el = $('missionsDate');
+  if (!el) return;
+  var today = new Date();
+  var days = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  el.textContent = '(' + days[today.getDay()] + ')';
+}
+
+/* ============ MISSIONS ============ */
+function getDefaultMissions(){
+  var today = new Date();
+  var seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  var pool = CONFIG.MISSION_POOL.slice();
+  var shuffled = [];
+  var rng = seed;
+  while (pool.length > 0) {
+    rng = (rng * 1103515245 + 12345) % 2147483648;
+    var idx = rng % pool.length;
+    shuffled.push(pool.splice(idx, 1)[0]);
+  }
+  var selected = shuffled.slice(0, 3);
+  var missions = {};
+  selected.forEach(function(m, i) {
+    missions['m' + i] = { id: m.id, type: m.type, target: m.target, reward: m.reward, text: m.text, progress: 0, done: false };
+  });
+  return missions;
+}
+
+function updateMissionsUI(){
+  var list = $('missionsList'); if(!list) return;
+  var m = App.user.missions || getDefaultMissions();
+  var html = '';
+  Object.keys(m).forEach(function(key) {
+    var mission = m[key];
+    if (!mission) return;
+    html += '<div class="mission-item ' + (mission.done ? 'done' : '') + '"><div class="mission-info"><strong>' + (mission.text || mission.id) + '</strong><span>' + mission.progress + '/' + mission.target + '</span></div><span class="mission-reward">+' + mission.reward + '</span></div>';
+  });
+  if (!html) html = '<p class="small-text">مفيش مهام النهاردة</p>';
+  list.innerHTML = html;
+}
+
+function updateMissionProgress(type, won, extra){
+  if(!App.user.missions) App.user.missions = getDefaultMissions();
+  var m = App.user.missions;
+  var changed = false;
+  Object.keys(m).forEach(function(key) {
+    var mission = m[key];
+    if (!mission || mission.done) return;
+    var match = false;
+    if (type === 'play' && mission.type === 'play') match = true;
+    if (type === 'win' && won && mission.type === 'win') match = true;
+    if (type === '1v1' && mission.type === '1v1') match = true;
+    if (type === 'wheel' && mission.type === 'wheel') match = true;
+    if (type === 'online' && mission.type === 'online') match = true;
+    if (type === 'win_online' && won && mission.type === 'win_online') match = true;
+    if (type === 'chest' && mission.type === 'chest') match = true;
+    if (type === 'share' && mission.type === 'share') match = true;
+    if (type === 'streak' && mission.type === 'streak' && App.user.streak >= mission.target) match = true;
+    if (type === 'play' && mission.type.indexOf('category_') === 0 && extra === mission.type.replace('category_', '')) match = true;
+    if (match) {
+      mission.progress++;
+      changed = true;
+      if (mission.progress >= mission.target) {
+        mission.done = true;
+        addPoints(mission.reward);
+        SoundSystem.playReward(); Vibration.onReward();
+        showCoinToast('+' + mission.reward + ' مهمة مكتملة', '🎯');
+      }
+    }
+  });
+  if (changed) { saveLocal(); updateMissionsUI(); updateAllUI(); checkMilestones(); }
+}
+
+/* ============ DAILY ============ */
+function updateDailyLoginUI(){
+  var today = new Date().toDateString();
+  var s = $('dailyLoginStatus'); if(!s) return;
+  if(App.user.lastDailyLogin === today){ s.textContent = 'تم الاستلام اليوم'; $('dailyLoginBox').classList.add('claimed'); }
+  else { s.textContent = 'اضغط لاستلامها'; $('dailyLoginBox').classList.remove('claimed'); }
+  $('dailyStreakDisplay').textContent = 'يوم ' + (App.user.dailyLoginStreak + 1);
+}
+
+function claimDailyLogin(){
+  if(!App.user.id) return;
+  var today = new Date().toDateString();
+  if(App.user.lastDailyLogin === today) return showToast('اخدت المكافأة النهاردة', 'error');
+  App.user.dailyLoginStreak = Math.min(App.user.dailyLoginStreak + 1, 7);
+  var idx = App.user.dailyLoginStreak - 1;
+  var reward = CONFIG.DAILY_LOGIN_REWARDS[idx] || 100;
+  if(isPrime()) reward *= 2;
+  addPoints(reward);
+  App.user.lastDailyLogin = today;
+  saveLocal(); updateAllUI();
+  SoundSystem.playReward(); Vibration.onReward();
+  showCoinToast('+' + reward + ' دخول يومي', '📅');
+  syncUser(); checkMilestones();
+}
+
+function updateChestUI(){
+  var today = new Date().toDateString();
+  var s = $('chestStatus'); if(!s) return;
+  if(App.user.lastDailyChest === today){ s.textContent = 'تم فتحه اليوم'; $('dailyChest').classList.add('claimed'); }
+  else { s.textContent = 'اضغط لفتحه'; $('dailyChest').classList.remove('claimed'); }
+}
+
+function claimDailyChest(){
+  if(!App.user.id) return;
+  var today = new Date().toDateString();
+  if(App.user.lastDailyChest === today) return showToast('فتحت الصندوق النهاردة', 'error');
+  var arr = CONFIG.DAILY_CHEST_REWARDS;
+  var reward = arr[Math.floor(Math.random()*arr.length)];
+  if(isPrime()) reward *= 2;
+  addPoints(reward);
+  App.user.lastDailyChest = today;
+  saveLocal(); updateAllUI();
+  SoundSystem.playReward(); Vibration.onReward();
+  updateMissionProgress('chest');
+  showCoinToast('+' + reward + ' من الصندوق', '🎁');
+  syncUser(); checkMilestones();
+}
+
+/* ============ STORAGE + WALLET ============ */
+function saveLocal(){ try{localStorage.setItem(STORAGE_KEY, JSON.stringify(App.user));}catch(e){} }
+
+function restoreSession(){
+  var saved = localStorage.getItem(STORAGE_KEY);
+  if(!saved) return;
+  try{
+    var p = JSON.parse(saved);
+    var m = createDefaultUser();
+    for(var k in p) if(p.hasOwnProperty(k)) m[k] = p[k];
+    App.user = m;
+    if(!App.user.missions) App.user.missions = getDefaultMissions();
+    if(!Array.isArray(App.user.claimedPrizes)) App.user.claimedPrizes = [];
+    if(!Array.isArray(App.user.claimed_milestones)) App.user.claimed_milestones = [];
+    if(App.user.username && App.user.password){
+      setTimeout(function(){enterGame(); maybeShowSpecialOffer();},300);
+    }
+  }catch(e){localStorage.removeItem(STORAGE_KEY);}
+}
 
 async function loadWallet() {
   if (!App.user.id) return;
-
   if (!supabaseClient || String(App.user.id).indexOf('local_') === 0) {
     try {
       var saved = JSON.parse(localStorage.getItem(WALLET_KEY_PREFIX + App.user.id) || '{}');
@@ -153,10 +635,8 @@ async function loadWallet() {
       Wallet.totalWon = saved.totalWon || 0;
       Wallet.totalWithdrawn = saved.totalWithdrawn || 0;
     } catch(e) {}
-    updateWalletUI();
-    return;
+    updateWalletUI(); return;
   }
-
   try {
     var res = await supabaseClient.from('wallets').select('*').eq('user_id', App.user.id).maybeSingle();
     if (res.data) {
@@ -167,288 +647,90 @@ async function loadWallet() {
     } else {
       await supabaseClient.from('wallets').insert({ user_id: App.user.id, balance: 0 });
     }
-
-    var earningsRes = await supabaseClient.from('earnings')
-      .select('amount')
-      .eq('user_id', App.user.id)
-      .eq('transferred', false);
-
-    if (earningsRes.data) {
-      Wallet.earned = earningsRes.data.reduce(function(sum, e) {
-        return sum + parseFloat(e.amount || 0);
-      }, 0);
-    }
-
+    var er = await supabaseClient.from('earnings').select('amount').eq('user_id', App.user.id).eq('transferred', false);
+    if (er.data) Wallet.earned = er.data.reduce(function(s, e) { return s + parseFloat(e.amount || 0); }, 0);
     updateWalletUI();
-  } catch(e) {
-    console.error('loadWallet error:', e);
-  }
+  } catch(e) { console.error('loadWallet:', e); }
 }
 
 function saveWallet() {
   if (!App.user.id) return;
-  try {
-    localStorage.setItem(WALLET_KEY_PREFIX + App.user.id, JSON.stringify(Wallet));
-  } catch(e) {}
+  try { localStorage.setItem(WALLET_KEY_PREFIX + App.user.id, JSON.stringify(Wallet)); } catch(e) {}
   updateWalletUI();
 }
 
 function updateWalletUI() {
-  var balanceEl = $('walletBalance');
-  var earnedEl = $('walletEarned');
-  var depositedEl = $('walletDeposited');
-  var withdrawBal = $('withdrawBalance');
-
-  if (balanceEl) balanceEl.textContent = Wallet.balance.toFixed(2) + ' ج';
-  if (earnedEl) earnedEl.textContent = Wallet.earned.toFixed(2) + ' ج';
-  if (depositedEl) depositedEl.textContent = Wallet.totalDeposited.toFixed(2) + ' ج';
-  if (withdrawBal) withdrawBal.textContent = Wallet.balance.toFixed(2) + ' ج';
-
-  // حدّث زر التحويل
-  var transferBtn = document.querySelector('.wallet-btn.transfer');
-  if (transferBtn) {
-    if (Wallet.earned > 0) {
-      transferBtn.disabled = false;
-      transferBtn.style.opacity = '1';
-    } else {
-      transferBtn.disabled = true;
-      transferBtn.style.opacity = '0.5';
-    }
-  }
+  var b = $('walletBalance'); if (b) b.textContent = Wallet.balance.toFixed(2) + ' ج';
+  var e = $('walletEarned'); if (e) e.textContent = Wallet.earned.toFixed(2) + ' ج';
+  var w = $('withdrawBalance'); if (w) w.textContent = Wallet.balance.toFixed(2) + ' ج';
+  var s = $('storeBalance'); if (s) { s.textContent = Wallet.balance.toFixed(2) + ' ج'; s.style.color = Wallet.balance > 0 ? '#00e676' : '#ef4444'; }
+  var tsb = $('ticketStoreBalance'); if (tsb) tsb.textContent = Wallet.balance.toFixed(2) + ' ج';
+  var tb = document.querySelector('.wallet-btn.transfer');
+  if (tb) { tb.disabled = Wallet.earned <= 0; tb.style.opacity = Wallet.earned > 0 ? '1' : '0.5'; }
 }
 
 async function addEarning(amount, source) {
   if (amount <= 0) return;
   Wallet.earned += amount;
   saveWallet();
-
   if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
-    try {
-      await supabaseClient.from('earnings').insert({
-        user_id: App.user.id,
-        amount: amount,
-        source: source || 'game',
-        transferred: false
-      });
-    } catch(e) { console.error('addEarning error:', e); }
+    try { await supabaseClient.from('earnings').insert({ user_id: App.user.id, amount: amount, source: source || 'game', transferred: false }); } catch(e) {}
   }
   updateWalletUI();
+  SoundSystem.playBigWin(); Vibration.onBigPrize();
+  showWinOverlay('💰', '+' + amount.toFixed(2) + ' جنيه', 2500);
 }
 
 async function transferEarningsToWallet() {
-  if (Wallet.earned <= 0) {
-    return showToast('مفيش مبلغ مكتسب لتحويله', 'error');
-  }
+  if (Wallet.earned <= 0) return showToast('مفيش مبلغ مكتسب لتحويله', 'error');
   var amount = Wallet.earned;
   Wallet.balance += amount;
   Wallet.earned = 0;
   Wallet.totalWon = (Wallet.totalWon || 0) + amount;
   saveWallet();
-
   if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
     try {
-      await supabaseClient.from('wallets').upsert({
-        user_id: App.user.id,
-        balance: Wallet.balance,
-        total_won: Wallet.totalWon,
-        updated_at: new Date().toISOString()
-      });
-      await supabaseClient.from('earnings')
-        .update({ transferred: true })
-        .eq('user_id', App.user.id)
-        .eq('transferred', false);
-    } catch(e) { console.error('transfer error:', e); }
+      await supabaseClient.from('wallets').upsert({ user_id: App.user.id, balance: Wallet.balance, total_won: Wallet.totalWon, updated_at: new Date().toISOString() });
+      await supabaseClient.from('earnings').update({ transferred: true }).eq('user_id', App.user.id).eq('transferred', false);
+    } catch(e) {}
   }
-
-  showToast('✅ تم تحويل ' + amount.toFixed(2) + ' جنيه للمحفظة', 'success');
-  showCoinToast('+' + amount.toFixed(2) + ' ج', '💰');
+  SoundSystem.playBigWin(); Vibration.onBigPrize();
+  showWinOverlay('💰', '+' + amount.toFixed(2) + ' ج', 2500);
+  showToast('✅ تم تحويل ' + amount.toFixed(2) + ' ج للمحفظة', 'success');
   updateWalletUI();
 }
 
 async function deductFromWallet(amount) {
-  if (Wallet.balance < amount) {
-    showToast('رصيد المحفظة غير كافٍ', 'error');
-    return false;
-  }
+  if (Wallet.balance < amount) { showToast('رصيد المحفظة غير كافٍ', 'error'); return false; }
   Wallet.balance -= amount;
   saveWallet();
-
   if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
-    try {
-      await supabaseClient.from('wallets').update({
-        balance: Wallet.balance,
-        updated_at: new Date().toISOString()
-      }).eq('user_id', App.user.id);
-    } catch(e) { console.error('deduct error:', e); }
+    try { await supabaseClient.from('wallets').update({ balance: Wallet.balance, updated_at: new Date().toISOString() }).eq('user_id', App.user.id); } catch(e) {}
   }
   return true;
 }
 
-async function requestDeposit(amount, transNumber) {
-  if (amount < CONFIG.MIN_DEPOSIT) {
-    showToast('الحد الأدنى للإيداع ' + CONFIG.MIN_DEPOSIT + ' جنيه', 'error');
-    return false;
-  }
-
-  if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
-    try {
-      var res = await supabaseClient.from('deposit_requests').insert({
-        user_id: App.user.id,
-        amount: amount,
-        trans_number: transNumber,
-        status: 'pending'
-      });
-      if (res.error) throw res.error;
-      showToast('✅ تم إرسال طلب الإيداع', 'success');
-      return true;
-    } catch(e) {
-      showToast('خطأ: ' + e.message, 'error');
-      return false;
-    }
-  }
-  showToast('✅ تم إرسال الطلب (محلي)', 'success');
-  return true;
+function syncUser(){
+  if(!supabaseClient || !App.user.id) return;
+  if(String(App.user.id).indexOf('local_') === 0) return;
+  supabaseClient.from('users').update({
+    purchased: App.user.purchased, earned: App.user.earned, level: App.user.level,
+    games_played: App.user.games_played, wins: App.user.wins, streak: App.user.streak, best_streak: App.user.bestStreak,
+    tickets: App.user.tickets, claimed_prizes: App.user.claimedPrizes,
+    last_daily_chest: App.user.lastDailyChest, last_daily_login: App.user.lastDailyLogin,
+    daily_login_streak: App.user.dailyLoginStreak, last_wheel_spin: App.user.lastWheelSpin,
+    missions: App.user.missions, last_mission_date: App.user.lastMissionDate,
+    ad_shown: App.user.adShown, is_prime: App.user.is_prime,
+    prime_expires_at: App.user.prime_expires_at, multiplier_2x_expires_at: App.user.multiplier_2x_expires_at,
+    peak_points: App.user.peak_points, claimed_milestones: App.user.claimed_milestones,
+    wheel_spins_total: App.user.wheel_spins_total,
+    active_ticket: App.user.active_ticket,
+    ticket_expires_at: App.user.ticket_expires_at,
+    ticket_uses_left: App.user.ticket_uses_left
+  }).eq('id', App.user.id).then(function(res){ if(res.error) console.warn('Sync:', res.error); });
 }
 
-async function requestWithdraw(amount, phone) {
-  if (amount < CONFIG.MIN_WITHDRAW) {
-    showToast('الحد الأدنى للسحب ' + CONFIG.MIN_WITHDRAW + ' جنيه', 'error');
-    return false;
-  }
-  if (Wallet.balance < amount) {
-    showToast('رصيد غير كافٍ', 'error');
-    return false;
-  }
-  if (!phone || phone.length < 11 || phone.indexOf('01') !== 0) {
-    showToast('رقم تليفون غير صحيح', 'error');
-    return false;
-  }
-
-  if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
-    try {
-      var res = await supabaseClient.from('withdraw_requests').insert({
-        user_id: App.user.id,
-        amount: amount,
-        phone: phone,
-        status: 'pending'
-      });
-      if (res.error) throw res.error;
-      showToast('✅ تم إرسال طلب السحب', 'success');
-      return true;
-    } catch(e) {
-      showToast('خطأ: ' + e.message, 'error');
-      return false;
-    }
-  }
-  showToast('✅ تم إرسال الطلب (محلي)', 'success');
-  return true;
-}
-
-function openDepositModal() {
-  var a = $('depositAmount'); if (a) a.value = '';
-  var t = $('depositTrans'); if (t) t.value = '';
-  var m = $('depositModal'); if (m) m.classList.add('active');
-}
-
-function openWithdrawModal() {
-  var a = $('withdrawAmount'); if (a) a.value = '';
-  var p = $('withdrawPhone'); if (p) p.value = App.user.phone || '';
-  updateWalletUI();
-  var m = $('withdrawModal'); if (m) m.classList.add('active');
-}
-
-async function submitDeposit() {
-  var amount = parseFloat($('depositAmount').value);
-  var trans = $('depositTrans').value.trim();
-  if (!amount || amount < CONFIG.MIN_DEPOSIT) return showToast('الحد الأدنى ' + CONFIG.MIN_DEPOSIT + ' جنيه', 'error');
-  if (trans.length < 6) return showToast('رقم العملية قصير', 'error');
-
-  var btn = document.querySelector('#depositModal .btn-neon');
-  if (btn) { btn.disabled = true; btn.textContent = 'جاري الإرسال...'; }
-
-  var ok = await requestDeposit(amount, trans);
-  if (ok) closeModal('depositModal');
-  if (btn) { btn.disabled = false; btn.textContent = 'إرسال طلب الإيداع'; }
-}
-
-async function submitWithdraw() {
-  var amount = parseFloat($('withdrawAmount').value);
-  var phone = $('withdrawPhone').value.trim();
-  if (!amount || amount < CONFIG.MIN_WITHDRAW) return showToast('الحد الأدنى ' + CONFIG.MIN_WITHDRAW + ' جنيه', 'error');
-  if (Wallet.balance < amount) return showToast('رصيد غير كافٍ', 'error');
-  if (!phone || phone.length < 11) return showToast('رقم تليفون غير صحيح', 'error');
-
-  var btn = document.querySelector('#withdrawModal .btn-neon');
-  if (btn) { btn.disabled = true; btn.textContent = 'جاري الإرسال...'; }
-
-  var ok = await requestWithdraw(amount, phone);
-  if (ok) closeModal('withdrawModal');
-  if (btn) { btn.disabled = false; btn.textContent = 'إرسال طلب السحب'; }
-}
-
-/* ============================================
-   MILESTONES
-   ============================================ */
-
-function checkMilestones() {
-  var peak = App.user.peak_points || 0;
-  if (!App.user.claimed_milestones) App.user.claimed_milestones = [];
-
-  for (var i = 0; i < CONFIG.MILESTONES.length; i++) {
-    var m = CONFIG.MILESTONES[i];
-    if (peak >= m.points && App.user.claimed_milestones.indexOf(m.points) === -1) {
-      App.user.claimed_milestones.push(m.points);
-      addEarning(m.money, 'milestone_' + m.points);
-      showToast('🏆 مبروك! وصلت ' + m.points + ' نقطة — ربحت ' + m.money + ' جنيه', 'success');
-      showCoinToast('+' + m.money + ' ج', '🏆');
-    }
-  }
-
-  saveLocal();
-  syncUser();
-  updateMilestonesUI();
-}
-
-function updateMilestonesUI() {
-  var container = $('milestonesList');
-  if (!container) return;
-
-  var peak = App.user.peak_points || 0;
-  var claimed = App.user.claimed_milestones || [];
-
-  var html = '';
-  for (var i = 0; i < CONFIG.MILESTONES.length; i++) {
-    var m = CONFIG.MILESTONES[i];
-    var done = claimed.indexOf(m.points) !== -1;
-    var available = peak >= m.points;
-    var progress = Math.min(100, Math.floor((peak / m.points) * 100));
-
-    var status = '';
-    if (done) status = '<span class="ms-status done">✅ مُستلم</span>';
-    else if (available) status = '<span class="ms-status ready">🎁 متاح</span>';
-    else status = '<span class="ms-status locked">🔒 ' + progress + '%</span>';
-
-    html += '<div class="milestone-item ' + (done ? 'done' : available ? 'ready' : '') + '">' +
-      '<div class="ms-icon">' + (done ? '✅' : available ? '🎁' : '🔒') + '</div>' +
-      '<div class="ms-info">' +
-        '<div class="ms-points">' + m.points.toLocaleString() + ' نقطة</div>' +
-        '<div class="ms-money">' + m.money + ' جنيه</div>' +
-      '</div>' +
-      status +
-    '</div>';
-  }
-  container.innerHTML = html;
-}
-
-function openMilestonesModal() {
-  updateMilestonesUI();
-  var m = $('milestonesModal');
-  if (m) m.classList.add('active');
-}
-
-/* ============================================
-   BACKGROUND
-   ============================================ */
+/* ============ BACKGROUND ============ */
 window.addEventListener('load', function(){
   startTriangleBackground();
   restoreSession();
@@ -456,15 +738,9 @@ window.addEventListener('load', function(){
   checkDailyResets();
   regenTickets();
   setInterval(regenTickets, 60000);
-  updateMissionsUI();
   updateAllUI();
-
-  var btn = $('loginBtn');
-  if(btn) btn.addEventListener('click', function(e){e.preventDefault(); login();});
-
-  var phoneInp = $('phoneInput');
-  if(phoneInp) phoneInp.addEventListener('input', function(){this.value = this.value.replace(/\D/g,'');});
-
+  var ph1 = $('signupPhone'); if(ph1) ph1.addEventListener('input', function(){this.value = this.value.replace(/\D/g,'');});
+  var ph2 = $('loginPhone'); if(ph2) ph2.addEventListener('input', function(){this.value = this.value.replace(/\D/g,'');});
   console.log('Neon Prediction ready ✅');
 });
 
@@ -490,173 +766,22 @@ function startTriangleBackground(){
   })();
 }
 
-/* ========== SESSION ========== */
-function restoreSession(){
-  var saved = localStorage.getItem(STORAGE_KEY);
-  if(!saved) return;
-  try{
-    var p = JSON.parse(saved);
-    var m = createDefaultUser();
-    for(var k in p) if(p.hasOwnProperty(k)) m[k] = p[k];
-    App.user = m;
-    if(!App.user.missions) App.user.missions = getDefaultMissions();
-    if(!Array.isArray(App.user.claimedPrizes)) App.user.claimedPrizes = [];
-    if(!Array.isArray(App.user.claimed_milestones)) App.user.claimed_milestones = [];
-    if(App.user.username){
-      setTimeout(function(){enterGame(); maybeShowSpecialOffer();},300);
-    }
-  }catch(e){localStorage.removeItem(STORAGE_KEY);}
-}
-
-function saveLocal(){
-  try{localStorage.setItem(STORAGE_KEY, JSON.stringify(App.user));}catch(e){}
-}
-
-/* ========== LOGIN ========== */
-function login(){
-  if(App.busy) return;
-  var nameEl = $('usernameInput'), phoneEl = $('phoneInput');
-  var name = nameEl ? nameEl.value.trim() : '';
-  var phone = phoneEl ? phoneEl.value.trim() : '';
-  if(name.length < 2) return showToast('اكتب اسم صحيح','error');
-  if(!phone || phone.length < 11 || phone.indexOf('01') !== 0) return showToast('رقم تليفون غير صحيح','error');
-
-  App.busy = true;
-
-  if(supabaseClient){
-    supabaseClient.from('users').select('*').eq('phone', phone).maybeSingle().then(function(res){
-      if(res.data){
-        loadUserFromDB(res.data);
-        showToast('أهلاً بيك تاني '+name,'success');
-        enterGame();
-        App.busy = false;
-      } else {
-        var newUser = createDefaultUser();
-        newUser.username = name;
-        newUser.phone = phone;
-        newUser.purchased = CONFIG.STARTER_POINTS;
-        newUser.tickets = CONFIG.MAX_TICKETS;
-        newUser.lastTicketRegen = new Date().toISOString();
-        newUser.missions = getDefaultMissions();
-        newUser.lastMissionDate = new Date().toDateString();
-
-        supabaseClient.from('users').insert({
-          username: name, phone: phone,
-          purchased: CONFIG.STARTER_POINTS,
-          tickets: CONFIG.MAX_TICKETS,
-          missions: newUser.missions,
-          last_mission_date: newUser.lastMissionDate
-        }).select().single().then(function(ins){
-          if(ins.error){
-            App.user = newUser;
-            App.user.id = 'local_'+Date.now();
-          } else if(ins.data){
-            loadUserFromDB(ins.data);
-          }
-          saveLocal();
-          enterGame();
-          showToast('أهلاً '+name+'! حصلت على '+CONFIG.STARTER_POINTS+' نقطة','success');
-          App.busy = false;
-        });
-      }
-    }).catch(function(err){
-      App.user = createDefaultUser();
-      App.user.id = 'local_'+Date.now();
-      App.user.username = name;
-      App.user.phone = phone;
-      App.user.purchased = CONFIG.STARTER_POINTS;
-      App.user.tickets = CONFIG.MAX_TICKETS;
-      App.user.lastTicketRegen = Date.now();
-      App.user.missions = getDefaultMissions();
-      App.user.lastMissionDate = new Date().toDateString();
-      saveLocal();
-      enterGame();
-      showToast('أهلاً '+name+'! (وضع محلي)','success');
-      App.busy = false;
-    });
-  } else {
-    App.user = createDefaultUser();
-    App.user.id = 'local_'+Date.now();
-    App.user.username = name;
-    App.user.phone = phone;
-    App.user.purchased = CONFIG.STARTER_POINTS;
-    App.user.tickets = CONFIG.MAX_TICKETS;
-    App.user.lastTicketRegen = Date.now();
-    App.user.missions = getDefaultMissions();
-    App.user.lastMissionDate = new Date().toDateString();
-    saveLocal();
-    enterGame();
-    showToast('أهلاً '+name+'! حصلت على '+CONFIG.STARTER_POINTS+' نقطة','success');
-    App.busy = false;
+function checkDailyResets(){
+  if(!App.user.id) return;
+  var today = new Date().toDateString();
+  if(App.user.lastMissionDate !== today){ App.user.missions = getDefaultMissions(); App.user.lastMissionDate = today; }
+  if(App.user.lastDailyLogin){
+    var last = new Date(App.user.lastDailyLogin);
+    var diff = Math.floor((Date.now() - last.getTime())/86400000);
+    if(diff > 1) App.user.dailyLoginStreak = 0;
   }
-}
-
-function loadUserFromDB(row){
-  App.user = createDefaultUser();
-  App.user.id = row.id;
-  App.user.username = row.username;
-  App.user.phone = row.phone;
-  App.user.purchased = row.purchased || 0;
-  App.user.earned = row.earned || 0;
-  App.user.level = row.level || 1;
-  App.user.games_played = row.games_played || 0;
-  App.user.wins = row.wins || 0;
-  App.user.streak = row.streak || 0;
-  App.user.bestStreak = row.best_streak || 0;
-  App.user.tickets = row.tickets != null ? row.tickets : CONFIG.MAX_TICKETS;
-  App.user.lastTicketRegen = row.last_ticket_regen;
-  App.user.claimedPrizes = row.claimed_prizes || [];
-  App.user.lastDailyChest = row.last_daily_chest;
-  App.user.lastDailyLogin = row.last_daily_login;
-  App.user.dailyLoginStreak = row.daily_login_streak || 0;
-  App.user.lastWheelSpin = row.last_wheel_spin;
-  App.user.missions = row.missions || getDefaultMissions();
-  App.user.lastMissionDate = row.last_mission_date;
-  App.user.adShown = row.ad_shown || false;
-  App.user.is_prime = row.is_prime || false;
-  App.user.prime_expires_at = row.prime_expires_at;
-  App.user.multiplier_2x_expires_at = row.multiplier_2x_expires_at;
-  App.user.peak_points = row.peak_points || 0;
-  App.user.claimed_milestones = row.claimed_milestones || [];
-  saveLocal();
-  loadWallet();
-}
-
-function enterGame(){
-  $('loginScreen').classList.remove('active');
-  $('mainScreen').classList.add('active');
-  updateAllUI();
-  loadWallet();
-  if(!App.user.adShown){
-    $('welcomeAd').classList.remove('hidden');
+  if(App.user.last_share_date !== today){ App.user.share_points_today = 0; App.user.last_share_date = today; }
+  if(App.user.ticket_expires_at && new Date(App.user.ticket_expires_at) < new Date()){
+    App.user.active_ticket = null; App.user.ticket_expires_at = null; App.user.ticket_uses_left = 0;
   }
-}
-
-function closeWelcomeAd(){
-  $('welcomeAd').classList.add('hidden');
-  App.user.adShown = true;
   saveLocal();
 }
 
-function updateAllUI(){
-  if(!App.user || !App.user.username) return;
-  $('userName').textContent = App.user.username;
-  $('userPoints').textContent = totalPoints();
-  $('userLevel').textContent = CONFIG.LEVEL_NAMES[App.user.level] || 'مبتدئ';
-  $('streakValue').textContent = App.user.streak;
-  $('ticketValue').textContent = App.user.tickets;
-  var av = $('userAvatar');
-  if(av){
-    av.textContent = App.user.username.charAt(0).toUpperCase();
-    if(isPrime()) av.classList.add('prime'); else av.classList.remove('prime');
-  }
-  updateDailyLoginUI();
-  updateChestUI();
-  updateMissionsUI();
-  updateWalletUI();
-}
-
-/* ========== TICKETS ========== */
 function regenTickets(){
   if(!App.user.id) return;
   if(isPrime()){ App.user.tickets = CONFIG.MAX_TICKETS; updateAllUI(); return; }
@@ -674,247 +799,70 @@ function regenTickets(){
 
 function useTicket(){
   if(isPrime()) return true;
-  if(App.user.tickets <= 0){
-    showToast('معندكش تذاكر!','error');
-    maybeShowSpecialOffer();
-    return false;
+  if(hasActiveTicket() && App.user.ticket_uses_left > 0){
+    App.user.ticket_uses_left--;
+    if(App.user.ticket_uses_left <= 0){ App.user.active_ticket = null; App.user.ticket_expires_at = null; }
+    saveLocal(); updateAllUI();
+    return true;
   }
+  if(App.user.tickets <= 0){ showToast('معندكش تذاكر! اشتري من متجر التذاكر', 'error'); setTimeout(function(){ openTicketStore(); }, 1200); return false; }
   App.user.tickets--;
   saveLocal(); updateAllUI();
   return true;
 }
 
-/* ========== DAILY ========== */
-function checkDailyResets(){
-  if(!App.user.id) return;
-  var today = new Date().toDateString();
-  if(App.user.lastMissionDate !== today){
-    App.user.missions = getDefaultMissions();
-    App.user.lastMissionDate = today;
+function buildPrizeTables(){
+  var html = '';
+  for(var i=0;i<CONFIG.PRIZES.length;i++){
+    var p = CONFIG.PRIZES[i];
+    html += '<div class="prize-row"><span class="prize-points">'+p.threshold+' نقطة</span><span class="prize-money">'+p.money+' جنيه</span></div>';
   }
-  if(App.user.lastDailyLogin){
-    var last = new Date(App.user.lastDailyLogin);
-    var diff = Math.floor((Date.now() - last.getTime())/86400000);
-    if(diff > 1) App.user.dailyLoginStreak = 0;
-  }
-  saveLocal();
+  var el = $('welcomePrizeTable'); if(el) el.innerHTML = html;
 }
 
-function updateDailyLoginUI(){
-  var today = new Date().toDateString();
-  var s = $('dailyLoginStatus');
-  if(!s) return;
-  if(App.user.lastDailyLogin === today){
-    s.textContent = 'تم الاستلام اليوم';
-    $('dailyLoginBox').classList.add('claimed');
+/* ============ UTILS ============ */
+function closeModal(id){var m = $(id); if(m) m.classList.remove('active');}
+
+function showToast(msg, type){
+  var t = $('toast'); if(!t) return;
+  var icons = {info:'ℹ️', success:'✅', error:'❌'};
+  $('toastIcon').textContent = icons[type] || icons.info;
+  $('toastText').textContent = msg;
+  t.className = 'toast ' + (type||'info');
+  setTimeout(function(){t.classList.add('show');},50);
+  setTimeout(function(){t.classList.remove('show');},3200);
+}
+
+function showCoinToast(msg, icon){
+  var t = $('coinToast'); if(!t) return;
+  $('coinToastIcon').textContent = icon || '💰';
+  $('coinToastText').textContent = msg;
+  t.className = 'coin-toast';
+  setTimeout(function(){t.classList.add('show');},50);
+  setTimeout(function(){t.classList.remove('show');},2800);
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    var el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+    else if (el.msRequestFullscreen) el.msRequestFullscreen();
   } else {
-    s.textContent = 'اضغط لاستلامها';
-    $('dailyLoginBox').classList.remove('claimed');
-  }
-  $('dailyStreakDisplay').textContent = 'يوم ' + (App.user.dailyLoginStreak + 1);
-}
-
-function claimDailyLogin(){
-  if(!App.user.id) return;
-  var today = new Date().toDateString();
-  if(App.user.lastDailyLogin === today) return showToast('اخدت المكافأة النهاردة خلاص','error');
-  App.user.dailyLoginStreak = Math.min(App.user.dailyLoginStreak + 1, 7);
-  var idx = App.user.dailyLoginStreak - 1;
-  var reward = CONFIG.DAILY_LOGIN_REWARDS[idx] || 100;
-  if(isPrime()) reward *= 2;
-  addPoints(reward);
-  App.user.lastDailyLogin = today;
-  saveLocal(); updateAllUI();
-  checkMilestones();
-  showCoinToast('+'+reward+' دخول يومي (يوم '+App.user.dailyLoginStreak+')','📅');
-  syncUser();
-}
-
-function updateChestUI(){
-  var today = new Date().toDateString();
-  var s = $('chestStatus');
-  if(!s) return;
-  if(App.user.lastDailyChest === today){
-    s.textContent = 'تم فتحه اليوم';
-    $('dailyChest').classList.add('claimed');
-  } else {
-    s.textContent = 'اضغط لفتحه';
-    $('dailyChest').classList.remove('claimed');
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
   }
 }
 
-function claimDailyChest(){
-  if(!App.user.id) return;
-  var today = new Date().toDateString();
-  if(App.user.lastDailyChest === today) return showToast('فتحت الصندوق النهاردة خلاص','error');
-  var arr = CONFIG.DAILY_CHEST_REWARDS;
-  var reward = arr[Math.floor(Math.random()*arr.length)];
-  if(isPrime()) reward *= 2;
-  addPoints(reward);
-  App.user.lastDailyChest = today;
-  saveLocal(); updateAllUI();
-  checkMilestones();
-  showCoinToast('+'+reward+' من الصندوق','🎁');
-  syncUser();
+function showView(viewId){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  var v = $(viewId); if(v) v.classList.add('active');
+  var nav = $('bottomNav');
+  if(nav) nav.classList.toggle('hidden', viewId !== 'categoryView');
 }
 
-/* ========== MISSIONS ========== */
-function getDefaultMissions(){
-  return {
-    play3:{progress:0,target:3,reward:25,done:false},
-    win2:{progress:0,target:2,reward:35,done:false},
-    play1v1:{progress:0,target:1,reward:20,done:false}
-  };
-}
-
-function updateMissionsUI(){
-  var list = $('missionsList');
-  if(!list) return;
-  var m = App.user.missions || getDefaultMissions();
-  list.innerHTML =
-    '<div class="mission-item '+(m.play3.done?'done':'')+'"><div class="mission-info"><strong>العب 3 مباريات</strong><span>'+m.play3.progress+'/'+m.play3.target+'</span></div><span class="mission-reward">+'+m.play3.reward+'</span></div>'+
-    '<div class="mission-item '+(m.win2.done?'done':'')+'"><div class="mission-info"><strong>اكسب مباراتين</strong><span>'+m.win2.progress+'/'+m.win2.target+'</span></div><span class="mission-reward">+'+m.win2.reward+'</span></div>'+
-    '<div class="mission-item '+(m.play1v1.done?'done':'')+'"><div class="mission-info"><strong>العب 1 ضد 1</strong><span>'+m.play1v1.progress+'/'+m.play1v1.target+'</span></div><span class="mission-reward">+'+m.play1v1.reward+'</span></div>';
-}
-
-function updateMissionProgress(type, won){
-  if(!App.user.missions) App.user.missions = getDefaultMissions();
-  var m = App.user.missions;
-  if(type === 'play' && !m.play3.done){
-    m.play3.progress++;
-    if(m.play3.progress >= m.play3.target){m.play3.done = true; addPoints(m.play3.reward); showCoinToast('+'+m.play3.reward+' مهمة','🎯');}
-  }
-  if(type === 'win' && won && !m.win2.done){
-    m.win2.progress++;
-    if(m.win2.progress >= m.win2.target){m.win2.done = true; addPoints(m.win2.reward); showCoinToast('+'+m.win2.reward+' مهمة','🎯');}
-  }
-  if(type === '1v1' && !m.play1v1.done){
-    m.play1v1.progress++;
-    if(m.play1v1.progress >= m.play1v1.target){m.play1v1.done = true; addPoints(m.play1v1.reward); showCoinToast('+'+m.play1v1.reward+' مهمة','🎯');}
-  }
-  saveLocal(); updateMissionsUI(); updateAllUI();
-  checkMilestones();
-}
-
-/* ========== SYNC ========== */
-function syncUser(){
-  if(!supabaseClient || !App.user.id) return;
-  if(String(App.user.id).indexOf('local_') === 0) return;
-  supabaseClient.from('users').update({
-    purchased: App.user.purchased,
-    earned: App.user.earned,
-    level: App.user.level,
-    games_played: App.user.games_played,
-    wins: App.user.wins,
-    streak: App.user.streak,
-    best_streak: App.user.bestStreak,
-    tickets: App.user.tickets,
-    claimed_prizes: App.user.claimedPrizes,
-    last_daily_chest: App.user.lastDailyChest,
-    last_daily_login: App.user.lastDailyLogin,
-    daily_login_streak: App.user.dailyLoginStreak,
-    last_wheel_spin: App.user.lastWheelSpin,
-    missions: App.user.missions,
-    last_mission_date: App.user.lastMissionDate,
-    ad_shown: App.user.adShown,
-    is_prime: App.user.is_prime,
-    prime_expires_at: App.user.prime_expires_at,
-    multiplier_2x_expires_at: App.user.multiplier_2x_expires_at,
-    peak_points: App.user.peak_points,
-    claimed_milestones: App.user.claimed_milestones
-  }).eq('id', App.user.id).then(function(res){
-    if(res.error) console.warn('Sync error:', res.error);
-  });
-}
-
-/* ========== ROOMS ========== */
-function generateRoomCode(){
-  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', code = '';
-  for(var i=0;i<6;i++) code += chars.charAt(Math.floor(Math.random()*chars.length));
-  return code;
-}
-
-function createPrivateRoom(){
-  if(App.busy) return;
-  if(!useTicket()) return;
-  if(totalPoints() < CONFIG.ENTRY_FEE + CONFIG.COMMISSION){showToast('رصيدك غير كافٍ','error'); return;}
-  var code = generateRoomCode();
-  App.room = {id:'private_'+Date.now(),category:'football',mode:'private',code:code,correctChoice:null,status:'waiting'};
-  $('roomCodeDisplay').textContent = code;
-  $('roomCodeModal').classList.add('active');
-  setTimeout(function(){startPrivateWaiting(code);},600);
-}
-
-function startPrivateWaiting(code){
-  closeModal('roomCodeModal');
-  showView('waitingView');
-  $('waitingTitle').textContent = 'غرفة خاصة';
-  $('playersCount').textContent = '1';
-  $('waitingHint').textContent = 'في انتظار الأصدقاء...';
-  $('roomCodeShow').style.display = 'block';
-  $('roomCodeShow').textContent = 'الكود: '+code;
-  $('slot3').style.display = '';
-  $('slot1').classList.add('filled');
-  $('slot1').textContent = App.user.username.charAt(0).toUpperCase();
-  $('slot2').classList.remove('filled');
-  $('slot2').textContent = '';
-  $('slot3').classList.remove('filled');
-  $('slot3').textContent = '';
-  setTimeout(function(){
-    if(App.room.status !== 'waiting') return;
-    $('playersCount').textContent = '2';
-    $('slot2').classList.add('filled');
-    $('slot2').textContent = BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)].charAt(0);
-  },2500);
-  setTimeout(function(){
-    if(App.room.status !== 'waiting') return;
-    $('playersCount').textContent = '3';
-    $('slot3').classList.add('filled');
-    $('slot3').textContent = BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)].charAt(0);
-    $('waitingHint').textContent = 'الغرفة اكتملت!';
-    setTimeout(startGame,1000);
-  },4500);
-}
-
-function openJoinModal(){$('joinCodeInput').value = ''; $('joinRoomModal').classList.add('active');}
-
-function joinRoomByCode(){
-  var code = $('joinCodeInput').value.trim().toUpperCase();
-  if(code.length !== 6) return showToast('الكود 6 حروف','error');
-  if(!useTicket()) return;
-  if(totalPoints() < CONFIG.ENTRY_FEE + CONFIG.COMMISSION){showToast('رصيدك غير كافٍ','error'); return;}
-  closeModal('joinRoomModal');
-  App.room = {id:'joined_'+Date.now(),category:'football',mode:'private',code:code,correctChoice:null,status:'waiting'};
-  showView('waitingView');
-  $('waitingTitle').textContent = 'غرفة '+code;
-  $('playersCount').textContent = '2';
-  $('waitingHint').textContent = 'انضممت للغرفة...';
-  $('roomCodeShow').style.display = 'block';
-  $('roomCodeShow').textContent = 'الكود: '+code;
-  $('slot3').style.display = '';
-  $('slot1').classList.add('filled');
-  $('slot1').textContent = BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)].charAt(0);
-  $('slot2').classList.add('filled');
-  $('slot2').textContent = App.user.username.charAt(0).toUpperCase();
-  $('slot3').classList.remove('filled');
-  setTimeout(function(){
-    $('playersCount').textContent = '3';
-    $('slot3').classList.add('filled');
-    $('slot3').textContent = BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)].charAt(0);
-    $('waitingHint').textContent = 'الغرفة اكتملت!';
-    setTimeout(startGame,900);
-  },2000);
-  showToast('✅ انضممت للغرفة!','success');
-}
-
-function copyRoomCode(){
-  var code = $('roomCodeDisplay').textContent;
-  var text = '🎮 العب معايا Neon Prediction!\n\n🔒 كود الغرفة: '+code+'\n\nادخل اللعبة واختار "دخول بكود"';
-  if(navigator.clipboard) navigator.clipboard.writeText(text).then(function(){showToast('تم نسخ الكود!','success');}).catch(function(){showToast('انسخ يدوياً: '+code,'info');});
-  else showToast('انسخ يدوياً: '+code,'info');
-}
-
-/* ========== CATEGORIES ========== */
+/* ============ OFFLINE GAME ============ */
 function selectCategory(category){
   if(App.busy) return;
   if(!useTicket()) return;
@@ -923,7 +871,7 @@ function selectCategory(category){
   showView('waitingView');
   $('waitingTitle').textContent = 'غرفة '+CATEGORIES[category].name;
   $('playersCount').textContent = '1';
-  $('waitingHint').textContent = 'جاري البحث عن لاعبين...';
+  $('waitingHint').textContent = 'جاري البحث...';
   $('roomCodeShow').style.display = 'none';
   $('slot3').style.display = '';
   $('slot1').classList.add('filled');
@@ -950,7 +898,6 @@ function start1v1(){
   setTimeout(function(){$('playersCount').textContent='2';$('slot2').classList.add('filled');$('slot2').textContent=BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)].charAt(0);$('waitingHint').textContent='تم العثور على خصم!';setTimeout(startGame,800);},1600);
 }
 
-/* ========== GAME ========== */
 function startGame(){
   App.room.status = 'playing';
   App.myChoice = null;
@@ -1014,7 +961,7 @@ function showResult(){
   var cost = CONFIG.ENTRY_FEE + CONFIG.COMMISSION;
   deductPoints(cost);
   App.user.games_played++;
-  updateMissionProgress('play');
+  updateMissionProgress('play', false, App.room.category);
   if(App.room.mode === '1v1') updateMissionProgress('1v1');
   $('lossRecoveryBtn').style.display = 'none';
   if(won){
@@ -1027,15 +974,18 @@ function showResult(){
     if(bonus > 0){addPoints(bonus, true); $('streakResult').textContent = '🔥 سلسلة ×'+App.user.streak+' (+'+bonus+')';}
     else $('streakResult').textContent = '🔥 سلسلة ×'+App.user.streak;
     updateMissionProgress('win', true);
-    checkLevelUp();
-    checkPrizes();
+    updateMissionProgress('streak', false);
+    checkLevelUp(); checkPrizes();
     showCoinToast('+'+(CONFIG.WIN_REWARD + bonus),'🏆');
+    SoundSystem.playSuccess(); Vibration.onWin();
+    showWinOverlay('🏆', 'مبروك! فزت', 1800);
   } else {
     App.user.streak = 0;
     App.user.lastLossAmount = cost;
     $('streakResult').textContent = '';
     $('lossRecoveryBtn').style.display = 'block';
     showCoinToast('-'+cost,'💸');
+    SoundSystem.playLoss(); Vibration.onLoss();
   }
   saveLocal(); updateAllUI(); syncUser();
   checkMilestones();
@@ -1050,7 +1000,12 @@ function showResult(){
 function checkLevelUp(){
   var lvl = Math.floor(App.user.games_played / CONFIG.LEVELS_PER_GAMES) + 1;
   if(lvl > 7) lvl = 7;
-  if(lvl > App.user.level){App.user.level = lvl; showToast('ترقيت! '+CONFIG.LEVEL_NAMES[lvl],'success');}
+  if(lvl > App.user.level){
+    App.user.level = lvl;
+    showToast('🎉 ترقيت! '+CONFIG.LEVEL_NAMES[lvl],'success');
+    SoundSystem.playLevelUp(); Vibration.onWin();
+    showWinOverlay('⭐', 'ترقية! ' + CONFIG.LEVEL_NAMES[lvl], 2000);
+  }
 }
 
 function checkPrizes(){
@@ -1063,46 +1018,105 @@ function checkPrizes(){
   }
 }
 
-/* ========== LOSS RECOVERY ========== */
+function checkMilestones() {
+  var peak = App.user.peak_points || 0;
+  if (!App.user.claimed_milestones) App.user.claimed_milestones = [];
+  for (var i = 0; i < CONFIG.MILESTONES.length; i++) {
+    var m = CONFIG.MILESTONES[i];
+    if (peak >= m.points && App.user.claimed_milestones.indexOf(m.points) === -1) {
+      App.user.claimed_milestones.push(m.points);
+      addEarning(m.money, 'milestone_' + m.points);
+      SoundSystem.playBigWin(); Vibration.onBigPrize();
+      showWinOverlay('🏆', 'وصلت ' + m.points + ' نقطة!', 2500);
+      showToast('🏆 ربحت ' + m.money + ' جنيه!', 'success');
+    }
+  }
+  saveLocal(); syncUser(); updateMilestonesUI();
+}
+
+function updateMilestonesUI() {
+  var c = $('milestonesList'); if (!c) return;
+  var peak = App.user.peak_points || 0;
+  var claimed = App.user.claimed_milestones || [];
+  var html = '';
+  for (var i = 0; i < CONFIG.MILESTONES.length; i++) {
+    var m = CONFIG.MILESTONES[i];
+    var done = claimed.indexOf(m.points) !== -1;
+    var avail = peak >= m.points;
+    var prog = Math.min(100, Math.floor((peak / m.points) * 100));
+    var st = done ? '<span class="ms-status done">✅ مُستلم</span>'
+      : (avail ? '<span class="ms-status ready">🎁 متاح</span>' : '<span class="ms-status locked">🔒 ' + prog + '%</span>');
+    html += '<div class="milestone-item ' + (done ? 'done' : avail ? 'ready' : '') + '">' +
+      '<div class="ms-icon">' + (done ? '✅' : avail ? '🎁' : '🔒') + '</div>' +
+      '<div class="ms-info"><div class="ms-points">' + m.points.toLocaleString() + ' نقطة</div>' +
+      '<div class="ms-money">' + m.money + ' جنيه</div></div>' + st + '</div>';
+  }
+  c.innerHTML = html;
+}
+
+function openMilestonesModal() {
+  updateMilestonesUI();
+  var m = $('milestonesModal'); if (m) m.classList.add('active');
+}
+
 function openLossRecovery(){
   var amount = App.user.lastLossAmount || 14;
   $('lossRecoveryText').textContent = 'هترجعلك '+amount+' نقطة + '+CONFIG.LOSS_RECOVERY_BONUS+' إضافية مقابل '+CONFIG.LOSS_RECOVERY_COST+' جنيه';
   $('lossRecoveryModal').classList.add('active');
 }
 
-function confirmLossRecovery(){
+async function confirmLossRecovery(){
   var amount = App.user.lastLossAmount || 14;
+  var price = CONFIG.LOSS_RECOVERY_COST;
+  if(Wallet.balance < price){
+    closeModal('lossRecoveryModal');
+    return showToast('❌ محتاج '+price+' جنيه في المحفظة','error');
+  }
+  var ok = await deductFromWallet(price);
+  if(!ok) return;
   addPoints(amount + CONFIG.LOSS_RECOVERY_BONUS);
   saveLocal(); updateAllUI(); syncUser();
+  SoundSystem.playReward(); Vibration.onReward();
   showCoinToast('تم استرجاع '+(amount + CONFIG.LOSS_RECOVERY_BONUS)+' نقطة','✅');
   closeModal('lossRecoveryModal');
   $('lossRecoveryBtn').style.display = 'none';
+  checkMilestones();
 }
 
-/* ============================================
-   LUCKY WHEEL — بالجنيه
-   ============================================ */
+function playAgain(){
+  $('slot2').classList.remove('filled');
+  $('slot3').classList.remove('filled');
+  $('slot3').style.display = '';
+  $('roomCodeShow').style.display = 'none';
+  App.room = {id:null,category:null,mode:'normal',code:null,correctChoice:null,status:'idle'};
+  App.myChoice = null;
+  showView('categoryView');
+}
+
+function leaveRoom(){
+  if(App.room.status === 'waiting' && !isPrime()){ App.user.tickets = Math.min(CONFIG.MAX_TICKETS, App.user.tickets + 1); saveLocal(); updateAllUI(); }
+  playAgain();
+  showToast('غادرت الغرفة','info');
+}
+
+/* ============ LUCKY WHEEL ============ */
 var WHEEL_PRIZES = [
-  {value:0,   weight:25,  color:'#1a1010', text:'0',    label:'حظ أوفر'},
-  {value:1,   weight:20,  color:'#2a1a1a', text:'1 ج',  label:'1 جنيه'},
-  {value:2,   weight:18,  color:'#3a2424', text:'2 ج',  label:'2 جنيه'},
-  {value:3,   weight:12,  color:'#e85a5a', text:'3 ج',  label:'3 جنيه'},
-  {value:5,   weight:10,  color:'#d44a4a', text:'5 ج',  label:'5 جنيه'},
-  {value:10,  weight:7,   color:'#f0b050', text:'10 ج', label:'10 جنيه'},
-  {value:15,  weight:4,   color:'#e8a040', text:'15 ج', label:'15 جنيه'},
-  {value:25,  weight:2.5, color:'#00c853', text:'25 ج', label:'25 جنيه'},
-  {value:50,  weight:1,   color:'#00a040', text:'50 ج', label:'50 جنيه'},
-  {value:100, weight:0.5, color:'#ffd700', text:'100 ج',label:'100 جنيه ⭐'}
+  {value:0,weight:30,color:'#1a1010',text:'0',label:'حظ أوفر'},
+  {value:1,weight:20,color:'#2a1a1a',text:'1 ج',label:'1 جنيه'},
+  {value:2,weight:15,color:'#3a2424',text:'2 ج',label:'2 جنيه'},
+  {value:5,weight:12,color:'#e85a5a',text:'5 ج',label:'5 جنيه'},
+  {value:10,weight:10,color:'#d44a4a',text:'10 ج',label:'10 جنيه'},
+  {value:15,weight:6,color:'#f0b050',text:'15 ج',label:'15 جنيه'},
+  {value:25,weight:4,color:'#e8a040',text:'25 ج',label:'25 جنيه'},
+  {value:50,weight:2,color:'#00c853',text:'50 ج',label:'50 جنيه'},
+  {value:100,weight:0.9,color:'#00a040',text:'100 ج',label:'100 جنيه ⭐'},
+  {value:500,weight:0.1,color:'#ffd700',text:'500 ج',label:'500 جنيه 💎'}
 ];
 
-var wheelState = {
-  spinning:false, currentAngle:0,
-  audioCtx:null, whir:null
-};
+var wheelState = {spinning:false,currentAngle:0};
 
 function drawWheel(segs){
-  var canvas = $('wheelCanvas');
-  if(!canvas) return;
+  var canvas = $('wheelCanvas'); if(!canvas) return;
   var ctx = canvas.getContext('2d');
   var W = canvas.width, H = canvas.height;
   var cx = W/2, cy = H/2, R = W/2 - 15;
@@ -1119,15 +1133,26 @@ function drawWheel(segs){
     ctx.save(); ctx.translate(cx,cy); ctx.rotate(a1 + arc/2);
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     ctx.fillStyle = s.color === '#ffd700' ? '#000' : '#fff';
-    ctx.font = 'bold 34px "Cairo", sans-serif';
-    ctx.fillText(s.text, R - 30, 0);
+    ctx.font = 'bold 38px "Cairo", sans-serif';
+    ctx.fillText(s.text, R - 32, 0);
     ctx.restore();
   }
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
   ctx.strokeStyle = 'rgba(220,70,70,0.6)'; ctx.lineWidth = 4; ctx.stroke();
 }
 
-function pickWinner(){
+function pickWinnerSmart(){
+  var spins = App.user.wheel_spins_total || 0;
+  if (spins < 2) {
+    var reward = 50 + Math.floor(Math.random() * 51);
+    var closestIdx = 0;
+    var minDiff = 9999;
+    for (var i = 0; i < WHEEL_PRIZES.length; i++) {
+      var diff = Math.abs(WHEEL_PRIZES[i].value - reward);
+      if (diff < minDiff) { minDiff = diff; closestIdx = i; }
+    }
+    return {index: closestIdx, segment: {value: reward, color: WHEEL_PRIZES[closestIdx].color, text: reward + ' ج', label: reward + ' جنيه'}};
+  }
   var total = 0;
   for(var i=0;i<WHEEL_PRIZES.length;i++) total += WHEEL_PRIZES[i].weight;
   var r = Math.random() * total, acc = 0;
@@ -1139,26 +1164,20 @@ function pickWinner(){
 }
 
 function openLuckyWheel(){
+  SoundSystem.init();
   var today = new Date().toDateString();
   var btn = $('spinBtn'), info = $('wheelInfo');
-  if(App.user.lastWheelSpin === today){
-    btn.textContent = 'لف العجلة ('+CONFIG.WHEEL_COST+' ج)';
-    info.textContent = 'خلصت المرة المجانية النهاردة';
-  } else {
-    btn.textContent = 'لف العجلة (مجاناً)';
-    info.textContent = 'مرة واحدة مجاناً كل يوم';
-  }
+  if(App.user.lastWheelSpin === today){ btn.textContent = 'لف العجلة ('+CONFIG.WHEEL_COST+' ج)'; info.textContent = 'خلصت المرة المجانية النهاردة'; }
+  else { btn.textContent = 'لف العجلة (مجاناً)'; info.textContent = 'مرة واحدة مجاناً كل يوم'; }
   btn.disabled = false;
   $('wheelResult').textContent = 'اضغط لف العجلة';
-  $('wheelResult').classList.remove('reveal');
   drawWheel(WHEEL_PRIZES);
   buildWheelLegend();
   $('luckyWheelModal').classList.add('active');
 }
 
 function buildWheelLegend(){
-  var el = $('wheelLegend');
-  if(!el) return;
+  var el = $('wheelLegend'); if(!el) return;
   var total = 0;
   for(var i=0;i<WHEEL_PRIZES.length;i++) total += WHEEL_PRIZES[i].weight;
   var html = '';
@@ -1170,152 +1189,44 @@ function buildWheelLegend(){
   el.innerHTML = html;
 }
 
-function initAudio(){
-  if(wheelState.audioCtx) return;
-  try{
-    var AC = window.AudioContext || window.webkitAudioContext;
-    wheelState.audioCtx = new AC();
-  }catch(e){}
-}
-
-function startWhir(){
-  if(!wheelState.audioCtx) return;
-  stopWhir();
-  var ctx = wheelState.audioCtx;
-  var osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 70;
-  var lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 15;
-  var lfoGain = ctx.createGain(); lfoGain.gain.value = 30;
-  lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
-  var filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 900; filter.Q.value = 4;
-  var gain = ctx.createGain(); gain.gain.value = 0;
-  osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-  osc.start(); lfo.start();
-  gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.15);
-  wheelState.whir = {osc:osc, lfo:lfo, gain:gain};
-}
-
-function updateWhir(progress){
-  if(!wheelState.whir || !wheelState.audioCtx) return;
-  var ctx = wheelState.audioCtx;
-  var freq = 70 - progress * 55;
-  wheelState.whir.osc.frequency.setTargetAtTime(Math.max(15, freq), ctx.currentTime, 0.1);
-  var vol = 0.12 * (1 - progress * 0.7);
-  wheelState.whir.gain.gain.setTargetAtTime(vol, ctx.currentTime, 0.2);
-}
-
-function stopWhir(){
-  if(!wheelState.whir || !wheelState.audioCtx) return;
-  try{
-    var ctx = wheelState.audioCtx;
-    wheelState.whir.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
-    var src = wheelState.whir;
-    setTimeout(function(){try{src.osc.stop(); src.lfo.stop();}catch(e){}},300);
-  }catch(e){}
-  wheelState.whir = null;
-}
-
-function tickSound(){
-  if(!wheelState.audioCtx) return;
-  var ctx = wheelState.audioCtx;
-  var osc = ctx.createOscillator(), gain = ctx.createGain();
-  osc.type = 'square'; osc.frequency.value = 1200 + Math.random()*400;
-  gain.gain.setValueAtTime(0.08, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
-  osc.connect(gain); gain.connect(ctx.destination);
-  osc.start(); osc.stop(ctx.currentTime + 0.05);
-}
-
-function winSound(){
-  if(!wheelState.audioCtx) return;
-  var ctx = wheelState.audioCtx;
-  var notes = [523.25, 659.25, 783.99, 1046.5];
-  notes.forEach(function(f, i){
-    var o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = 'sine'; o.frequency.value = f;
-    var t = ctx.currentTime + i*0.1;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.18, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(t); o.stop(t + 0.4);
-  });
-}
-
-function moneySound(){
-  if(!wheelState.audioCtx) return;
-  var ctx = wheelState.audioCtx;
-  var notes = [1046.5, 1318.5, 1567.98, 2093];
-  notes.forEach(function(f, i){
-    var o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = 'triangle'; o.frequency.value = f;
-    var t = ctx.currentTime + i*0.08;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.22, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(t); o.stop(t + 0.5);
-  });
-}
-
 function spinWheel(){
   if(wheelState.spinning) return;
+  SoundSystem.init();
   var today = new Date().toDateString();
   var isFree = App.user.lastWheelSpin !== today;
   var btn = $('spinBtn'), canvas = $('wheelCanvas');
-
   if(!isFree){
-    if(Wallet.balance < CONFIG.WHEEL_COST){
-      return showToast('محتاج '+CONFIG.WHEEL_COST+' جنيه في المحفظة', 'error');
-    }
+    if(Wallet.balance < CONFIG.WHEEL_COST) return showToast('محتاج '+CONFIG.WHEEL_COST+' جنيه في المحفظة','error');
     deductFromWallet(CONFIG.WHEEL_COST);
   }
-
   wheelState.spinning = true;
   App.user.lastWheelSpin = today;
+  App.user.wheel_spins_total = (App.user.wheel_spins_total || 0) + 1;
   btn.disabled = true;
   $('wheelResult').textContent = 'بلف...';
   $('wheelResult').classList.remove('reveal');
-
-  var winner = pickWinner();
-
+  var winner = pickWinnerSmart();
   var n = WHEEL_PRIZES.length;
   var segAngle = 360 / n;
   var centerAngle = winner.index * segAngle + segAngle / 2;
   var jitter = (Math.random() - 0.5) * (segAngle * 0.5);
   var targetAngle = 360 - centerAngle + jitter;
-  var fullRotations = 4;
   var startAngle = wheelState.currentAngle;
-  var delta = fullRotations * 360 + (targetAngle - (startAngle % 360));
-  var finalAngle = startAngle + delta;
-  var duration = 5500;
+  var delta = 4 * 360 + (targetAngle - (startAngle % 360));
+  var duration = 5200;
   var startTime = performance.now();
   var lastTick = 0;
-  var ticksPerSeg = 4;
-
-  initAudio();
-  startWhir();
-  var hub = document.querySelector('.wheel-hub');
-  if(hub) hub.classList.add('spinning');
-
   function ease(t){return 1 - Math.pow(1 - t, 4);}
-
   function animate(now){
     var p = Math.min((now - startTime)/duration, 1);
     var e = ease(p);
     var rot = startAngle + delta * e;
     canvas.style.transform = 'rotate(' + rot + 'deg)';
-    if(p < 1){
-      var degPassed = Math.abs(rot - startAngle);
-      var expectedTicks = (degPassed / segAngle) * ticksPerSeg;
-      if(expectedTicks - lastTick >= 1){ tickSound(); lastTick = Math.floor(expectedTicks); }
-      updateWhir(p);
-      requestAnimationFrame(animate);
-    } else {
-      wheelState.currentAngle = finalAngle % 360;
-      stopWhir();
-      if(hub) hub.classList.remove('spinning');
-      finishSpin(winner.segment);
-    }
+    var degPassed = Math.abs(rot - startAngle);
+    var expectedTicks = (degPassed / segAngle) * 3;
+    if (expectedTicks - lastTick >= 1) { SoundSystem.playTick(); Vibration.vibrate(15); lastTick = Math.floor(expectedTicks); }
+    if(p < 1) requestAnimationFrame(animate);
+    else { wheelState.currentAngle = (startAngle + delta) % 360; finishSpin(winner.segment); }
   }
   requestAnimationFrame(animate);
 }
@@ -1323,29 +1234,238 @@ function spinWheel(){
 function finishSpin(reward){
   var el = $('wheelResult');
   el.classList.add('reveal');
-  var actualValue = reward.value;
-  if(isPrime()) actualValue *= 2;
-
-  if(actualValue > 0){
-    addEarning(actualValue, 'wheel');
-    el.textContent = '🎉 كسبت ' + actualValue + ' جنيه!';
-    if(actualValue >= 25) moneySound();
-    else winSound();
-    showCoinToast('+' + actualValue + ' ج', '🎡');
+  var val = reward.value;
+  if(isPrime()) val *= 2;
+  if(val > 0){
+    addEarning(val, 'wheel');
+    el.textContent = '🎉 كسبت ' + val + ' جنيه!';
+    if (val >= 100) { SoundSystem.playBigWin(); Vibration.onBigPrize(); showWinOverlay('💎', '+' + val + ' جنيه', 2500); }
+    else { SoundSystem.playReward(); Vibration.onReward(); showWinOverlay('🎉', '+' + val + ' ج', 1800); }
+    showCoinToast('+' + val + ' ج', '🎡');
   } else {
     el.textContent = 'حظ أوفر المرة الجاية 😢';
-    showToast('حظ أوفر', 'info');
+    SoundSystem.playLoss(); Vibration.onLoss();
   }
-
-  saveLocal(); updateAllUI();
+  updateMissionProgress('wheel');
+  saveLocal(); updateAllUI(); syncUser();
   $('spinBtn').disabled = false;
   $('spinBtn').textContent = 'لف العجلة ('+CONFIG.WHEEL_COST+' ج)';
-  $('wheelInfo').textContent = 'خلصت المرة المجانية النهاردة';
   wheelState.spinning = false;
 }
 
-/* ========== SPECIAL OFFER ========== */
-function maybeShowSpecialOffer() {
+/* ============ TICKET STORE ============ */
+var TICKETS = [
+  {id:'daily',name:'تذكرة يومية',icon:'🎫',price:15,durationHours:24,uses:10,features:['10 مرات لعب في 24 ساعة','تدخل الغرف العادية','مفيش خصم من النقاط']},
+  {id:'weekly',name:'تذكرة أسبوعية',icon:'🎫🎫',price:79,durationHours:24*7,uses:75,popular:true,features:['75 مرة لعب في 7 أيام','تدخل الغرف العادية + 1v1','خصم 10% على العجلة','شارة أسبوعية']},
+  {id:'monthly',name:'تذكرة شهرية',icon:'🎫🎫🎫',price:199,durationHours:24*30,uses:400,features:['400 مرة لعب في 30 يوم','كل أنواع الغرف','خصم 15% على العجلة','شارة شهرية']},
+  {id:'vip',name:'تذكرة VIP',icon:'💎',price:499,durationHours:24*30,uses:999999,features:['لعب غير محدود لمدة 30 يوم','كل أنواع الغرف + الأونلاين','لفة عجلة كل 8 ساعات','شعار VIP أزرق','خصم 20% على المشتريات']},
+  {id:'legendary',name:'تذكرة أسطورية',icon:'👑',price:999,durationHours:24*90,uses:999999,legendary:true,features:['لعب غير محدود لمدة 90 يوم','كل الميزات مفتوحة','لفة عجلة كل 4 ساعات','شعار ذهبي أسطوري','كاش باك 5%','أولوية قصوى']}
+];
+
+function openTicketStore() { updateWalletUI(); renderTickets(); $('ticketStoreModal').classList.add('active'); }
+
+function renderTickets() {
+  var container = $('ticketsList'); if (!container) return;
+  var hasTicket = hasActiveTicket();
+  var remaining = 0, hoursLeft = 0;
+  if (hasTicket) {
+    remaining = App.user.ticket_uses_left;
+    hoursLeft = Math.max(0, Math.ceil((new Date(App.user.ticket_expires_at) - new Date()) / 3600000));
+  }
+  var html = '';
+  if (hasTicket) {
+    var activeTicketInfo = TICKETS.find(function(t) { return t.id === App.user.active_ticket; });
+    html += '<div class="ticket-owned"><span>✅ عندك ' + (activeTicketInfo ? activeTicketInfo.name : 'تذكرة') + '</span><span>' + remaining + ' استخدام • ' + hoursLeft + ' ساعة</span></div>';
+  }
+  TICKETS.forEach(function(t) {
+    var cls = t.popular ? 'popular' : (t.legendary ? 'legendary' : '');
+    var btnCls = t.popular ? 'popular-btn' : (t.legendary ? 'legendary-btn' : '');
+    var featuresHtml = '';
+    t.features.forEach(function(f) { featuresHtml += '<div><span>✓ ' + f + '</span></div>'; });
+    html += '<div class="ticket-item ' + cls + '"><div class="ticket-header"><span class="ticket-icon">' + t.icon + '</span><span class="ticket-name">' + t.name + '</span><span class="ticket-price">' + t.price + ' ج</span></div><div class="ticket-details">' + featuresHtml + '</div><button type="button" class="ticket-buy-btn ' + btnCls + '" onclick="buyTicket(\'' + t.id + '\')">شراء الآن</button></div>';
+  });
+  container.innerHTML = html;
+}
+
+async function buyTicket(ticketId) {
+  var ticket = TICKETS.find(function(t) { return t.id === ticketId; });
+  if (!ticket) return;
+  if (Wallet.balance < ticket.price) {
+    showToast('❌ محتاج ' + (ticket.price - Wallet.balance).toFixed(2) + ' ج إضافية', 'error');
+    setTimeout(function() { if (confirm('رصيدك: ' + Wallet.balance.toFixed(2) + ' ج\nالمطلوب: ' + ticket.price + ' ج\n\nتروح للإيداع؟')) { closeModal('ticketStoreModal'); openDepositModal(); } }, 800);
+    return;
+  }
+  if (!confirm('شراء ' + ticket.name + ' بـ ' + ticket.price + ' جنيه؟')) return;
+  var ok = await deductFromWallet(ticket.price);
+  if (!ok) return;
+  App.user.active_ticket = ticket.id;
+  App.user.ticket_expires_at = new Date(Date.now() + ticket.durationHours * 3600000).toISOString();
+  App.user.ticket_uses_left = ticket.uses;
+  saveLocal(); updateAllUI(); syncUser();
+  SoundSystem.playBigWin(); Vibration.onBigPrize();
+  showWinOverlay(ticket.icon, ticket.name + '!', 2500);
+  showToast('✅ تم شراء ' + ticket.name, 'success');
+  renderTickets();
+}
+
+/* ============ STORE ============ */
+function openStore(){ updateWalletUI(); $('storeModal').classList.add('active'); }
+
+async function buyPackage(points, price){
+  if (Wallet.balance < price) {
+    showToast('❌ رصيدك غير كافي! محتاج ' + (price - Wallet.balance).toFixed(2) + ' ج', 'error');
+    setTimeout(function(){ if (confirm('تروح للإيداع؟')){ closeModal('storeModal'); openDepositModal(); }}, 800);
+    return;
+  }
+  if (!confirm('شراء ' + points + ' نقطة بـ ' + price + ' جنيه من المحفظة؟')) return;
+  var ok = await deductFromWallet(price);
+  if (!ok) return;
+  addPoints(points);
+  if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
+    try { await supabaseClient.from('transactions').insert({ user_id: App.user.id, amount: points, type: 'purchase', description: 'شراء ' + points + ' نقطة' }); } catch(e) {}
+  }
+  saveLocal(); updateAllUI(); syncUser(); checkMilestones();
+  SoundSystem.playReward(); Vibration.onReward();
+  showToast('✅ تم شراء ' + points + ' نقطة!', 'success');
+  showCoinToast('+' + points + ' 💎', '💎');
+  closeModal('storeModal');
+}
+
+async function buyPrime(){
+  var price = CONFIG.PRIME_PRICE;
+  if (Wallet.balance < price) {
+    showToast('❌ محتاج ' + (price - Wallet.balance).toFixed(2) + ' ج إضافية', 'error');
+    setTimeout(function(){ if (confirm('تروح للإيداع؟')){ closeModal('storeModal'); openDepositModal(); }}, 800);
+    return;
+  }
+  if (!confirm('اشتراك البرايم 30 يوم بـ ' + price + ' جنيه؟')) return;
+  var ok = await deductFromWallet(price);
+  if (!ok) return;
+  App.user.is_prime = true;
+  App.user.prime_expires_at = new Date(Date.now() + CONFIG.PRIME_DAYS * 86400000).toISOString();
+  App.user.tickets = CONFIG.MAX_TICKETS;
+  saveLocal(); updateAllUI(); syncUser();
+  SoundSystem.playBigWin(); Vibration.onBigPrize();
+  showWinOverlay('👑', 'مبروك البرايم!', 3000);
+  showToast('👑 برايم مفعّل — كل المكافآت مضاعفة!', 'success');
+  closeModal('storeModal');
+}
+
+async function buyMultiplier(){
+  var price = CONFIG.MULTIPLIER_PRICE;
+  if (Wallet.balance < price) { showToast('❌ رصيدك غير كافي', 'error'); return; }
+  if (!confirm('مضاعفة ×2 لمدة 24 ساعة بـ ' + price + ' جنيه؟')) return;
+  var ok = await deductFromWallet(price);
+  if (!ok) return;
+  App.user.multiplier_2x_expires_at = new Date(Date.now() + CONFIG.MULTIPLIER_HOURS * 3600000).toISOString();
+  saveLocal(); updateAllUI(); syncUser();
+  SoundSystem.playReward(); Vibration.onReward();
+  showToast('⚡ تم تفعيل المضاعفة', 'success');
+  closeModal('storeModal');
+}
+
+/* ============ DEPOSIT/WITHDRAW ============ */
+function openDepositModal() {
+  var a = $('depositAmount'); if (a) a.value = '';
+  var t = $('depositTrans'); if (t) t.value = '';
+  closeModal('storeModal'); closeModal('ticketStoreModal'); closeModal('profileModal');
+  var m = $('depositModal'); if (m) m.classList.add('active');
+}
+
+function openWithdrawModal() {
+  var a = $('withdrawAmount'); if (a) a.value = '';
+  var p = $('withdrawPhone'); if (p) p.value = App.user.phone || '';
+  updateWalletUI();
+  closeModal('profileModal');
+  var m = $('withdrawModal'); if (m) m.classList.add('active');
+}
+
+async function submitDeposit() {
+  var amount = parseFloat($('depositAmount').value);
+  var trans = $('depositTrans').value.trim();
+  if (!amount || amount < 10) return showToast('الحد الأدنى 10 جنيه', 'error');
+  if (trans.length < 6) return showToast('رقم العملية قصير', 'error');
+  var btn = document.querySelector('#depositModal .btn-neon');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري الإرسال...'; }
+  try {
+    var res = await supabaseClient.from('deposit_requests').insert({ user_id: App.user.id, amount: amount, trans_number: trans, status: 'pending' });
+    if (res.error) throw res.error;
+    showToast('✅ تم إرسال طلب الإيداع', 'success');
+    closeModal('depositModal');
+  } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
+  if (btn) { btn.disabled = false; btn.textContent = 'إرسال طلب الإيداع'; }
+}
+
+async function submitWithdraw() {
+  var amount = parseFloat($('withdrawAmount').value);
+  var phone = $('withdrawPhone').value.trim();
+  if (!amount || amount < 50) return showToast('الحد الأدنى 50 جنيه', 'error');
+  if (Wallet.balance < amount) return showToast('رصيد غير كافٍ', 'error');
+  if (!phone || phone.length < 11) return showToast('رقم غير صحيح', 'error');
+  var btn = document.querySelector('#withdrawModal .btn-neon');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري الإرسال...'; }
+  try {
+    var res = await supabaseClient.from('withdraw_requests').insert({ user_id: App.user.id, amount: amount, phone: phone, status: 'pending' });
+    if (res.error) throw res.error;
+    showToast('✅ تم إرسال طلب السحب', 'success');
+    closeModal('withdrawModal');
+  } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
+  if (btn) { btn.disabled = false; btn.textContent = 'إرسال طلب السحب'; }
+}
+
+/* ============ PROFILE ============ */
+function openProfile(){
+  $('profileName').textContent = App.user.username;
+  $('profilePhone').textContent = App.user.phone || '--';
+  $('profilePurchased').textContent = App.user.purchased;
+  $('profileEarned').textContent = App.user.earned;
+  $('profileWins').textContent = App.user.wins;
+  $('profileGames').textContent = App.user.games_played;
+  $('profileLevel').textContent = CONFIG.LEVEL_NAMES[App.user.level];
+  $('profileBestStreak').textContent = App.user.bestStreak;
+  $('profileTickets').textContent = hasActiveTicket() ? '∞' : App.user.tickets;
+  var rate = App.user.games_played > 0 ? Math.round((App.user.wins/App.user.games_played)*100) : 0;
+  $('profileWinRate').textContent = rate + '%';
+  var av = $('profileAvatar');
+  av.textContent = App.user.username.charAt(0).toUpperCase();
+  if(isPrime()) av.classList.add('prime'); else av.classList.remove('prime');
+  var ps = $('primeStatus');
+  if(isPrime()){
+    var exp = new Date(App.user.prime_expires_at);
+    var days = Math.max(0, Math.ceil((exp - new Date())/86400000));
+    ps.innerHTML = '<span class="badge-prime">👑 برايم</span> <span style="color:#ffd700;font-size:12px;">متبقي '+days+' يوم</span>';
+  } else if(hasMultiplier()){
+    var exp2 = new Date(App.user.multiplier_2x_expires_at);
+    var hrs = Math.max(0, Math.ceil((exp2 - new Date())/3600000));
+    ps.innerHTML = '<span class="badge-prime" style="background:linear-gradient(135deg,#00e676,#00a040)">⚡ ×2</span> <span style="color:#00e676;font-size:12px;">متبقي '+hrs+' ساعة</span>';
+  } else {
+    ps.innerHTML = '';
+  }
+  loadWallet();
+  $('profileModal').classList.add('active');
+}
+
+/* ============ LEADERBOARD ============ */
+function showLeaderboard(){
+  var list = $('leaderboardList');
+  list.innerHTML = '<p class="small-text">جاري التحميل...</p>';
+  $('leaderboardModal').classList.add('active');
+  if(!supabaseClient){ list.innerHTML = '<p class="small-text">Supabase غير متصل</p>'; return; }
+  supabaseClient.from('users').select('username, purchased, earned, wins, is_prime').order('purchased', {ascending:false}).limit(20).then(function(res){
+    if(res.error || !res.data || !res.data.length){ list.innerHTML = '<p class="small-text">لا يوجد لاعبين</p>'; return; }
+    var html = '';
+    for(var i=0;i<res.data.length;i++){
+      var u = res.data[i];
+      var total = (u.purchased||0) + (u.earned||0);
+      var primeCls = u.is_prime ? 'prime-row' : '';
+      html += '<div class="leaderboard-item ' + primeCls + '"><span class="rank">#'+(i+1)+'</span><span class="name">'+(u.is_prime ? '👑 ' : '')+u.username+'</span><span class="points">'+total+' 💎</span></div>';
+    }
+    list.innerHTML = html;
+  });
+}
+
+/* ============ SPECIAL OFFER ============ */
+function maybeShowSpecialOffer(){
   var today = new Date().toDateString();
   if (totalPoints() >= 40) return;
   if (App.user.lastSpecialOffer === today) return;
@@ -1358,250 +1478,667 @@ function maybeShowSpecialOffer() {
   }, 2000);
 }
 
-function startOfferTimer(seconds) {
+function startOfferTimer(seconds){
   var el = $('offerTimer');
   var left = seconds;
   if (App.specialOfferTimeout) clearInterval(App.specialOfferTimeout);
-  function update() {
+  function update(){
     var m = Math.floor(left / 60);
     var s = left % 60;
     el.textContent = 'ينتهي خلال ' + m + ':' + (s < 10 ? '0' + s : s);
-    if (left <= 0) {
-      clearInterval(App.specialOfferTimeout);
-      closeModal('specialOfferModal');
-    }
+    if (left <= 0){ clearInterval(App.specialOfferTimeout); closeModal('specialOfferModal'); }
     left--;
   }
   update();
   App.specialOfferTimeout = setInterval(update, 1000);
 }
 
-function acceptSpecialOffer() {
+async function acceptSpecialOffer(){
   closeModal('specialOfferModal');
   if (App.specialOfferTimeout) clearInterval(App.specialOfferTimeout);
-  buyPackage(300, 35);
+  var price = 35, points = 300;
+  if (Wallet.balance < price) { showToast('❌ محتاج ' + (price - Wallet.balance).toFixed(2) + ' ج إضافية', 'error'); openDepositModal(); return; }
+  if (!confirm('300 نقطة بـ 35 جنيه من محفظتك؟')) return;
+  var ok = await deductFromWallet(price);
+  if (!ok) return;
+  addPoints(points);
+  saveLocal(); updateAllUI(); syncUser(); checkMilestones();
+  SoundSystem.playReward(); Vibration.onReward();
+  showToast('✅ تم شراء 300 نقطة', 'success');
+  showCoinToast('+300 💎', '💎');
 }
 
-/* ========== NAVIGATION ========== */
-function playAgain(){
-  $('slot2').classList.remove('filled');
-  $('slot3').classList.remove('filled');
-  $('slot3').style.display = '';
-  $('roomCodeShow').style.display = 'none';
-  App.room = {id:null,category:null,mode:'normal',code:null,correctChoice:null,status:'idle'};
-  App.myChoice = null;
-  showView('categoryView');
+/* ============ FRIENDS ============ */
+var Friends = { list: [], searchDebounce: null };
+
+async function openFriendsModal() {
+  $('friendsModal').classList.add('active');
+  $('friendSearchInput').value = '';
+  $('friendSearchResults').innerHTML = '';
+  await loadFriendsList();
 }
 
-function leaveRoom(){
-  if(App.room.status === 'waiting' && !isPrime()){
-    App.user.tickets = Math.min(CONFIG.MAX_TICKETS, App.user.tickets + 1);
-    saveLocal(); updateAllUI();
+async function loadFriendsList() {
+  var container = $('friendsList'); if (!container) return;
+  container.innerHTML = '<p class="small-text">جاري التحميل...</p>';
+  if (!supabaseClient || !App.user.id || String(App.user.id).indexOf('local_') === 0) {
+    container.innerHTML = '<p class="small-text">محتاج Supabase</p>'; return;
   }
-  playAgain();
-  showToast('غادرت الغرفة','info');
-}
-
-function showView(viewId){
-  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
-  var v = $(viewId);
-  if(v) v.classList.add('active');
-  var nav = $('bottomNav');
-  if(nav) nav.classList.toggle('hidden', viewId !== 'categoryView');
-}
-
-/* ========== STORE ========== */
-function openStore(){$('storeModal').classList.add('active');}
-function closeModal(id){var m = $(id); if(m) m.classList.remove('active');}
-
-function buyPackage(points, price){
-  App.pendingPurchase = {type:'points', points:points, price:price, label:points+' نقطة'};
-  closeModal('storeModal');
-  closeModal('specialOfferModal');
-  $('paymentProduct').textContent = points+' نقطة';
-  $('paymentPrice').textContent = price+' جنيه';
-  $('paymentModal').classList.add('active');
-}
-
-function buyPrime(){
-  App.pendingPurchase = {type:'prime', price:CONFIG.PRIME_PRICE, label:'اشتراك البرايم 30 يوم'};
-  closeModal('storeModal');
-  $('paymentProduct').textContent = 'اشتراك البرايم (30 يوم)';
-  $('paymentPrice').textContent = CONFIG.PRIME_PRICE+' جنيه';
-  $('paymentModal').classList.add('active');
-}
-
-function buyMultiplier(){
-  App.pendingPurchase = {type:'multiplier', price:CONFIG.MULTIPLIER_PRICE, label:'مضاعفة ×2 لمدة 24 ساعة'};
-  closeModal('storeModal');
-  $('paymentProduct').textContent = 'مضاعفة ×2 (24 ساعة)';
-  $('paymentPrice').textContent = CONFIG.MULTIPLIER_PRICE+' جنيه';
-  $('paymentModal').classList.add('active');
-}
-
-function submitPayment(){
-  var inp = $('transNumberInput');
-  var num = inp ? inp.value.trim() : '';
-  if(num.length < 6) return showToast('رقم العملية لازم 6 أرقام على الأقل','error');
-  if(!App.pendingPurchase) return;
-
-  var btn = document.querySelector('#paymentModal .btn-neon');
-  if(btn){btn.disabled = true; btn.textContent = 'جاري الإرسال...';}
-
-  var req = {
-    user_id: (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) ? App.user.id : null,
-    points: App.pendingPurchase.type === 'points' ? App.pendingPurchase.points : 0,
-    price_egp: App.pendingPurchase.price,
-    trans_number: num,
-    status: 'pending'
-  };
-
-  if(supabaseClient && req.user_id){
-    supabaseClient.from('purchase_requests').insert(req).then(function(res){
-      if(btn){btn.disabled = false; btn.textContent = 'إرسال الطلب';}
-      if(res.error){
-        if(res.error.message && res.error.message.indexOf('foreign key') >= 0){
-          showToast('⚠️ جلسة قديمة! جاري إعادة التسجيل...','error');
-          setTimeout(function(){localStorage.clear(); location.reload();}, 2000);
-          return;
-        }
-        return showToast('خطأ: '+res.error.message,'error');
-      }
-      showToast('✅ تم إرسال الطلب!','success');
-      closeModal('paymentModal');
-      App.pendingPurchase = null;
-      if(inp) inp.value = '';
-    });
-  } else {
-    setTimeout(function(){
-      showToast('✅ تم إرسال الطلب (محلياً)','success');
-      closeModal('paymentModal');
-      App.pendingPurchase = null;
-      if(inp) inp.value = '';
-      if(btn){btn.disabled = false; btn.textContent = 'إرسال الطلب';}
-    },700);
-  }
-}
-
-/* ========== PROFILE ========== */
-function openProfile(){
-  $('profileName').textContent = App.user.username;
-  $('profilePhone').textContent = App.user.phone || '--';
-  $('profilePurchased').textContent = App.user.purchased;
-  $('profileEarned').textContent = App.user.earned;
-  $('profileWins').textContent = App.user.wins;
-  $('profileGames').textContent = App.user.games_played;
-  $('profileLevel').textContent = CONFIG.LEVEL_NAMES[App.user.level];
-  $('profileBestStreak').textContent = App.user.bestStreak;
-  $('profileTickets').textContent = App.user.tickets;
-  var rate = App.user.games_played > 0 ? Math.round((App.user.wins/App.user.games_played)*100) : 0;
-  $('profileWinRate').textContent = rate + '%';
-  var av = $('profileAvatar');
-  av.textContent = App.user.username.charAt(0).toUpperCase();
-  if(isPrime()) av.classList.add('prime'); else av.classList.remove('prime');
-
-  var ps = $('primeStatus');
-  if(isPrime()){
-    var exp = new Date(App.user.prime_expires_at);
-    var days = Math.max(0, Math.ceil((exp - new Date())/86400000));
-    ps.innerHTML = '<span class="badge-prime">👑 برايم</span> <span style="color:#ffd700;font-size:12px;">متبقي '+days+' يوم</span>';
-  } else {
-    ps.innerHTML = '';
-  }
-
-  loadWallet();
-  updateWalletUI();
-  $('profileModal').classList.add('active');
-}
-
-/* ========== PRIZE TABLE ========== */
-function buildPrizeTables(){
-  var html = '';
-  for(var i=0;i<CONFIG.PRIZES.length;i++){
-    var p = CONFIG.PRIZES[i];
-    html += '<div class="prize-row"><span class="prize-points">'+p.threshold+' نقطة</span><span class="prize-money">'+p.money+' جنيه</span></div>';
-  }
-  var el = $('welcomePrizeTable');
-  if(el) el.innerHTML = html;
-}
-
-/* ========== LEADERBOARD ========== */
-function showLeaderboard(){
-  var list = $('leaderboardList');
-  list.innerHTML = '<p class="small-text">جاري التحميل...</p>';
-  $('leaderboardModal').classList.add('active');
-  if(!supabaseClient){
-    list.innerHTML = '<p class="small-text">Supabase غير متصل</p>';
-    return;
-  }
-  supabaseClient.from('users').select('username, purchased, earned, wins').order('purchased', {ascending:false}).limit(20).then(function(res){
-    if(res.error || !res.data || !res.data.length){
-      list.innerHTML = '<p class="small-text">لا يوجد لاعبين بعد</p>';
-      return;
-    }
+  try {
+    var res = await supabaseClient.from('friendships').select('friend_id, status').eq('user_id', App.user.id).eq('status', 'accepted');
+    if (res.error) throw res.error;
+    if (!res.data || res.data.length === 0) { container.innerHTML = '<p class="small-text">مفيش أصدقاء لسه</p>'; Friends.list = []; return; }
+    var friendIds = res.data.map(function(f) { return f.friend_id; });
+    var usersRes = await supabaseClient.from('users').select('id, username, level, is_prime, last_seen').in('id', friendIds);
+    if (usersRes.error) throw usersRes.error;
+    Friends.list = usersRes.data || [];
     var html = '';
-    for(var i=0;i<res.data.length;i++){
-      var u = res.data[i];
-      var total = (u.purchased||0) + (u.earned||0);
-      html += '<div class="leaderboard-item"><span class="rank">#'+(i+1)+'</span><span class="name">'+u.username+'</span><span class="points">'+total+' 💎</span></div>';
-    }
+    Friends.list.forEach(function(u) {
+      var isOnline = u.last_seen && (Date.now() - new Date(u.last_seen).getTime() < 5 * 60 * 1000);
+      html += '<div class="friend-item"><div class="friend-avatar ' + (u.is_prime ? 'prime' : '') + '">' + (u.username.charAt(0) || '?').toUpperCase() + '<span class="status-dot ' + (isOnline ? 'online' : '') + '"></span></div><div class="friend-info"><div class="friend-name">' + u.username + ' ' + (u.is_prime ? '👑' : '') + '</div><div class="friend-status">' + (isOnline ? '🟢 متصل' : '⚫ غير متصل') + '</div></div><div class="friend-actions"><button type="button" class="friend-btn" onclick="removeFriend(\'' + u.id + '\')">إزالة</button></div></div>';
+    });
+    container.innerHTML = html;
+  } catch(e) {
+    console.error('loadFriends error:', e);
+    container.innerHTML = '<p class="small-text">خطأ: تأكد من جدول friendships في Supabase</p>';
+  }
+}
+
+function searchFriends() {
+  clearTimeout(Friends.searchDebounce);
+  var q = $('friendSearchInput').value.trim();
+  var container = $('friendSearchResults');
+  if (!q || q.length < 2) { container.innerHTML = ''; return; }
+  Friends.searchDebounce = setTimeout(async function() {
+    if (!supabaseClient || !App.user.id) return;
+    try {
+      var res = await supabaseClient.from('users').select('id, username, phone, level, is_prime').or('username.ilike.%' + q + '%,phone.ilike.%' + q + '%').neq('id', App.user.id).limit(10);
+      if (res.error) throw res.error;
+      if (!res.data || res.data.length === 0) { container.innerHTML = '<p class="small-text">مفيش نتائج</p>'; return; }
+      var html = '';
+      res.data.forEach(function(u) {
+        var alreadyFriend = Friends.list.some(function(f){ return f.id === u.id; });
+        html += '<div class="friend-item"><div class="friend-avatar ' + (u.is_prime ? 'prime' : '') + '">' + (u.username.charAt(0) || '?').toUpperCase() + '</div><div class="friend-info"><div class="friend-name">' + u.username + ' ' + (u.is_prime ? '👑' : '') + '</div><div class="friend-status">المستوى ' + (u.level || 1) + '</div></div><div class="friend-actions">' + (alreadyFriend ? '<button type="button" class="friend-btn" disabled>✓ صديق</button>' : '<button type="button" class="friend-btn invite" onclick="sendFriendRequest(\'' + u.id + '\')">➕ إضافة</button>') + '</div></div>';
+      });
+      container.innerHTML = html;
+    } catch(e) { console.error(e); }
+  }, 400);
+}
+
+async function sendFriendRequest(friendId) {
+  if (!supabaseClient || !App.user.id) return;
+  try {
+    var res = await supabaseClient.from('friendships').insert({ user_id: App.user.id, friend_id: friendId, status: 'accepted' });
+    if (res.error) throw res.error;
+    SoundSystem.playReward(); Vibration.onReward();
+    showToast('✅ تم إضافة الصديق', 'success');
+    await loadFriendsList();
+  } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
+}
+
+async function removeFriend(friendId) {
+  if (!supabaseClient || !App.user.id) return;
+  if (!confirm('إزالة الصديق؟')) return;
+  try {
+    await supabaseClient.from('friendships').delete().eq('user_id', App.user.id).eq('friend_id', friendId);
+    await supabaseClient.from('friendships').delete().eq('user_id', friendId).eq('friend_id', App.user.id);
+    showToast('تم إزالة الصديق', 'success');
+    await loadFriendsList();
+  } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
+}
+
+function inviteFriendToRoom(friendId, friendName) {
+  if (!App.user.referral_code) return;
+  var link = window.location.origin + '?invite=' + App.user.referral_code;
+  var text = '🎮 ' + App.user.username + ' بيدعوك يلعب Neon Prediction!\n\n' + link;
+  if (navigator.share) navigator.share({ title: 'Neon Prediction', text: text }).catch(function(){});
+  else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function(){ showToast('تم نسخ الدعوة!', 'success'); });
+}
+
+/* ============ SHARE ============ */
+function openShareModal() {
+  var today = new Date().toDateString();
+  if (App.user.last_share_date !== today) { App.user.share_points_today = 0; App.user.last_share_date = today; saveLocal(); }
+  var url = window.location.origin + '?ref=' + (App.user.referral_code || '');
+  var el = $('shareUrl'); if (el) el.textContent = url;
+  var pt = $('sharePointsToday');
+  if (pt) pt.textContent = (App.user.share_points_today || 0) + ' / ' + CONFIG.SHARE_DAILY_LIMIT;
+  $('shareModal').classList.add('active');
+}
+
+function getShareUrl() { return window.location.origin + '?ref=' + (App.user.referral_code || ''); }
+
+function copyShareLink() {
+  var url = getShareUrl();
+  var text = '🎮 العب معايا Neon Prediction واكسب فلوس!\n\n' + url;
+  if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function() { showToast('✅ تم نسخ الرابط!', 'success'); awardSharePoints(); }); }
+}
+
+function shareWhatsApp() {
+  var url = getShareUrl();
+  window.open('https://wa.me/?text=' + encodeURIComponent('🎮 العب معايا Neon Prediction واكسب فلوس!\n\n' + url), '_blank');
+  awardSharePoints();
+}
+
+function shareTelegram() {
+  var url = getShareUrl();
+  window.open('https://t.me/share/url?url=' + encodeURIComponent(url), '_blank');
+  awardSharePoints();
+}
+
+function nativeShare() {
+  var url = getShareUrl();
+  if (navigator.share) { navigator.share({ title: 'Neon Prediction', text: '🎮 العب معايا Neon Prediction!', url: url }).then(function() { awardSharePoints(); }).catch(function() {}); }
+  else { copyShareLink(); }
+}
+
+function awardSharePoints() {
+  var today = new Date().toDateString();
+  if (App.user.last_share_date !== today) { App.user.share_points_today = 0; App.user.last_share_date = today; }
+  if ((App.user.share_points_today || 0) >= CONFIG.SHARE_DAILY_LIMIT) { showToast('خلصت نقاط المشاركة النهاردة', 'info'); return; }
+  App.user.share_points_today = (App.user.share_points_today || 0) + CONFIG.SHARE_REWARD;
+  addPoints(CONFIG.SHARE_REWARD);
+  saveLocal(); updateAllUI(); syncUser();
+  updateMissionProgress('share');
+  SoundSystem.playReward(); Vibration.onReward();
+  showCoinToast('+' + CONFIG.SHARE_REWARD + ' 💎', '📢');
+  var pt = $('sharePointsToday');
+  if (pt) pt.textContent = App.user.share_points_today + ' / ' + CONFIG.SHARE_DAILY_LIMIT;
+  checkMilestones();
+}
+
+async function registerReferral(refCode) {
+  if (!refCode || !supabaseClient || !App.user.id) return;
+  if (String(App.user.id).indexOf('local_') === 0) return;
+  try {
+    var res = await supabaseClient.from('users').select('id').eq('referral_code', refCode).maybeSingle();
+    if (!res.data || res.data.id === App.user.id) return;
+    await supabaseClient.from('earnings').insert({ user_id: res.data.id, amount: 5, source: 'referral_' + App.user.id, transferred: false });
+    await supabaseClient.from('users').update({ referred_by: refCode }).eq('id', App.user.id);
+  } catch(e) { console.error('registerReferral:', e); }
+}
+
+/* ============ ONLINE GAME ============ */
+var Online = {
+  room: null, players: [], answers: [], roundData: null,
+  myChoice: null, myAnswerTime: 0, roundStartTime: 0,
+  timer: null, channel: null, isHost: false,
+  currentRound: 0, isReady: false, playing: false,
+  maxPlayers: 3, choiceTime: 10, category: 'football', privacy: 'public'
+};
+
+function openOnlineLobby() { showView('onlineLobbyView'); }
+
+async function openPublicRooms() {
+  showView('publicRoomsView');
+  var list = $('publicRoomsList');
+  list.innerHTML = '<p class="small-text" style="text-align:center">جاري التحميل...</p>';
+  try {
+    var res = await supabaseClient.from('online_rooms').select('*').eq('status', 'waiting').eq('privacy', 'public').order('created_at', { ascending: false }).limit(20);
+    if (res.error) throw res.error;
+    if (!res.data || res.data.length === 0) { list.innerHTML = '<p class="small-text" style="text-align:center">مفيش غرف عامة دلوقتي — اعمل واحدة!</p>'; return; }
+    var html = '';
+    res.data.forEach(function(r) {
+      html += '<div class="package-item" onclick="joinPublicRoom(\'' + r.id + '\')" style="cursor:pointer"><span class="pkg-icon">🌐</span><div class="pkg-info"><span class="pkg-points">غرفة ' + r.code + '</span><span class="pkg-price">' + (CATEGORIES[r.category] ? CATEGORIES[r.category].name : 'كرة القدم') + ' • ' + r.max_players + ' لاعبين</span><span class="pkg-details">⏱️ ' + r.choice_time + ' ثواني للاختيار</span></div><span style="color:#00c853;font-weight:900">دخول →</span></div>';
+    });
     list.innerHTML = html;
+  } catch(e) { console.error(e); list.innerHTML = '<p class="small-text" style="text-align:center">خطأ: ' + e.message + '</p>'; }
+}
+
+async function joinPublicRoom(roomId) {
+  if (!supabaseClient || !App.user.id) return;
+  if (totalPoints() < CONFIG.ONLINE_ENTRY) { showToast('محتاج ' + CONFIG.ONLINE_ENTRY + ' نقطة', 'error'); return; }
+  try {
+    var r = await supabaseClient.from('online_rooms').select('*').eq('id', roomId).maybeSingle();
+    if (!r.data) return showToast('الغرفة مش موجودة', 'error');
+    if (r.data.status !== 'waiting') return showToast('الغرفة بدأت خلاص', 'error');
+    var playersRes = await supabaseClient.from('room_players').select('id').eq('room_id', roomId);
+    if (playersRes.data && playersRes.data.length >= r.data.max_players) return showToast('الغرفة مليانة', 'error');
+    deductPoints(CONFIG.ONLINE_ENTRY);
+    saveLocal(); updateAllUI();
+    Online.room = r.data;
+    Online.isHost = false;
+    Online.isReady = false;
+    Online.maxPlayers = r.data.max_players;
+    Online.choiceTime = r.data.choice_time;
+    Online.category = r.data.category;
+    Online.currentRound = 0;
+    await supabaseClient.from('room_players').insert({ room_id: r.data.id, user_id: App.user.id, username: App.user.username, is_host: false, is_ready: false });
+    subscribeToRoom(r.data.id);
+    enterOnlineRoomView(r.data.code);
+    showToast('✅ انضممت للغرفة!', 'success');
+  } catch(e) { console.error(e); showToast('خطأ: ' + e.message, 'error'); }
+}
+
+function openCreateRoomModal() {
+  Online.maxPlayers = 3;
+  Online.choiceTime = 10;
+  Online.category = 'football';
+  Online.privacy = 'public';
+  $('createRoomModal').classList.add('active');
+}
+
+function setRoomPlayers(n) {
+  Online.maxPlayers = n;
+  document.querySelectorAll('#createRoomModal .setting-group:nth-child(2) .setting-option').forEach(function(b, i) { b.classList.toggle('active', [2,3,5][i] === n); });
+}
+
+function setRoomTime(t) {
+  Online.choiceTime = t;
+  document.querySelectorAll('#createRoomModal .setting-group:nth-child(3) .setting-option').forEach(function(b, i) { b.classList.toggle('active', [5,10,15,20][i] === t); });
+}
+
+function setRoomCategory(c) {
+  Online.category = c;
+  var opts = ['football','fruits','animals','colors'];
+  document.querySelectorAll('#createRoomModal .setting-group:nth-child(4) .setting-option').forEach(function(b, i) { b.classList.toggle('active', opts[i] === c); });
+}
+
+function setRoomPrivacy(p) {
+  Online.privacy = p;
+  document.querySelectorAll('#createRoomModal .setting-group:nth-child(5) .setting-option').forEach(function(b, i) { b.classList.toggle('active', ['public','private'][i] === p); });
+}
+
+async function createOnlineRoomWithSettings() {
+  closeModal('createRoomModal');
+  if (!supabaseClient || !App.user.id) { showToast('محتاج Supabase', 'error'); return; }
+  if (String(App.user.id).indexOf('local_') === 0) { showToast('سجّل من جديد', 'error'); return; }
+  if (totalPoints() < CONFIG.ONLINE_ENTRY) { showToast('محتاج ' + CONFIG.ONLINE_ENTRY + ' نقطة', 'error'); return; }
+  deductPoints(CONFIG.ONLINE_ENTRY);
+  saveLocal(); updateAllUI();
+  try {
+    var code = generateRoomCode();
+    var res = await supabaseClient.from('online_rooms').insert({ code: code, host_id: App.user.id, category: Online.category, status: 'waiting', max_players: Online.maxPlayers, choice_time: Online.choiceTime, privacy: Online.privacy, entry_fee: CONFIG.ONLINE_ENTRY }).select().single();
+    if (res.error) throw res.error;
+    Online.room = res.data;
+    Online.isHost = true;
+    Online.isReady = true;
+    Online.currentRound = 0;
+    await supabaseClient.from('room_players').insert({ room_id: res.data.id, user_id: App.user.id, username: App.user.username, is_host: true, is_ready: true });
+    subscribeToRoom(res.data.id);
+    enterOnlineRoomView(code);
+  } catch(e) {
+    console.error('createOnlineRoom error:', e);
+    addPoints(CONFIG.ONLINE_ENTRY);
+    saveLocal(); updateAllUI();
+    showToast('خطأ: ' + e.message, 'error');
+  }
+}
+
+function openJoinOnlineModal() { $('joinOnlineCodeInput').value = ''; $('joinOnlineModal').classList.add('active'); }
+
+async function joinOnlineRoom() {
+  var code = $('joinOnlineCodeInput').value.trim().toUpperCase();
+  if (code.length !== 6) return showToast('الكود 6 حروف', 'error');
+  if (!supabaseClient || !App.user.id) return;
+  if (totalPoints() < CONFIG.ONLINE_ENTRY) { showToast('محتاج ' + CONFIG.ONLINE_ENTRY + ' نقطة', 'error'); return; }
+  try {
+    var res = await supabaseClient.from('online_rooms').select('*').eq('code', code).eq('status', 'waiting').maybeSingle();
+    if (!res.data) return showToast('مفيش غرفة بالكود ده', 'error');
+    var playersRes = await supabaseClient.from('room_players').select('id').eq('room_id', res.data.id);
+    if (playersRes.data && playersRes.data.length >= res.data.max_players) return showToast('الغرفة مليانة', 'error');
+    deductPoints(CONFIG.ONLINE_ENTRY);
+    saveLocal(); updateAllUI();
+    Online.room = res.data;
+    Online.isHost = false;
+    Online.isReady = false;
+    Online.maxPlayers = res.data.max_players;
+    Online.choiceTime = res.data.choice_time;
+    Online.category = res.data.category;
+    Online.currentRound = 0;
+    await supabaseClient.from('room_players').insert({ room_id: res.data.id, user_id: App.user.id, username: App.user.username, is_host: false, is_ready: false });
+    closeModal('joinOnlineModal');
+    subscribeToRoom(res.data.id);
+    enterOnlineRoomView(code);
+    showToast('✅ انضممت للغرفة!', 'success');
+  } catch(e) { console.error(e); addPoints(CONFIG.ONLINE_ENTRY); saveLocal(); updateAllUI(); showToast('خطأ: ' + e.message, 'error'); }
+}
+
+function enterOnlineRoomView(code) {
+  showView('onlineRoomView');
+  $('onlineRoomTitle').textContent = 'غرفة ' + code;
+  $('onlineRoomCode').style.display = 'block';
+  $('onlineRoomCode').textContent = 'الكود: ' + code;
+  $('onlineMaxPlayers').textContent = Online.maxPlayers;
+  var slots = ['oslot1','oslot2','oslot3','oslot4','oslot5'];
+  for (var i = 0; i < 5; i++) {
+    var el = $(slots[i]);
+    if (el) el.style.display = (i < Online.maxPlayers) ? 'flex' : 'none';
+  }
+  refreshOnlinePlayers();
+}
+
+function generateRoomCode(){
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', code = '';
+  for(var i=0;i<6;i++) code += chars.charAt(Math.floor(Math.random()*chars.length));
+  return code;
+}
+
+function subscribeToRoom(roomId) {
+  if (Online.channel) { try { supabaseClient.removeChannel(Online.channel); } catch(e) {} }
+  Online.channel = supabaseClient.channel('room_' + roomId)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_players', filter: 'room_id=eq.' + roomId }, function() { refreshOnlinePlayers(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_rounds', filter: 'room_id=eq.' + roomId }, function(payload) { if (payload.new && payload.new.round_number) startOnlineRound(payload.new); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'room_answers', filter: 'room_id=eq.' + roomId }, function() { refreshOnlineAnswers(); })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'online_rooms', filter: 'id=eq.' + roomId }, function(payload) { if (payload.new.status === 'playing' && !Online.playing) startOnlineGame(); })
+    .subscribe();
+}
+
+async function refreshOnlinePlayers() {
+  if (!Online.room) return;
+  try {
+    var res = await supabaseClient.from('room_players').select('*').eq('room_id', Online.room.id).order('joined_at');
+    if (res.data) { Online.players = res.data; updateOnlineRoomPlayers(); checkAllReady(); }
+  } catch(e) { console.error(e); }
+}
+
+function updateOnlineRoomPlayers() {
+  var slots = ['oslot1', 'oslot2', 'oslot3', 'oslot4', 'oslot5'];
+  for (var i = 0; i < slots.length; i++) {
+    var el = $(slots[i]); if (!el) continue;
+    el.classList.remove('filled', 'prime-slot');
+    el.innerHTML = '';
+  }
+  for (var j = 0; j < Online.players.length && j < 5; j++) {
+    var p = Online.players[j];
+    var el = $(slots[j]);
+    if (el) {
+      el.classList.add('filled');
+      supabaseClient.from('users').select('is_prime').eq('id', p.user_id).maybeSingle().then(function(r) {
+        if (r.data && r.data.is_prime) el.classList.add('prime-slot');
+      });
+      el.innerHTML = (p.username.charAt(0) || '?').toUpperCase() + '<span class="slot-name">' + p.username + (p.is_ready ? ' ✋' : '') + '</span>';
+    }
+  }
+  $('onlinePlayersCount').textContent = Online.players.length;
+  if (Online.players.length >= 2) $('onlineWaitingHint').textContent = 'الجميع جاهز؟ اضغط "جاهز"';
+}
+
+async function toggleReady() {
+  if (!Online.room) return;
+  Online.isReady = !Online.isReady;
+  try {
+    await supabaseClient.from('room_players').update({ is_ready: Online.isReady }).eq('room_id', Online.room.id).eq('user_id', App.user.id);
+    var btn = $('readyBtn');
+    if (Online.isReady) { btn.textContent = '✓ جاهز'; btn.classList.add('ready'); }
+    else { btn.textContent = '✋ جاهز'; btn.classList.remove('ready'); }
+    await refreshOnlinePlayers();
+  } catch(e) { console.error(e); }
+}
+
+async function checkAllReady() {
+  if (!Online.room || !Online.isHost) return;
+  if (Online.players.length < 2) return;
+  if (Online.room.status !== 'waiting') return;
+  var allReady = Online.players.every(function(p){ return p.is_ready; });
+  if (!allReady) return;
+  try { await supabaseClient.from('online_rooms').update({ status: 'playing', started_at: new Date().toISOString() }).eq('id', Online.room.id); } catch(e) { console.error(e); }
+}
+
+async function startOnlineGame() {
+  Online.playing = true;
+  Online.currentRound = 0;
+  showView('onlineGameView');
+  updateOnlineScores();
+  setTimeout(function() { if (Online.isHost) nextOnlineRound(); }, 1500);
+}
+
+async function nextOnlineRound() {
+  Online.currentRound++;
+  if (Online.currentRound > CONFIG.ONLINE_ROUNDS) { endOnlineGame(); return; }
+  if (!Online.isHost) return;
+  var correct = Math.floor(Math.random() * 5) + 1;
+  try { await supabaseClient.from('room_rounds').insert({ room_id: Online.room.id, round_number: Online.currentRound, correct_choice: correct, started_at: new Date().toISOString() }); } catch(e) { console.error(e); }
+}
+
+function startOnlineRound(round) {
+  Online.roundData = round;
+  Online.currentRound = round.round_number;
+  Online.myChoice = null;
+  Online.myAnswerTime = 0;
+  Online.roundStartTime = Date.now();
+  $('onlineRoundNum').textContent = round.round_number;
+  var cat = CATEGORIES[Online.category] || CATEGORIES.football;
+  var grid = $('onlineChoicesGrid');
+  grid.innerHTML = '';
+  cat.choices.forEach(function(c, i) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'choice-btn';
+    btn.innerHTML = '<span class="choice-num">' + (i+1) + '</span><span>' + c + '</span>';
+    btn.onclick = function() { makeOnlineChoice(i+1); };
+    grid.appendChild(btn);
   });
+  startOnlineTimer();
+  refreshOnlineAnswers();
 }
 
-/* ========== TOASTS ========== */
-function showToast(msg, type){
-  var t = $('toast');
-  if(!t) return;
-  var icons = {info:'ℹ️', success:'✅', error:'❌'};
-  $('toastIcon').textContent = icons[type] || icons.info;
-  $('toastText').textContent = msg;
-  t.className = 'toast ' + (type||'info');
-  setTimeout(function(){t.classList.add('show');},50);
-  setTimeout(function(){t.classList.remove('show');},3200);
+function startOnlineTimer() {
+  if (Online.timer) clearInterval(Online.timer);
+  var timeLeft = Online.choiceTime;
+  $('onlineTimerValue').textContent = timeLeft;
+  $('onlineTimerValue').classList.remove('danger');
+  Online.timer = setInterval(function() {
+    timeLeft--;
+    $('onlineTimerValue').textContent = timeLeft;
+    if (timeLeft <= 3) $('onlineTimerValue').classList.add('danger');
+    if (timeLeft <= 0) { clearInterval(Online.timer); finishOnlineRound(Online.roundData); }
+  }, 1000);
 }
 
-function showCoinToast(msg, icon){
-  var t = $('coinToast');
-  if(!t) return;
-  $('coinToastIcon').textContent = icon || '💰';
-  $('coinToastText').textContent = msg;
-  t.className = 'coin-toast';
-  setTimeout(function(){t.classList.add('show');},50);
-  setTimeout(function(){t.classList.remove('show');},2800);
+async function makeOnlineChoice(num) {
+  if (Online.myChoice !== null) return;
+  if (!Online.roundData) return;
+  Online.myChoice = num;
+  Online.myAnswerTime = Date.now() - Online.roundStartTime;
+  var btns = document.querySelectorAll('#onlineChoicesGrid .choice-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].disabled = true;
+    if (i + 1 === num) btns[i].classList.add('selected');
+  }
+  try {
+    var isCorrect = num === Online.roundData.correct_choice;
+    var points = 0;
+    if (isCorrect) {
+      var timeSec = Online.myAnswerTime / 1000;
+      points = Math.max(50, Math.floor(100 - (timeSec * 4)));
+    }
+    await supabaseClient.from('room_answers').insert({ room_id: Online.room.id, round_number: Online.currentRound, user_id: App.user.id, username: App.user.username, choice: num, answer_time: Online.myAnswerTime, is_correct: isCorrect, points_earned: points });
+    if (isCorrect) {
+      var newScore = getMyNewScore(points);
+      await supabaseClient.from('room_players').update({ score: newScore }).eq('room_id', Online.room.id).eq('user_id', App.user.id);
+    }
+  } catch(e) { console.error(e); }
 }
 
-/* ========== GLOBAL EXPORTS ========== */
-window.login = login;
+function getMyNewScore(addedPoints) {
+  for (var i = 0; i < Online.players.length; i++) {
+    if (Online.players[i].user_id === App.user.id) return (Online.players[i].score || 0) + addedPoints;
+  }
+  return addedPoints;
+}
+
+async function refreshOnlineAnswers() {
+  if (!Online.room || !Online.roundData) return;
+  try {
+    var res = await supabaseClient.from('room_answers').select('*').eq('room_id', Online.room.id).eq('round_number', Online.currentRound);
+    if (res.data) { Online.answers = res.data; updateOnlineScores(); }
+  } catch(e) { console.error(e); }
+}
+
+function updateOnlineScores() {
+  var container = $('onlineScores'); if (!container) return;
+  var sorted = Online.players.slice().sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
+  var html = '';
+  for (var i = 0; i < sorted.length; i++) {
+    var p = sorted[i];
+    var isMe = p.user_id === App.user.id;
+    var answer = Online.answers.find(function(a){ return a.user_id === p.user_id; });
+    var cls = '';
+    if (answer) cls = answer.is_correct ? 'correct' : 'wrong';
+    html += '<div class="online-score-row ' + (isMe ? 'me ' : '') + cls + '"><span class="online-score-rank">#' + (i+1) + '</span><span class="online-score-name">' + p.username + (isMe ? ' (أنت)' : '') + '</span><span class="online-score-points">' + (p.score || 0) + '</span></div>';
+  }
+  container.innerHTML = html;
+}
+
+async function finishOnlineRound(round) {
+  if (Online.timer) clearInterval(Online.timer);
+  var btns = document.querySelectorAll('#onlineChoicesGrid .choice-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].disabled = true;
+    if (i + 1 === round.correct_choice) btns[i].classList.add('correct');
+    else if (i + 1 === Online.myChoice) btns[i].classList.add('wrong');
+  }
+  if (Online.myChoice === round.correct_choice) { SoundSystem.playSuccess(); Vibration.onWin(); }
+  else { SoundSystem.playLoss(); Vibration.onLoss(); }
+  await refreshOnlineAnswers();
+  setTimeout(function() { if (Online.isHost) nextOnlineRound(); }, 3000);
+}
+
+async function endOnlineGame() {
+  Online.playing = false;
+  if (Online.timer) clearInterval(Online.timer);
+  try { await supabaseClient.from('online_rooms').update({ status: 'finished', finished_at: new Date().toISOString() }).eq('id', Online.room.id); } catch(e) {}
+  updateMissionProgress('online');
+  var sorted = Online.players.slice().sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
+  var winner = sorted[0];
+  var iWon = winner && winner.user_id === App.user.id;
+  if (iWon) {
+    addPoints(30, true);
+    updateMissionProgress('win_online', true);
+    SoundSystem.playBigWin(); Vibration.onBigPrize();
+    showWinOverlay('🏆', 'مبروك! فزت', 3000);
+  } else { SoundSystem.playLoss(); Vibration.onLoss(); }
+  var container = $('onlineResultContainer');
+  container.className = 'result-container ' + (iWon ? 'winner' : 'loser');
+  $('onlineResultIcon').textContent = iWon ? '🏆' : '😢';
+  $('onlineResultTitle').textContent = iWon ? 'مبروك! فزت' : 'للأسف خسرت';
+  $('onlineResultReward').textContent = iWon ? '+30 نقطة' : 'حظ أوفر المرة الجاية';
+  var finalHtml = '';
+  sorted.forEach(function(p, j) {
+    var isMe = p.user_id === App.user.id;
+    finalHtml += '<div class="online-score-row ' + (isMe ? 'me' : '') + '"><span class="online-score-rank">#' + (j+1) + '</span><span class="online-score-name">' + p.username + (isMe ? ' (أنت)' : '') + '</span><span class="online-score-points">' + (p.score || 0) + '</span></div>';
+  });
+  $('onlineFinalScores').innerHTML = finalHtml;
+  showView('onlineResultView');
+  saveLocal(); updateAllUI(); syncUser(); checkMilestones();
+}
+
+async function leaveOnlineRoom() {
+  if (Online.channel) { try { supabaseClient.removeChannel(Online.channel); } catch(e) {} Online.channel = null; }
+  if (Online.room) {
+    try {
+      await supabaseClient.from('room_players').delete().eq('room_id', Online.room.id).eq('user_id', App.user.id);
+      var remaining = await supabaseClient.from('room_players').select('id').eq('room_id', Online.room.id);
+      if (!remaining.data || remaining.data.length === 0) await supabaseClient.from('online_rooms').delete().eq('id', Online.room.id);
+    } catch(e) {}
+  }
+  Online.room = null; Online.players = []; Online.answers = [];
+  Online.playing = false; Online.isHost = false; Online.isReady = false; Online.currentRound = 0;
+  if (Online.timer) clearInterval(Online.timer);
+  $('readyBtn').textContent = '✋ جاهز';
+  $('readyBtn').classList.remove('ready');
+  showView('onlineLobbyView');
+  showToast('غادرت الغرفة', 'info');
+}
+
+function playAgainOnline() {
+  leaveOnlineRoom();
+  setTimeout(function() { openOnlineLobby(); }, 300);
+}
+
+/* ============ JOIN OFFLINE ============ */
+function openJoinModal() { $('joinCodeInput').value = ''; $('joinRoomModal').classList.add('active'); }
+
+function joinRoomByCode(){
+  var code = $('joinCodeInput').value.trim().toUpperCase();
+  if(code.length !== 6) return showToast('الكود 6 حروف','error');
+  if(!useTicket()) return;
+  if(totalPoints() < CONFIG.ENTRY_FEE + CONFIG.COMMISSION){showToast('رصيدك غير كافٍ','error'); return;}
+  closeModal('joinRoomModal');
+  App.room = {id:'joined_'+Date.now(),category:'football',mode:'private',code:code,correctChoice:null,status:'waiting'};
+  showView('waitingView');
+  $('waitingTitle').textContent = 'غرفة '+code;
+  $('playersCount').textContent = '2';
+  $('waitingHint').textContent = 'انضممت للغرفة...';
+  $('roomCodeShow').style.display = 'block';
+  $('roomCodeShow').textContent = 'الكود: '+code;
+  $('slot3').style.display = '';
+  $('slot1').classList.add('filled');
+  $('slot1').textContent = BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)].charAt(0);
+  $('slot2').classList.add('filled');
+  $('slot2').textContent = App.user.username.charAt(0).toUpperCase();
+  $('slot3').classList.remove('filled');
+  setTimeout(function(){$('playersCount').textContent='3';$('slot3').classList.add('filled');$('slot3').textContent=BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)].charAt(0);$('waitingHint').textContent='الغرفة اكتملت!';setTimeout(startGame,900);},2000);
+  showToast('✅ انضممت للغرفة!','success');
+}
+
+function copyRoomCode(){
+  var code = $('roomCodeDisplay').textContent;
+  var text = '🎮 العب معايا Neon Prediction!\n\n🔒 كود الغرفة: '+code;
+  if(navigator.clipboard) navigator.clipboard.writeText(text).then(function(){showToast('تم النسخ!','success');}).catch(function(){showToast('الكود: '+code,'info');});
+  else showToast('الكود: '+code,'info');
+}
+
+/* ============ EXPORTS ============ */
+window.switchAuthTab = switchAuthTab;
+window.signupNew = signupNew;
+window.loginExisting = loginExisting;
+window.saveNewPassword = saveNewPassword;
+window.logoutUser = logoutUser;
 window.closeWelcomeAd = closeWelcomeAd;
 window.claimDailyLogin = claimDailyLogin;
 window.claimDailyChest = claimDailyChest;
-window.createPrivateRoom = createPrivateRoom;
-window.openJoinModal = openJoinModal;
-window.joinRoomByCode = joinRoomByCode;
-window.copyRoomCode = copyRoomCode;
-window.start1v1 = start1v1;
-window.openLuckyWheel = openLuckyWheel;
-window.spinWheel = spinWheel;
 window.selectCategory = selectCategory;
+window.start1v1 = start1v1;
 window.leaveRoom = leaveRoom;
 window.playAgain = playAgain;
-window.showView = showView;
+window.openMilestonesModal = openMilestonesModal;
+window.openLossRecovery = openLossRecovery;
+window.confirmLossRecovery = confirmLossRecovery;
+window.openLuckyWheel = openLuckyWheel;
+window.spinWheel = spinWheel;
+window.openTicketStore = openTicketStore;
+window.buyTicket = buyTicket;
 window.openStore = openStore;
-window.closeModal = closeModal;
 window.buyPackage = buyPackage;
 window.buyPrime = buyPrime;
 window.buyMultiplier = buyMultiplier;
-window.submitPayment = submitPayment;
-window.openProfile = openProfile;
-window.showLeaderboard = showLeaderboard;
-window.openLossRecovery = openLossRecovery;
-window.confirmLossRecovery = confirmLossRecovery;
-window.acceptSpecialOffer = function(){closeModal('specialOfferModal'); buyPackage(300,35);};
 window.openDepositModal = openDepositModal;
 window.openWithdrawModal = openWithdrawModal;
 window.submitDeposit = submitDeposit;
 window.submitWithdraw = submitWithdraw;
 window.transferEarningsToWallet = transferEarningsToWallet;
-window.openMilestonesModal = openMilestonesModal;
-window.loadWallet = loadWallet;
+window.openProfile = openProfile;
+window.showLeaderboard = showLeaderboard;
+window.acceptSpecialOffer = acceptSpecialOffer;
+window.openFriendsModal = openFriendsModal;
+window.searchFriends = searchFriends;
+window.sendFriendRequest = sendFriendRequest;
+window.removeFriend = removeFriend;
+window.inviteFriendToRoom = inviteFriendToRoom;
+window.openShareModal = openShareModal;
+window.copyShareLink = copyShareLink;
+window.shareWhatsApp = shareWhatsApp;
+window.shareTelegram = shareTelegram;
+window.nativeShare = nativeShare;
+window.openOnlineLobby = openOnlineLobby;
+window.openPublicRooms = openPublicRooms;
+window.joinPublicRoom = joinPublicRoom;
+window.openCreateRoomModal = openCreateRoomModal;
+window.setRoomPlayers = setRoomPlayers;
+window.setRoomTime = setRoomTime;
+window.setRoomCategory = setRoomCategory;
+window.setRoomPrivacy = setRoomPrivacy;
+window.createOnlineRoomWithSettings = createOnlineRoomWithSettings;
+window.openJoinOnlineModal = openJoinOnlineModal;
+window.joinOnlineRoom = joinOnlineRoom;
+window.toggleReady = toggleReady;
+window.leaveOnlineRoom = leaveOnlineRoom;
+window.playAgainOnline = playAgainOnline;
+window.showView = showView;
+window.closeModal = closeModal;
+window.toggleFullscreen = toggleFullscreen;
+window.openJoinModal = openJoinModal;
+window.joinRoomByCode = joinRoomByCode;
+window.copyRoomCode = copyRoomCode;
