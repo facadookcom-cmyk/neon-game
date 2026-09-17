@@ -1,5 +1,6 @@
 /* ============================================
-   Neon Prediction v8 — Script.js (Fixed)
+   Neon Prediction v9 — Script.js FINAL
+   كل الإصلاحات النهائية
    ============================================ */
 
 var SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -69,8 +70,8 @@ var CATEGORIES = {
 };
 
 var BOT_NAMES = ['أحمد','محمود','سارة','ياسين','نور','عمر','لينا','كريم','هدى','يوسف','مريم','علي'];
-var STORAGE_KEY = 'neon_user_v8';
-var WALLET_KEY_PREFIX = 'neon_wallet_v8_';
+var STORAGE_KEY = 'neon_user_v9';
+var WALLET_KEY_PREFIX = 'neon_wallet_v9_';
 
 var App = {
   user: createDefaultUser(),
@@ -283,17 +284,16 @@ async function signupNew() {
   var password = $('signupPassword').value.trim();
 
   if (name.length < 2) return showToast('اكتب اسم صحيح', 'error');
-  if (!phone || phone.length < 11 || phone.indexOf('01') !== 0) return showToast('رقم تليفون غير صحيح', 'error');
+  if (!phone || phone.length < 11 || phone.indexOf('01') !== 0) return showToast('رقم غير صحيح', 'error');
   if (password.length < 6) return showToast('كلمة السر 6 أحرف على الأقل', 'error');
 
   App.busy = true;
-
   try {
     var nameCheck = await supabaseClient.from('users').select('id').eq('username', name).maybeSingle();
-    if (nameCheck.data) { App.busy = false; return showToast('❌ الاسم مستخدم — اختار تاني', 'error'); }
+    if (nameCheck.data) { App.busy = false; return showToast('❌ الاسم مستخدم', 'error'); }
 
     var phoneCheck = await supabaseClient.from('users').select('id').eq('phone', phone).maybeSingle();
-    if (phoneCheck.data) { App.busy = false; return showToast('❌ الرقم مسجل قبل كده', 'error'); }
+    if (phoneCheck.data) { App.busy = false; return showToast('❌ الرقم مسجل', 'error'); }
 
     var urlParams = new URLSearchParams(window.location.search);
     var refCode = urlParams.get('ref') || localStorage.getItem('neon_ref_code');
@@ -565,7 +565,7 @@ function claimDailyChest(){
   syncUser(); checkMilestones();
 }
 
-/* ============ STORAGE + WALLET ============ */
+/* ============ STORAGE ============ */
 function saveLocal(){ try{localStorage.setItem(STORAGE_KEY, JSON.stringify(App.user));}catch(e){} }
 
 function restoreSession(){
@@ -1272,7 +1272,7 @@ function openStore(){ updateWalletUI(); $('storeModal').classList.add('active');
 
 async function buyPackage(points, price){
   if (Wallet.balance < price) {
-    showToast('❌ رصيدك غير كافي! محتاج ' + (price - Wallet.balance).toFixed(2) + ' ج', 'error');
+    showToast('❌ محتاج ' + (price - Wallet.balance).toFixed(2) + ' ج', 'error');
     setTimeout(function(){ if (confirm('تروح للإيداع؟')){ closeModal('storeModal'); openDepositModal(); }}, 800);
     return;
   }
@@ -1496,7 +1496,7 @@ async function loadFriendsList() {
     container.innerHTML = html;
   } catch(e) {
     console.error('loadFriends error:', e);
-    container.innerHTML = '<p class="small-text">خطأ: تأكد من جدول friendships</p>';
+    container.innerHTML = '<p class="small-text">خطأ</p>';
   }
 }
 
@@ -1607,18 +1607,17 @@ async function registerReferral(refCode) {
 }
 
 /* ============================================
-   ONLINE GAME — الإصلاحات الرئيسية
+   ONLINE GAME — النسخة النهائية
    ============================================ */
 var Online = {
   room: null, players: [], answers: [], roundData: null,
   myChoice: null, myAnswerTime: 0, roundStartTime: 0,
-  timer: null, channel: null, pollInterval: null,
+  timer: null, channel: null, pollInterval: null, roundPollInterval: null,
   isHost: false,
   currentRound: 0, isReady: false, playing: false,
   maxPlayers: 3, choiceTime: 10, category: 'football', privacy: 'public'
 };
 
-/* متغيرات إعدادات الغرفة المؤقتة */
 var RoomSettings = {
   maxPlayers: 3,
   choiceTime: 10,
@@ -1638,10 +1637,10 @@ async function openPublicRooms() {
     if (!res.data || res.data.length === 0) { list.innerHTML = '<p class="small-text" style="text-align:center">مفيش غرف عامة دلوقتي</p>'; return; }
     var html = '';
     res.data.forEach(function(r) {
-      html += '<div class="package-item" onclick="joinPublicRoom(\'' + r.id + '\')" style="cursor:pointer"><span class="pkg-icon">🌐</span><div class="pkg-info"><span class="pkg-points">غرفة ' + r.code + '</span><span class="pkg-price">' + (CATEGORIES[r.category] ? CATEGORIES[r.category].name : 'كرة القدم') + ' • ' + r.max_players + ' لاعبين</span><span class="pkg-details">⏱️ ' + r.choice_time + ' ثواني للاختيار</span></div><span style="color:#00c853;font-weight:900">دخول →</span></div>';
+      html += '<div class="package-item" onclick="joinPublicRoom(\'' + r.id + '\')" style="cursor:pointer"><span class="pkg-icon">🌐</span><div class="pkg-info"><span class="pkg-points">غرفة ' + r.code + '</span><span class="pkg-price">' + (CATEGORIES[r.category] ? CATEGORIES[r.category].name : 'كرة القدم') + ' • ' + r.max_players + ' لاعبين</span><span class="pkg-details">⏱️ ' + r.choice_time + ' ثواني</span></div><span style="color:#00c853;font-weight:900">دخول →</span></div>';
     });
     list.innerHTML = html;
-  } catch(e) { console.error(e); list.innerHTML = '<p class="small-text" style="text-align:center">خطأ: ' + e.message + '</p>'; }
+  } catch(e) { console.error(e); list.innerHTML = '<p class="small-text" style="text-align:center">خطأ</p>'; }
 }
 
 async function joinPublicRoom(roomId) {
@@ -1669,114 +1668,61 @@ async function joinPublicRoom(roomId) {
   } catch(e) { console.error(e); showToast('خطأ: ' + e.message, 'error'); }
 }
 
-/* ✅ فتح إعدادات الغرفة */
 function openCreateRoomModal() {
   RoomSettings.maxPlayers = 3;
   RoomSettings.choiceTime = 10;
   RoomSettings.category = 'football';
   RoomSettings.privacy = 'public';
   
-  // ✅ ريّح الاختيارات في الواجهة
   var groups = document.querySelectorAll('#createRoomModal .setting-group');
-  if (groups[0]) {
-    groups[0].querySelectorAll('.setting-option').forEach(function(b, i) {
-      b.classList.toggle('active', [2,3,5][i] === 3);
-    });
-  }
-  if (groups[1]) {
-    groups[1].querySelectorAll('.setting-option').forEach(function(b, i) {
-      b.classList.toggle('active', [5,10,15,20][i] === 10);
-    });
-  }
-  if (groups[2]) {
-    groups[2].querySelectorAll('.setting-option').forEach(function(b, i) {
-      b.classList.toggle('active', ['football','fruits','animals','colors'][i] === 'football');
-    });
-  }
-  if (groups[3]) {
-    groups[3].querySelectorAll('.setting-option').forEach(function(b, i) {
-      b.classList.toggle('active', ['public','private'][i] === 'public');
-    });
-  }
+  if (groups[0]) groups[0].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', [2,3,5][i] === 3); });
+  if (groups[1]) groups[1].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', [5,10,15,20][i] === 10); });
+  if (groups[2]) groups[2].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', ['football','fruits','animals','colors'][i] === 'football'); });
+  if (groups[3]) groups[3].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', ['public','private'][i] === 'public'); });
   
   $('createRoomModal').classList.add('active');
 }
 
-/* ✅ الإصلاح الرئيسي — setRoomPlayers وsetRoomTime وsetRoomCategory وsetRoomPrivacy */
 function setRoomPlayers(n) {
   RoomSettings.maxPlayers = n;
   var groups = document.querySelectorAll('#createRoomModal .setting-group');
-  if (groups[0]) {
-    var opts = groups[0].querySelectorAll('.setting-option');
-    opts.forEach(function(b, i) {
-      b.classList.toggle('active', [2,3,5][i] === n);
-    });
-  }
-  console.log('👥 Players set to:', n);
+  if (groups[0]) groups[0].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', [2,3,5][i] === n); });
 }
 
 function setRoomTime(t) {
   RoomSettings.choiceTime = t;
   var groups = document.querySelectorAll('#createRoomModal .setting-group');
-  if (groups[1]) {
-    var opts = groups[1].querySelectorAll('.setting-option');
-    opts.forEach(function(b, i) {
-      b.classList.toggle('active', [5,10,15,20][i] === t);
-    });
-  }
-  console.log('⏱️ Time set to:', t);
+  if (groups[1]) groups[1].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', [5,10,15,20][i] === t); });
 }
 
 function setRoomCategory(c) {
   RoomSettings.category = c;
   var groups = document.querySelectorAll('#createRoomModal .setting-group');
-  if (groups[2]) {
-    var opts = groups[2].querySelectorAll('.setting-option');
-    opts.forEach(function(b, i) {
-      b.classList.toggle('active', ['football','fruits','animals','colors'][i] === c);
-    });
-  }
-  console.log('🎮 Category set to:', c);
+  if (groups[2]) groups[2].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', ['football','fruits','animals','colors'][i] === c); });
 }
 
 function setRoomPrivacy(p) {
   RoomSettings.privacy = p;
   var groups = document.querySelectorAll('#createRoomModal .setting-group');
-  if (groups[3]) {
-    var opts = groups[3].querySelectorAll('.setting-option');
-    opts.forEach(function(b, i) {
-      b.classList.toggle('active', ['public','private'][i] === p);
-    });
-  }
-  console.log('🔒 Privacy set to:', p);
+  if (groups[3]) groups[3].querySelectorAll('.setting-option').forEach(function(b, i) { b.classList.toggle('active', ['public','private'][i] === p); });
 }
 
 async function createOnlineRoomWithSettings() {
-  console.log('🎮 Creating room with settings:', RoomSettings);
   closeModal('createRoomModal');
-  
   if (!supabaseClient || !App.user.id) { showToast('محتاج Supabase', 'error'); return; }
   if (String(App.user.id).indexOf('local_') === 0) { showToast('سجّل من جديد', 'error'); return; }
   if (totalPoints() < CONFIG.ONLINE_ENTRY) { showToast('محتاج ' + CONFIG.ONLINE_ENTRY + ' نقطة', 'error'); return; }
-  
   deductPoints(CONFIG.ONLINE_ENTRY);
   saveLocal(); updateAllUI();
-  
   try {
     var code = generateRoomCode();
     var res = await supabaseClient.from('online_rooms').insert({
-      code: code,
-      host_id: App.user.id,
-      category: RoomSettings.category,
-      status: 'waiting',
-      max_players: RoomSettings.maxPlayers,
-      choice_time: RoomSettings.choiceTime,
-      privacy: RoomSettings.privacy,
+      code: code, host_id: App.user.id, category: RoomSettings.category,
+      status: 'waiting', max_players: RoomSettings.maxPlayers,
+      choice_time: RoomSettings.choiceTime, privacy: RoomSettings.privacy,
       entry_fee: CONFIG.ONLINE_ENTRY
     }).select().single();
-
     if (res.error) throw res.error;
-
     Online.room = res.data;
     Online.isHost = true;
     Online.isReady = true;
@@ -1784,19 +1730,12 @@ async function createOnlineRoomWithSettings() {
     Online.choiceTime = RoomSettings.choiceTime;
     Online.category = RoomSettings.category;
     Online.currentRound = 0;
-
     await supabaseClient.from('room_players').insert({
-      room_id: res.data.id,
-      user_id: App.user.id,
-      username: App.user.username,
-      is_host: true,
-      is_ready: true,
-      score: 0
+      room_id: res.data.id, user_id: App.user.id,
+      username: App.user.username, is_host: true, is_ready: true, score: 0
     });
-
     subscribeToRoom(res.data.id);
     enterOnlineRoomView(code);
-    console.log('✅ Room created:', code);
   } catch(e) {
     console.error('createOnlineRoom error:', e);
     addPoints(CONFIG.ONLINE_ENTRY);
@@ -1854,7 +1793,7 @@ function generateRoomCode(){
   return code;
 }
 
-/* ✅ subscribeToRoom — مع Polling */
+/* ✅ subscribeToRoom — مع Polling كامل */
 function subscribeToRoom(roomId) {
   if (Online.channel) {
     try { supabaseClient.removeChannel(Online.channel); } catch(e) {}
@@ -1868,10 +1807,11 @@ function subscribeToRoom(roomId) {
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'room_rounds', filter: 'room_id=eq.' + roomId }, function(payload) {
       console.log('📢 Round change:', payload.new);
-      if (payload.new && payload.new.round_number) startOnlineRound(payload.new);
+      if (payload.new && payload.new.round_number && payload.new.round_number !== Online.currentRound) {
+        startOnlineRound(payload.new);
+      }
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'room_answers', filter: 'room_id=eq.' + roomId }, function(payload) {
-      console.log('📢 Answer change');
       refreshOnlineAnswers();
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'online_rooms', filter: 'id=eq.' + roomId }, function(payload) {
@@ -1882,45 +1822,52 @@ function subscribeToRoom(roomId) {
       console.log('📡 Realtime status:', status);
     });
 
-  // ✅ Polling احتياطي
+  // Polling للاعبين + حالة الغرفة
   if (Online.pollInterval) clearInterval(Online.pollInterval);
   Online.pollInterval = setInterval(function() {
-    if (Online.room && Online.room.status === 'waiting') {
-      refreshOnlinePlayers();
-    }
-    if (Online.room && !Online.playing) {
+    if (!Online.room) return;
+    if (Online.room.status === 'waiting') refreshOnlinePlayers();
+    if (!Online.playing) {
       supabaseClient.from('online_rooms').select('status').eq('id', Online.room.id).maybeSingle().then(function(r) {
         if (r.data && r.data.status === 'playing' && !Online.playing) {
-          console.log('🎮 Room became playing — starting game');
+          console.log('🎮 Polling: Room playing');
           startOnlineGame();
         }
       });
     }
-  }, 3000);
+  }, 2000);
+
+  // ✅ Polling للجولات — كل اللاعبين
+  if (Online.roundPollInterval) clearInterval(Online.roundPollInterval);
+  Online.roundPollInterval = setInterval(function() {
+    if (!Online.playing || !Online.room) return;
+    supabaseClient.from('room_rounds')
+      .select('*')
+      .eq('room_id', Online.room.id)
+      .order('round_number', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(function(r) {
+        if (r.data && r.data.round_number > 0 && r.data.round_number !== Online.currentRound) {
+          console.log('🎯 Polling: New round:', r.data.round_number);
+          startOnlineRound(r.data);
+        }
+      });
+  }, 2000);
 }
 
-/* ✅ refreshOnlinePlayers — مع Logs */
 async function refreshOnlinePlayers() {
   if (!Online.room) return;
   try {
-    var res = await supabaseClient
-      .from('room_players')
-      .select('*')
-      .eq('room_id', Online.room.id)
-      .order('joined_at', { ascending: true });
-    
-    if (res.error) {
-      console.error('refreshOnlinePlayers error:', res.error);
-      return;
-    }
-    
+    var res = await supabaseClient.from('room_players').select('*').eq('room_id', Online.room.id).order('joined_at', { ascending: true });
+    if (res.error) return;
     if (res.data) {
       Online.players = res.data;
-      console.log('👥 Players:', res.data.length, res.data.map(function(p) { return p.username + (p.is_ready ? ' ✋' : ''); }).join(', '));
+      console.log('👥 Players:', res.data.length);
       updateOnlineRoomPlayers();
       checkAllReady();
     }
-  } catch(e) { console.error('refreshOnlinePlayers catch:', e); }
+  } catch(e) { console.error(e); }
 }
 
 function updateOnlineRoomPlayers() {
@@ -1935,10 +1882,11 @@ function updateOnlineRoomPlayers() {
     var el = $(slots[j]);
     if (el) {
       el.classList.add('filled');
-      // فحص البرايم
-      supabaseClient.from('users').select('is_prime').eq('id', p.user_id).maybeSingle().then(function(r) {
-        if (r.data && r.data.is_prime) el.classList.add('prime-slot');
-      });
+      (function(el, userId) {
+        supabaseClient.from('users').select('is_prime').eq('id', userId).maybeSingle().then(function(r) {
+          if (r.data && r.data.is_prime) el.classList.add('prime-slot');
+        });
+      })(el, p.user_id);
       el.innerHTML = (p.username.charAt(0) || '?').toUpperCase() + '<span class="slot-name">' + p.username + (p.is_ready ? ' ✋' : '') + '</span>';
     }
   }
@@ -1946,62 +1894,33 @@ function updateOnlineRoomPlayers() {
   if (Online.players.length >= 2) $('onlineWaitingHint').textContent = 'الجميع جاهز؟ اضغط "جاهز"';
 }
 
-/* ✅ toggleReady — مع تحديث فوري */
 async function toggleReady() {
   if (!Online.room) return;
-  
   Online.isReady = !Online.isReady;
   var btn = $('readyBtn');
-  if (Online.isReady) {
-    btn.textContent = '✓ جاهز';
-    btn.classList.add('ready');
-  } else {
-    btn.textContent = '✋ جاهز';
-    btn.classList.remove('ready');
-  }
-  
+  if (Online.isReady) { btn.textContent = '✓ جاهز'; btn.classList.add('ready'); }
+  else { btn.textContent = '✋ جاهز'; btn.classList.remove('ready'); }
   try {
-    var res = await supabaseClient
-      .from('room_players')
-      .update({ is_ready: Online.isReady })
-      .eq('room_id', Online.room.id)
-      .eq('user_id', App.user.id);
-    
-    if (res.error) {
-      console.error('toggleReady error:', res.error);
-      return;
-    }
-    console.log('✅ Ready status:', Online.isReady);
-    
+    var res = await supabaseClient.from('room_players').update({ is_ready: Online.isReady }).eq('room_id', Online.room.id).eq('user_id', App.user.id);
+    if (res.error) { console.error('toggleReady error:', res.error); return; }
+    console.log('✅ Ready:', Online.isReady);
     setTimeout(function() { refreshOnlinePlayers(); }, 300);
-  } catch(e) { console.error('toggleReady error:', e); }
+  } catch(e) { console.error(e); }
 }
 
-/* ✅ checkAllReady — بدون قيد الـ host */
 async function checkAllReady() {
   if (!Online.room) return;
   if (Online.room.status !== 'waiting') return;
   if (Online.players.length < 2) return;
-  
   var allReady = Online.players.every(function(p) { return p.is_ready === true; });
-  console.log('🔍 Check ready:', Online.players.length, 'players, allReady:', allReady);
-  
+  console.log('🔍 Check ready:', Online.players.length, 'allReady:', allReady);
   if (!allReady) return;
-  
   try {
     console.log('🚀 Starting game...');
-    var res = await supabaseClient
-      .from('online_rooms')
-      .update({ status: 'playing', started_at: new Date().toISOString() })
-      .eq('id', Online.room.id)
-      .eq('status', 'waiting');
-    
-    if (res.error) {
-      console.error('Start game error:', res.error);
-    } else {
-      console.log('✅ Room set to playing');
-    }
-  } catch(e) { console.error('checkAllReady error:', e); }
+    var res = await supabaseClient.from('online_rooms').update({ status: 'playing', started_at: new Date().toISOString() }).eq('id', Online.room.id).eq('status', 'waiting');
+    if (res.error) console.error('Start error:', res.error);
+    else console.log('✅ Room set to playing');
+  } catch(e) { console.error(e); }
 }
 
 async function startOnlineGame() {
@@ -2010,8 +1929,15 @@ async function startOnlineGame() {
   Online.currentRound = 0;
   showView('onlineGameView');
   updateOnlineScores();
-  console.log('🎮 Game started, waiting for round...');
-  setTimeout(function() { if (Online.isHost) nextOnlineRound(); }, 1500);
+  console.log('🎮 Game started by:', App.user.username, 'isHost:', Online.isHost);
+  setTimeout(function() {
+    if (Online.isHost) {
+      console.log('🚀 Host — starting first round');
+      nextOnlineRound();
+    } else {
+      console.log('⏳ Guest — waiting for host');
+    }
+  }, 1000);
 }
 
 async function nextOnlineRound() {
@@ -2021,26 +1947,34 @@ async function nextOnlineRound() {
   var correct = Math.floor(Math.random() * 5) + 1;
   console.log('📤 Creating round', Online.currentRound, 'correct:', correct);
   try {
-    await supabaseClient.from('room_rounds').insert({
-      room_id: Online.room.id,
-      round_number: Online.currentRound,
-      correct_choice: correct,
-      started_at: new Date().toISOString()
-    });
-  } catch(e) { console.error('nextOnlineRound error:', e); }
+    var res = await supabaseClient.from('room_rounds').insert({
+      room_id: Online.room.id, round_number: Online.currentRound,
+      correct_choice: correct, started_at: new Date().toISOString()
+    }).select().single();
+    if (res.error) {
+      console.error('Round insert error:', res.error);
+      setTimeout(function() { Online.currentRound--; nextOnlineRound(); }, 1500);
+    } else {
+      console.log('✅ Round inserted:', res.data);
+    }
+  } catch(e) { console.error('nextOnlineRound catch:', e); }
 }
 
 function startOnlineRound(round) {
-  console.log('🎯 Round started:', round.round_number);
+  console.log('🎯 startOnlineRound:', round.round_number);
+  if (Online.roundData && Online.roundData.id === round.id && Online.currentRound === round.round_number) {
+    console.log('⚠️ Same round, skip');
+    return;
+  }
   Online.roundData = round;
   Online.currentRound = round.round_number;
   Online.myChoice = null;
   Online.myAnswerTime = 0;
   Online.roundStartTime = Date.now();
   $('onlineRoundNum').textContent = round.round_number;
-  
   var cat = CATEGORIES[Online.category] || CATEGORIES.football;
   var grid = $('onlineChoicesGrid');
+  if (!grid) { console.error('❌ grid not found'); return; }
   grid.innerHTML = '';
   cat.choices.forEach(function(c, i) {
     var btn = document.createElement('button');
@@ -2050,6 +1984,7 @@ function startOnlineRound(round) {
     btn.onclick = function() { makeOnlineChoice(i+1); };
     grid.appendChild(btn);
   });
+  console.log('✅ Choices rendered:', cat.choices.length);
   startOnlineTimer();
   refreshOnlineAnswers();
 }
@@ -2063,10 +1998,7 @@ function startOnlineTimer() {
     timeLeft--;
     $('onlineTimerValue').textContent = timeLeft;
     if (timeLeft <= 3) $('onlineTimerValue').classList.add('danger');
-    if (timeLeft <= 0) {
-      clearInterval(Online.timer);
-      finishOnlineRound(Online.roundData);
-    }
+    if (timeLeft <= 0) { clearInterval(Online.timer); finishOnlineRound(Online.roundData); }
   }, 1000);
 }
 
@@ -2088,22 +2020,16 @@ async function makeOnlineChoice(num) {
       points = Math.max(50, Math.floor(100 - (timeSec * 4)));
     }
     await supabaseClient.from('room_answers').insert({
-      room_id: Online.room.id,
-      round_number: Online.currentRound,
-      user_id: App.user.id,
-      username: App.user.username,
-      choice: num,
-      answer_time: Online.myAnswerTime,
-      is_correct: isCorrect,
-      points_earned: points
+      room_id: Online.room.id, round_number: Online.currentRound,
+      user_id: App.user.id, username: App.user.username,
+      choice: num, answer_time: Online.myAnswerTime,
+      is_correct: isCorrect, points_earned: points
     });
     if (isCorrect) {
       var newScore = getMyNewScore(points);
-      await supabaseClient.from('room_players').update({ score: newScore })
-        .eq('room_id', Online.room.id)
-        .eq('user_id', App.user.id);
+      await supabaseClient.from('room_players').update({ score: newScore }).eq('room_id', Online.room.id).eq('user_id', App.user.id);
     }
-  } catch(e) { console.error('makeOnlineChoice error:', e); }
+  } catch(e) { console.error(e); }
 }
 
 function getMyNewScore(addedPoints) {
@@ -2116,13 +2042,8 @@ function getMyNewScore(addedPoints) {
 async function refreshOnlineAnswers() {
   if (!Online.room || !Online.roundData) return;
   try {
-    var res = await supabaseClient.from('room_answers').select('*')
-      .eq('room_id', Online.room.id)
-      .eq('round_number', Online.currentRound);
-    if (res.data) {
-      Online.answers = res.data;
-      updateOnlineScores();
-    }
+    var res = await supabaseClient.from('room_answers').select('*').eq('room_id', Online.room.id).eq('round_number', Online.currentRound);
+    if (res.data) { Online.answers = res.data; updateOnlineScores(); }
   } catch(e) { console.error(e); }
 }
 
@@ -2136,11 +2057,7 @@ function updateOnlineScores() {
     var answer = Online.answers.find(function(a){ return a.user_id === p.user_id; });
     var cls = '';
     if (answer) cls = answer.is_correct ? 'correct' : 'wrong';
-    html += '<div class="online-score-row ' + (isMe ? 'me ' : '') + cls + '">' +
-      '<span class="online-score-rank">#' + (i+1) + '</span>' +
-      '<span class="online-score-name">' + p.username + (isMe ? ' (أنت)' : '') + '</span>' +
-      '<span class="online-score-points">' + (p.score || 0) + '</span>' +
-    '</div>';
+    html += '<div class="online-score-row ' + (isMe ? 'me ' : '') + cls + '"><span class="online-score-rank">#' + (i+1) + '</span><span class="online-score-name">' + p.username + (isMe ? ' (أنت)' : '') + '</span><span class="online-score-points">' + (p.score || 0) + '</span></div>';
   }
   container.innerHTML = html;
 }
@@ -2164,9 +2081,7 @@ async function finishOnlineRound(round) {
 async function endOnlineGame() {
   Online.playing = false;
   if (Online.timer) clearInterval(Online.timer);
-  try {
-    await supabaseClient.from('online_rooms').update({ status: 'finished', finished_at: new Date().toISOString() }).eq('id', Online.room.id);
-  } catch(e) {}
+  try { await supabaseClient.from('online_rooms').update({ status: 'finished', finished_at: new Date().toISOString() }).eq('id', Online.room.id); } catch(e) {}
   updateMissionProgress('online');
   var sorted = Online.players.slice().sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
   var winner = sorted[0];
@@ -2181,15 +2096,11 @@ async function endOnlineGame() {
   container.className = 'result-container ' + (iWon ? 'winner' : 'loser');
   $('onlineResultIcon').textContent = iWon ? '🏆' : '😢';
   $('onlineResultTitle').textContent = iWon ? 'مبروك! فزت' : 'للأسف خسرت';
-  $('onlineResultReward').textContent = iWon ? '+30 نقطة' : 'حظ أوفر المرة الجاية';
+  $('onlineResultReward').textContent = iWon ? '+30 نقطة' : 'حظ أوفر';
   var finalHtml = '';
   sorted.forEach(function(p, j) {
     var isMe = p.user_id === App.user.id;
-    finalHtml += '<div class="online-score-row ' + (isMe ? 'me' : '') + '">' +
-      '<span class="online-score-rank">#' + (j+1) + '</span>' +
-      '<span class="online-score-name">' + p.username + (isMe ? ' (أنت)' : '') + '</span>' +
-      '<span class="online-score-points">' + (p.score || 0) + '</span>' +
-    '</div>';
+    finalHtml += '<div class="online-score-row ' + (isMe ? 'me' : '') + '"><span class="online-score-rank">#' + (j+1) + '</span><span class="online-score-name">' + p.username + (isMe ? ' (أنت)' : '') + '</span><span class="online-score-points">' + (p.score || 0) + '</span></div>';
   });
   $('onlineFinalScores').innerHTML = finalHtml;
   showView('onlineResultView');
@@ -2197,26 +2108,18 @@ async function endOnlineGame() {
 }
 
 async function leaveOnlineRoom() {
-  if (Online.channel) {
-    try { supabaseClient.removeChannel(Online.channel); } catch(e) {}
-    Online.channel = null;
-  }
-  if (Online.pollInterval) {
-    clearInterval(Online.pollInterval);
-    Online.pollInterval = null;
-  }
+  if (Online.channel) { try { supabaseClient.removeChannel(Online.channel); } catch(e) {} Online.channel = null; }
+  if (Online.pollInterval) { clearInterval(Online.pollInterval); Online.pollInterval = null; }
+  if (Online.roundPollInterval) { clearInterval(Online.roundPollInterval); Online.roundPollInterval = null; }
   if (Online.room) {
     try {
       await supabaseClient.from('room_players').delete().eq('room_id', Online.room.id).eq('user_id', App.user.id);
       var remaining = await supabaseClient.from('room_players').select('id').eq('room_id', Online.room.id);
-      if (!remaining.data || remaining.data.length === 0) {
-        await supabaseClient.from('online_rooms').delete().eq('id', Online.room.id);
-      }
+      if (!remaining.data || remaining.data.length === 0) await supabaseClient.from('online_rooms').delete().eq('id', Online.room.id);
     } catch(e) {}
   }
   Online.room = null; Online.players = []; Online.answers = [];
-  Online.playing = false; Online.isHost = false; Online.isReady = false;
-  Online.currentRound = 0;
+  Online.playing = false; Online.isHost = false; Online.isReady = false; Online.currentRound = 0;
   if (Online.timer) clearInterval(Online.timer);
   $('readyBtn').textContent = '✋ جاهز';
   $('readyBtn').classList.remove('ready');
