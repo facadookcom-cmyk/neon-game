@@ -1,5 +1,5 @@
 /* ============================================
-   Neon Prediction v11.4 — الكود الكامل المُصلَّح
+   Neon Prediction v11.5 — الكود الكامل
    ============================================ */
 
 var SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -111,7 +111,6 @@ function createDefaultUser() {
 function $(id){return document.getElementById(id);}
 
 /* ============ نظام النقاط المزدوج ============ */
-
 function cashPoints(){ return (App.user.purchased || 0) + (App.user.earned || 0); }
 function bonusPoints(){ return App.user.bonus_points || 0; }
 function totalPoints(){ return cashPoints() + bonusPoints(); }
@@ -313,6 +312,7 @@ function showWinOverlay(icon, text, duration) {
   setTimeout(function() { overlay.classList.remove('show'); }, duration || 2000);
 }
 
+/* ============ UTILS ============ */
 function showToast(msg, type){
   var t = $('toast'); if(!t) return;
   var icons = {info:'ℹ️', success:'✅', error:'❌'};
@@ -805,7 +805,7 @@ window.addEventListener('load', function(){
   updateAllUI();
   var ph1 = $('signupPhone'); if(ph1) ph1.addEventListener('input', function(){this.value = this.value.replace(/\D/g,'');});
   var ph2 = $('loginPhone'); if(ph2) ph2.addEventListener('input', function(){this.value = this.value.replace(/\D/g,'');});
-  console.log('Neon Prediction v11.4 ready ✅');
+  console.log('Neon Prediction v11.5 ready ✅');
 });
 
 function startTriangleBackground(){
@@ -1341,7 +1341,6 @@ function finishSpin(reward){
   wheelState.spinning = false;
 }
 
-/* ---- التأثيرات البصرية ---- */
 function triggerGoldenFlash(duration){
   var flash = document.createElement('div');
   flash.className = 'golden-flash';
@@ -1447,61 +1446,6 @@ function showJackpotOverlay(val){
   document.body.appendChild(overlay);
   setTimeout(function(){ overlay.classList.add('show'); }, 50);
   setTimeout(function(){ overlay.classList.remove('show'); setTimeout(function(){ overlay.remove(); }, 700); }, 4500);
-}
-
-/* ============ TICKET STORE ============ */
-var TICKETS = [
-  {id:'daily',name:'تذكرة يومية',icon:'🎫',price:15,durationHours:24,uses:10,features:['10 مرات لعب في 24 ساعة','تدخل الغرف العادية','مفيش خصم من النقاط']},
-  {id:'weekly',name:'تذكرة أسبوعية',icon:'🎫🎫',price:79,durationHours:24*7,uses:75,popular:true,features:['75 مرة لعب في 7 أيام','تدخل الغرف العادية + 1v1','خصم 10% على العجلة','شارة أسبوعية']},
-  {id:'monthly',name:'تذكرة شهرية',icon:'🎫🎫🎫',price:199,durationHours:24*30,uses:400,features:['400 مرة لعب في 30 يوم','كل أنواع الغرف','خصم 15% على العجلة','شارة شهرية']},
-  {id:'vip',name:'تذكرة VIP',icon:'💎',price:499,durationHours:24*30,uses:999999,features:['لعب غير محدود لمدة 30 يوم','كل أنواع الغرف + الأونلاين','لفة عجلة كل 8 ساعات','شعار VIP أزرق','خصم 20% على المشتريات']},
-  {id:'legendary',name:'تذكرة أسطورية',icon:'👑',price:999,durationHours:24*90,uses:999999,legendary:true,features:['لعب غير محدود لمدة 90 يوم','كل الميزات مفتوحة','لفة عجلة كل 4 ساعات','شعار ذهبي أسطوري','كاش باك 5%','أولوية قصوى']}
-];
-
-function openTicketStore() { updateWalletUI(); renderTickets(); $('ticketStoreModal').classList.add('active'); }
-
-function renderTickets() {
-  var container = $('ticketsList'); if (!container) return;
-  var hasTicket = hasActiveTicket();
-  var remaining = 0, hoursLeft = 0;
-  if (hasTicket) {
-    remaining = App.user.ticket_uses_left;
-    hoursLeft = Math.max(0, Math.ceil((new Date(App.user.ticket_expires_at) - new Date()) / 3600000));
-  }
-  var html = '';
-  if (hasTicket) {
-    var activeTicketInfo = TICKETS.find(function(t) { return t.id === App.user.active_ticket; });
-    html += '<div class="ticket-owned"><span>✅ عندك ' + (activeTicketInfo ? activeTicketInfo.name : 'تذكرة') + '</span><span>' + remaining + ' استخدام • ' + hoursLeft + ' ساعة</span></div>';
-  }
-  TICKETS.forEach(function(t) {
-    var cls = t.popular ? 'popular' : (t.legendary ? 'legendary' : '');
-    var btnCls = t.popular ? 'popular-btn' : (t.legendary ? 'legendary-btn' : '');
-    var featuresHtml = '';
-    t.features.forEach(function(f) { featuresHtml += '<div><span>✓ ' + f + '</span></div>'; });
-    html += '<div class="ticket-item ' + cls + '"><div class="ticket-header"><span class="ticket-icon">' + t.icon + '</span><span class="ticket-name">' + t.name + '</span><span class="ticket-price">' + t.price + ' ج</span></div><div class="ticket-details">' + featuresHtml + '</div><button type="button" class="ticket-buy-btn ' + btnCls + '" onclick="buyTicket(\'' + t.id + '\')">شراء الآن</button></div>';
-  });
-  container.innerHTML = html;
-}
-
-async function buyTicket(ticketId) {
-  var ticket = TICKETS.find(function(t) { return t.id === ticketId; });
-  if (!ticket) return;
-  if (Wallet.balance < ticket.price) {
-    showToast('❌ محتاج ' + (ticket.price - Wallet.balance).toFixed(2) + ' ج', 'error');
-    setTimeout(function() { if (confirm('تروح للإيداع؟')) { closeModal('ticketStoreModal'); openDepositModal(); } }, 800);
-    return;
-  }
-  if (!confirm('شراء ' + ticket.name + ' بـ ' + ticket.price + ' جنيه؟')) return;
-  var ok = await deductFromWallet(ticket.price);
-  if (!ok) return;
-  App.user.active_ticket = ticket.id;
-  App.user.ticket_expires_at = new Date(Date.now() + ticket.durationHours * 3600000).toISOString();
-  App.user.ticket_uses_left = ticket.uses;
-  saveLocal(); updateAllUI(); syncUser();
-  SoundSystem.playBigWin(); Vibration.onBigPrize();
-  showWinOverlay(ticket.icon, ticket.name + '!', 2500);
-  showToast('✅ تم شراء ' + ticket.name, 'success');
-  renderTickets();
 }
 
 /* ============ STORE ============ */
@@ -1699,6 +1643,59 @@ async function acceptSpecialOffer(){
   SoundSystem.playReward(); Vibration.onReward();
   showToast('✅ تم شراء 300 نقطة', 'success');
   showCoinToast('+300 💰', '💰');
+}/* ============ TICKET STORE ============ */
+var TICKETS = [
+  {id:'daily',name:'تذكرة يومية',icon:'🎫',price:15,durationHours:24,uses:10,features:['10 مرات لعب في 24 ساعة','تدخل الغرف العادية','مفيش خصم من النقاط']},
+  {id:'weekly',name:'تذكرة أسبوعية',icon:'🎫🎫',price:79,durationHours:24*7,uses:75,popular:true,features:['75 مرة لعب في 7 أيام','تدخل الغرف العادية + 1v1','خصم 10% على العجلة','شارة أسبوعية']},
+  {id:'monthly',name:'تذكرة شهرية',icon:'🎫🎫🎫',price:199,durationHours:24*30,uses:400,features:['400 مرة لعب في 30 يوم','كل أنواع الغرف','خصم 15% على العجلة','شارة شهرية']},
+  {id:'vip',name:'تذكرة VIP',icon:'💎',price:499,durationHours:24*30,uses:999999,features:['لعب غير محدود لمدة 30 يوم','كل أنواع الغرف + الأونلاين','لفة عجلة كل 8 ساعات','شعار VIP أزرق','خصم 20% على المشتريات']},
+  {id:'legendary',name:'تذكرة أسطورية',icon:'👑',price:999,durationHours:24*90,uses:999999,legendary:true,features:['لعب غير محدود لمدة 90 يوم','كل الميزات مفتوحة','لفة عجلة كل 4 ساعات','شعار ذهبي أسطوري','كاش باك 5%','أولوية قصوى']}
+];
+
+function openTicketStore() { updateWalletUI(); renderTickets(); $('ticketStoreModal').classList.add('active'); }
+
+function renderTickets() {
+  var container = $('ticketsList'); if (!container) return;
+  var hasTicket = hasActiveTicket();
+  var remaining = 0, hoursLeft = 0;
+  if (hasTicket) {
+    remaining = App.user.ticket_uses_left;
+    hoursLeft = Math.max(0, Math.ceil((new Date(App.user.ticket_expires_at) - new Date()) / 3600000));
+  }
+  var html = '';
+  if (hasTicket) {
+    var activeTicketInfo = TICKETS.find(function(t) { return t.id === App.user.active_ticket; });
+    html += '<div class="ticket-owned"><span>✅ عندك ' + (activeTicketInfo ? activeTicketInfo.name : 'تذكرة') + '</span><span>' + remaining + ' استخدام • ' + hoursLeft + ' ساعة</span></div>';
+  }
+  TICKETS.forEach(function(t) {
+    var cls = t.popular ? 'popular' : (t.legendary ? 'legendary' : '');
+    var btnCls = t.popular ? 'popular-btn' : (t.legendary ? 'legendary-btn' : '');
+    var featuresHtml = '';
+    t.features.forEach(function(f) { featuresHtml += '<div><span>✓ ' + f + '</span></div>'; });
+    html += '<div class="ticket-item ' + cls + '"><div class="ticket-header"><span class="ticket-icon">' + t.icon + '</span><span class="ticket-name">' + t.name + '</span><span class="ticket-price">' + t.price + ' ج</span></div><div class="ticket-details">' + featuresHtml + '</div><button type="button" class="ticket-buy-btn ' + btnCls + '" onclick="buyTicket(\'' + t.id + '\')">شراء الآن</button></div>';
+  });
+  container.innerHTML = html;
+}
+
+async function buyTicket(ticketId) {
+  var ticket = TICKETS.find(function(t) { return t.id === ticketId; });
+  if (!ticket) return;
+  if (Wallet.balance < ticket.price) {
+    showToast('❌ محتاج ' + (ticket.price - Wallet.balance).toFixed(2) + ' ج', 'error');
+    setTimeout(function() { if (confirm('تروح للإيداع؟')) { closeModal('ticketStoreModal'); openDepositModal(); } }, 800);
+    return;
+  }
+  if (!confirm('شراء ' + ticket.name + ' بـ ' + ticket.price + ' جنيه؟')) return;
+  var ok = await deductFromWallet(ticket.price);
+  if (!ok) return;
+  App.user.active_ticket = ticket.id;
+  App.user.ticket_expires_at = new Date(Date.now() + ticket.durationHours * 3600000).toISOString();
+  App.user.ticket_uses_left = ticket.uses;
+  saveLocal(); updateAllUI(); syncUser();
+  SoundSystem.playBigWin(); Vibration.onBigPrize();
+  showWinOverlay(ticket.icon, ticket.name + '!', 2500);
+  showToast('✅ تم شراء ' + ticket.name, 'success');
+  renderTickets();
 }
 
 /* ============ FRIENDS ============ */
@@ -1845,7 +1842,7 @@ async function registerReferral(refCode) {
     await supabaseClient.from('users').update({ referred_by: refCode }).eq('id', App.user.id);
   } catch(e) { console.error('registerReferral:', e); }
 }/* ============================================
-   ONLINE GAME — النسخة المُصلَّحة v11.4
+   ONLINE GAME — النسخة المُصلَّحة
    ============================================ */
 var Online = {
   room: null, players: [], answers: [], roundData: null,
@@ -2292,6 +2289,7 @@ function updateOnlineScores() {
   container.innerHTML = html;
 }
 
+/* ⭐ الدالة المُصلَّحة — كل اللاعبين يحاولوا يبدأوا الجولة الجديدة */
 async function finishOnlineRound(round) {
   if (!round) return;
   if (Online.timer) clearInterval(Online.timer);
@@ -2303,14 +2301,61 @@ async function finishOnlineRound(round) {
     else if (i + 1 === Online.myChoice) btns[i].classList.add('wrong');
   }
   
-  if (Online.myChoice === round.correct_choice) { SoundSystem.playSuccess(); Vibration.onWin(); }
-  else { SoundSystem.playLoss(); Vibration.onLoss(); }
+  if (Online.myChoice === round.correct_choice) {
+    SoundSystem.playSuccess(); Vibration.onWin();
+  } else {
+    SoundSystem.playLoss(); Vibration.onLoss();
+  }
   
   await refreshOnlineAnswers();
   
-  if (Online.isHost) {
-    setTimeout(function() { if (Online.playing) nextOnlineRound(); }, 2000);
-  }
+  // كل اللاعبين يحاولوا يبدأوا الجولة الجديدة بعد ثانيتين
+  setTimeout(async function() {
+    if (!Online.playing) return;
+    if (!Online.room) return;
+    
+    var nextRoundNum = Online.currentRound + 1;
+    
+    if (nextRoundNum > CONFIG.ONLINE_ROUNDS) {
+      if (Online.isHost) endOnlineGame();
+      return;
+    }
+    
+    try {
+      // نشوف لو الجولة الجديدة اتعملت خلاص
+      var checkRound = await supabaseClient.from('room_rounds')
+        .select('id, round_number')
+        .eq('room_id', Online.room.id)
+        .eq('round_number', nextRoundNum)
+        .maybeSingle();
+      
+      if (checkRound.data) {
+        console.log('✅ Round', nextRoundNum, 'already exists');
+        return;
+      }
+      
+      // الجولة مش موجودة → نعملها
+      var correct = Math.floor(Math.random() * 5) + 1;
+      var res = await supabaseClient.from('room_rounds').insert({
+        room_id: Online.room.id,
+        round_number: nextRoundNum,
+        correct_choice: correct,
+        started_at: new Date().toISOString()
+      }).select().single();
+      
+      if (res.error) {
+        console.error('Create round error:', res.error);
+        return;
+      }
+      
+      if (res.data) {
+        console.log('🎬 Created round', res.data.round_number);
+        startOnlineRound(res.data);
+      }
+    } catch(e) {
+      console.error('finishOnlineRound error:', e);
+    }
+  }, 2000);
 }
 
 async function endOnlineGame() {
@@ -2378,7 +2423,7 @@ function playAgainOnline() {
 
 /* ============================================
    EXPORTS — ربط كل الدوال بـ window
-   ⚠️ ده الجزء الأهم عشان الأزرار تشتغل
+   ⚠️ الجزء الأهم عشان الأزرار تشتغل
    ============================================ */
 
 // Auth & Account
@@ -2465,4 +2510,4 @@ window.playAgainOnline = playAgainOnline;
 // Utils
 window.closeModal = closeModal;
 
-console.log('✅ Neon Prediction v11.4 — All functions bound to window');
+console.log('✅ Neon Prediction v11.5 — All functions bound to window');
