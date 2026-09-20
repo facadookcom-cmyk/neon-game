@@ -27,15 +27,31 @@
       <button type="button" id="tabSignup" class="ticket-tab" onclick="switchAuthTab('signup')">✨ حساب جديد</button>
     </div>
     <div id="signupForm">
-      <div class="input-group"><label for="signupName">اسمك</label><input type="text" id="signupName" placeholder="اكتب اسمك..." maxlength="20"></div>
-      <div class="input-group"><label for="signupPhone">رقم فودافون كاش</label><input type="tel" id="signupPhone" placeholder="01xxxxxxxxx" maxlength="11" inputmode="numeric"></div>
-      <div class="input-group"><label for="signupPassword">كلمة السر</label><input type="password" id="signupPassword" placeholder="6 أحرف على الأقل"><div class="hint">🔒 كلمة السر سرية — متقولش لحد</div></div>
+      <div class="input-group">
+        <label for="signupName">اسمك</label>
+        <input type="text" id="signupName" placeholder="اكتب اسمك..." maxlength="20">
+      </div>
+      <div class="input-group">
+        <label for="signupPhone">رقم فودافون كاش</label>
+        <input type="tel" id="signupPhone" placeholder="01xxxxxxxxx" maxlength="11" inputmode="numeric">
+      </div>
+      <div class="input-group">
+        <label for="signupPassword">كلمة السر</label>
+        <input type="password" id="signupPassword" placeholder="6 أحرف على الأقل">
+        <div class="hint">🔒 كلمة السر سرية — متقولش لحد</div>
+      </div>
       <button type="button" class="btn-neon" onclick="signupNew()" style="margin-top:10px">✨ إنشاء حساب جديد</button>
-      <p class="small-text">ستحصل على <strong>60 نقطة</strong> مجاناً</p>
+      <p class="small-text">ستحصل على <strong>80 نقطة</strong> مجاناً</p>
     </div>
     <div id="loginForm" style="display:none">
-      <div class="input-group"><label for="loginPhone">رقم التليفون</label><input type="tel" id="loginPhone" placeholder="01xxxxxxxxx" maxlength="11" inputmode="numeric"></div>
-      <div class="input-group"><label for="loginPassword">كلمة السر</label><input type="password" id="loginPassword" placeholder="اكتب كلمة السر"></div>
+      <div class="input-group">
+        <label for="loginPhone">رقم التليفون</label>
+        <input type="tel" id="loginPhone" placeholder="01xxxxxxxxx" maxlength="11" inputmode="numeric">
+      </div>
+      <div class="input-group">
+        <label for="loginPassword">كلمة السر</label>
+        <input type="password" id="loginPassword" placeholder="اكتب كلمة السر">
+      </div>
       <button type="button" class="btn-neon" onclick="loginExisting()" style="margin-top:10px">🔓 دخول</button>
     </div>
   </div>
@@ -43,6 +59,7 @@
 
 <!-- MAIN -->
 <section id="mainScreen" class="screen">
+  <!-- Welcome Ad -->
   <div id="welcomeAd" class="welcome-ad hidden">
     <div class="ad-content">
       <h2>🎉 مسابقة الجوائز الكبرى</h2>
@@ -52,6 +69,47 @@
       <button type="button" class="btn-close-ad" onclick="closeWelcomeAd()">تمام، فهمت</button>
     </div>
   </div>
+
+  <!-- How To Play Modal (جديد) -->
+  <div id="howToPlayModal" class="modal">
+    <div class="modal-content">
+      <button type="button" class="close-modal" onclick="closeHowToPlay()">&times;</button>
+      <h2 class="neon-title">🎮 ازاي تلعب؟</h2>
+      <div class="howto-content">
+        <div class="howto-step">
+          <span class="howto-num">1</span>
+          <div>
+            <strong>اختار فئة</strong>
+            <p>كرة قدم، فواكه، حيوانات، أو ألوان</p>
+          </div>
+        </div>
+        <div class="howto-step">
+          <span class="howto-num">2</span>
+          <div>
+            <strong>اختار توقعك</strong>
+            <p>عندك 10 ثواني تختار واحد من 5 اختيارات</p>
+          </div>
+        </div>
+        <div class="howto-step">
+          <span class="howto-num">3</span>
+          <div>
+            <strong>اكسب نقاط</strong>
+            <p>لو توقعت صح هتكسب نقاط، ولو غلط هتخسر شوية</p>
+          </div>
+        </div>
+        <div class="howto-step">
+          <span class="howto-num">4</span>
+          <div>
+            <strong>حول لجوائز</strong>
+            <p>اجمع نقاط واستبدلها بفلوس فودافون كاش</p>
+          </div>
+        </div>
+        <p class="howto-tip">💡 نصيحة: العب المهام اليومية وافتح الصندوق عشان تزود نقاطك مجاناً</p>
+      </div>
+      <button type="button" class="btn-neon" onclick="closeHowToPlay()">يلا نبدأ 🚀</button>
+    </div>
+  </div>
+
   <header class="game-header">
     <div class="user-badge">
       <span class="user-avatar" id="userAvatar">?</span>
@@ -67,47 +125,106 @@
       <button type="button" class="fs-btn" onclick="toggleFullscreen()" title="شاشة كاملة">⛶</button>
     </div>
   </header>
+
   <main class="game-content">
+    <!-- Category View -->
     <div id="categoryView" class="view active">
       <div class="home-hero">
         <h2 class="section-title">اختر تحديك</h2>
+
+        <button type="button" class="btn-howto" onclick="openHowToPlay()">❓ ازاي ألعب؟</button>
+
         <div class="daily-login" id="dailyLoginBox" onclick="claimDailyLogin()">
           <div class="daily-icon">📅</div>
-          <div class="daily-info"><strong>مكافأة الدخول اليومي</strong><span id="dailyLoginStatus">اضغط لاستلامها</span></div>
+          <div class="daily-info">
+            <strong>مكافأة الدخول اليومي</strong>
+            <span id="dailyLoginStatus">اضغط لاستلامها</span>
+          </div>
           <div class="daily-streak" id="dailyStreakDisplay">يوم 1</div>
         </div>
+
         <div class="daily-chest" id="dailyChest" onclick="claimDailyChest()">
           <div class="chest-icon">🎁</div>
-          <div class="chest-info"><strong>الصندوق اليومي</strong><span id="chestStatus">اضغط لفتحه</span></div>
+          <div class="chest-info">
+            <strong>الصندوق اليومي</strong>
+            <span id="chestStatus">اضغط لفتحه</span>
+          </div>
         </div>
+
         <div class="room-actions">
-          <button type="button" class="btn-room-action online" onclick="openOnlineLobby()"><span class="room-action-icon">🌐</span><span>لعب أونلاين</span></button>
-          <button type="button" class="btn-room-action" onclick="openFriendsModal()"><span class="room-action-icon">👥</span><span>أصدقائي</span></button>
+          <button type="button" class="btn-room-action online" onclick="openOnlineLobby()">
+            <span class="room-action-icon">🌐</span>
+            <span>لعب أونلاين</span>
+          </button>
+          <button type="button" class="btn-room-action" onclick="openFriendsModal()">
+            <span class="room-action-icon">👥</span>
+            <span>أصدقائي</span>
+          </button>
         </div>
+
         <div class="room-actions">
-          <button type="button" class="btn-room-action" onclick="openTicketStore()"><span class="room-action-icon">🎫</span><span>متجر التذاكر</span></button>
-          <button type="button" class="btn-room-action" onclick="openLuckyWheel()"><span class="room-action-icon">🎡</span><span>عجلة الحظ</span></button>
+          <button type="button" class="btn-room-action" onclick="openTicketStore()">
+            <span class="room-action-icon">🎫</span>
+            <span>متجر التذاكر</span>
+          </button>
+          <button type="button" class="btn-room-action" onclick="openLuckyWheel()">
+            <span class="room-action-icon">🎡</span>
+            <span>عجلة الحظ</span>
+          </button>
         </div>
+
         <div class="room-actions">
-          <button type="button" class="btn-room-action" onclick="openMilestonesModal()"><span class="room-action-icon">🏆</span><span>الجوائز المادية</span></button>
-          <button type="button" class="btn-room-action" onclick="openStore()"><span class="room-action-icon">💎</span><span>متجر النقاط</span></button>
+          <button type="button" class="btn-room-action" onclick="openMilestonesModal()">
+            <span class="room-action-icon">🏆</span>
+            <span>الجوائز المادية</span>
+          </button>
+          <button type="button" class="btn-room-action" onclick="openStore()">
+            <span class="room-action-icon">💎</span>
+            <span>متجر النقاط</span>
+          </button>
         </div>
+
         <div class="room-actions" style="grid-template-columns:1fr;">
-          <button type="button" class="btn-room-action" onclick="openShareModal()"><span class="room-action-icon">📢</span><span>شارك الموقع واكسب 10 نقاط</span></button>
+          <button type="button" class="btn-room-action" onclick="openShareModal()">
+            <span class="room-action-icon">📢</span>
+            <span>شارك الموقع واكسب 10 نقاط</span>
+          </button>
         </div>
       </div>
+
       <div class="categories-grid">
-        <button type="button" class="category-card" onclick="selectCategory('football')"><div class="category-icon">⚽</div><h3>كرة القدم</h3><p>5 خيارات</p></button>
-        <button type="button" class="category-card" onclick="selectCategory('fruits')"><div class="category-icon">🍎</div><h3>فواكه</h3><p>5 خيارات</p></button>
-        <button type="button" class="category-card" onclick="selectCategory('animals')"><div class="category-icon">🦁</div><h3>حيوانات</h3><p>5 خيارات</p></button>
-        <button type="button" class="category-card" onclick="selectCategory('colors')"><div class="category-icon">🎨</div><h3>ألوان</h3><p>5 خيارات</p></button>
+        <button type="button" class="category-card" onclick="selectCategory('football')">
+          <div class="category-icon">⚽</div>
+          <h3>كرة القدم</h3>
+          <p>5 خيارات</p>
+        </button>
+        <button type="button" class="category-card" onclick="selectCategory('fruits')">
+          <div class="category-icon">🍎</div>
+          <h3>فواكه</h3>
+          <p>5 خيارات</p>
+        </button>
+        <button type="button" class="category-card" onclick="selectCategory('animals')">
+          <div class="category-icon">🦁</div>
+          <h3>حيوانات</h3>
+          <p>5 خيارات</p>
+        </button>
+        <button type="button" class="category-card" onclick="selectCategory('colors')">
+          <div class="category-icon">🎨</div>
+          <h3>ألوان</h3>
+          <p>5 خيارات</p>
+        </button>
       </div>
+
       <div class="missions-section">
-        <h3 class="missions-title">🎯 المهام اليومية <span style="font-size:11px;color:var(--muted);font-weight:600" id="missionsDate"></span></h3>
+        <h3 class="missions-title">
+          🎯 المهام اليومية 
+          <span style="font-size:11px;color:var(--muted);font-weight:600" id="missionsDate"></span>
+        </h3>
         <div id="missionsList" class="missions-list"></div>
       </div>
     </div>
 
+    <!-- Waiting View -->
     <div id="waitingView" class="view">
       <h2 class="section-title" id="waitingTitle">في انتظار اللاعبين</h2>
       <div class="waiting-container">
@@ -123,6 +240,7 @@
       <button type="button" class="btn-cancel" onclick="leaveRoom()">خروج</button>
     </div>
 
+    <!-- Online Lobby -->
     <div id="onlineLobbyView" class="view">
       <h2 class="section-title">🌐 اللعب الأونلاين</h2>
       <div class="waiting-container">
@@ -138,6 +256,7 @@
       </div>
     </div>
 
+    <!-- Public Rooms -->
     <div id="publicRoomsView" class="view">
       <h2 class="section-title">🎮 الغرف العامة</h2>
       <p class="small-text" style="margin-bottom:14px">دوس على أي غرفة عشان تنضم</p>
@@ -145,6 +264,7 @@
       <button type="button" class="btn-cancel" style="margin-top:20px" onclick="showView('onlineLobbyView')">↩️ رجوع</button>
     </div>
 
+    <!-- Online Room -->
     <div id="onlineRoomView" class="view">
       <h2 class="section-title" id="onlineRoomTitle">غرفة انتظار</h2>
       <div class="waiting-container">
@@ -163,13 +283,18 @@
       <button type="button" class="btn-cancel" onclick="leaveOnlineRoom()">خروج</button>
     </div>
 
+    <!-- Online Game -->
     <div id="onlineGameView" class="view">
-      <div class="timer-display"><span class="timer-icon">⏱️</span><span class="timer-value" id="onlineTimerValue">12</span></div>
+      <div class="timer-display">
+        <span class="timer-icon">⏱️</span>
+        <span class="timer-value" id="onlineTimerValue">12</span>
+      </div>
       <h2 class="section-title">الجولة <span id="onlineRoundNum">1</span> / 5</h2>
       <div class="online-scores" id="onlineScores"></div>
       <div class="choices-grid" id="onlineChoicesGrid"></div>
     </div>
 
+    <!-- Online Result -->
     <div id="onlineResultView" class="view">
       <div class="result-container" id="onlineResultContainer">
         <div class="result-icon" id="onlineResultIcon">🏆</div>
@@ -181,12 +306,17 @@
       </div>
     </div>
 
+    <!-- Game View -->
     <div id="gameView" class="view">
-      <div class="timer-display"><span class="timer-icon">⏱️</span><span class="timer-value" id="timerValue">10</span></div>
+      <div class="timer-display">
+        <span class="timer-icon">⏱️</span>
+        <span class="timer-value" id="timerValue">10</span>
+      </div>
       <h2 class="section-title">اختر توقعك</h2>
       <div class="choices-grid" id="choicesGrid"></div>
     </div>
 
+    <!-- Result View -->
     <div id="resultView" class="view">
       <div class="result-container" id="resultContainer">
         <div class="result-icon" id="resultIcon">🏆</div>
@@ -199,25 +329,43 @@
       </div>
     </div>
   </main>
+
   <nav class="bottom-nav" id="bottomNav">
-    <button type="button" class="nav-btn active" onclick="showView('categoryView')"><span class="nav-icon">🎮</span><span>اللعب</span></button>
-    <button type="button" class="nav-btn" onclick="openStore()"><span class="nav-icon">💎</span><span>المتجر</span></button>
-    <button type="button" class="nav-btn" onclick="showLeaderboard()"><span class="nav-icon">🏆</span><span>المتصدرين</span></button>
-    <button type="button" class="nav-btn" onclick="openProfile()"><span class="nav-icon">👤</span><span>حسابي</span></button>
+    <button type="button" class="nav-btn active" onclick="showView('categoryView')">
+      <span class="nav-icon">🎮</span><span>اللعب</span>
+    </button>
+    <button type="button" class="nav-btn" onclick="openStore()">
+      <span class="nav-icon">💎</span><span>المتجر</span>
+    </button>
+    <button type="button" class="nav-btn" onclick="showLeaderboard()">
+      <span class="nav-icon">🏆</span><span>المتصدرين</span>
+    </button>
+    <button type="button" class="nav-btn" onclick="openProfile()">
+      <span class="nav-icon">👤</span><span>حسابي</span>
+    </button>
   </nav>
 </section>
 
-<!-- MODALS -->
+<!-- ==================== MODALS ==================== -->
+
+<!-- Set Password -->
 <div id="setPasswordModal" class="modal">
   <div class="modal-content">
     <h2 class="neon-title">🔒 محتاج كلمة سر</h2>
     <p class="small-text" style="margin:10px 0 20px">علشان أأمن حسابك، لازم تحط كلمة سر</p>
-    <div class="input-group"><label>كلمة السر الجديدة</label><input type="password" id="newPasswordInput" placeholder="6 أحرف على الأقل"></div>
-    <div class="input-group"><label>تأكيد كلمة السر</label><input type="password" id="confirmPasswordInput" placeholder="اكتبها تاني"></div>
+    <div class="input-group">
+      <label>كلمة السر الجديدة</label>
+      <input type="password" id="newPasswordInput" placeholder="6 أحرف على الأقل">
+    </div>
+    <div class="input-group">
+      <label>تأكيد كلمة السر</label>
+      <input type="password" id="confirmPasswordInput" placeholder="اكتبها تاني">
+    </div>
     <button type="button" class="btn-neon" onclick="saveNewPassword()" style="margin-top:12px">✅ حفظ</button>
   </div>
 </div>
 
+<!-- Friends -->
 <div id="friendsModal" class="modal">
   <div class="modal-content wide">
     <button type="button" class="close-modal" onclick="closeModal('friendsModal')">&times;</button>
@@ -232,6 +380,7 @@
   </div>
 </div>
 
+<!-- Share -->
 <div id="shareModal" class="modal">
   <div class="modal-content">
     <button type="button" class="close-modal" onclick="closeModal('shareModal')">&times;</button>
@@ -249,11 +398,13 @@
       <button type="button" class="share-btn" onclick="nativeShare()">مشاركة أخرى</button>
     </div>
     <div class="stat-row" style="margin-top:16px">
-      <span>نقاطي من المشاركة اليوم</span><span id="sharePointsToday">0 / 100</span>
+      <span>نقاطي من المشاركة اليوم</span>
+      <span id="sharePointsToday">0 / 100</span>
     </div>
   </div>
 </div>
 
+<!-- Create Room -->
 <div id="createRoomModal" class="modal">
   <div class="modal-content">
     <button type="button" class="close-modal" onclick="closeModal('createRoomModal')">&times;</button>
@@ -295,16 +446,20 @@
   </div>
 </div>
 
+<!-- Join Online -->
 <div id="joinOnlineModal" class="modal">
   <div class="modal-content">
     <button type="button" class="close-modal" onclick="closeModal('joinOnlineModal')">&times;</button>
     <h2 class="neon-title">🔑 انضم لغرفة</h2>
     <p class="small-text">اكتب الكود اللي وصلك:</p>
-    <div class="input-group"><input type="text" id="joinOnlineCodeInput" placeholder="ABC123" maxlength="6" style="text-align:center;font-size:22px;letter-spacing:4px;font-family:'Orbitron',sans-serif;direction:ltr;"></div>
+    <div class="input-group">
+      <input type="text" id="joinOnlineCodeInput" placeholder="ABC123" maxlength="6" style="text-align:center;font-size:22px;letter-spacing:4px;font-family:'Orbitron',sans-serif;direction:ltr;">
+    </div>
     <button type="button" class="btn-neon" onclick="joinOnlineRoom()">✅ انضمام</button>
   </div>
 </div>
 
+<!-- Ticket Store -->
 <div id="ticketStoreModal" class="modal">
   <div class="modal-content wide">
     <button type="button" class="close-modal" onclick="closeModal('ticketStoreModal')">&times;</button>
@@ -318,6 +473,7 @@
   </div>
 </div>
 
+<!-- Store -->
 <div id="storeModal" class="modal">
   <div class="modal-content">
     <button type="button" class="close-modal" onclick="closeModal('storeModal')">&times;</button>
@@ -328,11 +484,41 @@
     </div>
     <a class="store-deposit-link" onclick="closeModal('storeModal'); openDepositModal();">➕ إيداع رصيد إضافي</a>
     <div class="packages-list">
-      <button type="button" class="package-item" onclick="buyPackage(50,12)"><span class="pkg-icon">💎</span><div class="pkg-info"><span class="pkg-points">50 نقطة</span><span class="pkg-price">12 جنيه</span></div></button>
-      <button type="button" class="package-item" onclick="buyPackage(120,25)"><span class="pkg-icon">💎💎</span><div class="pkg-info"><span class="pkg-points">120 نقطة</span><span class="pkg-price">25 جنيه</span></div></button>
-      <button type="button" class="package-item" onclick="buyPackage(250,45)"><span class="pkg-icon">💎💎💎</span><div class="pkg-info"><span class="pkg-points">250 نقطة</span><span class="pkg-price">45 جنيه</span></div></button>
-      <button type="button" class="package-item special" onclick="buyPackage(400,50)"><span class="pkg-icon">🔥</span><div class="pkg-info"><span class="pkg-points">400 نقطة</span><span class="pkg-price">50 جنيه (عرض)</span></div></button>
-      <button type="button" class="package-item" onclick="buyPackage(1000,140)"><span class="pkg-icon">💎💎💎💎💎</span><div class="pkg-info"><span class="pkg-points">1000 نقطة</span><span class="pkg-price">140 جنيه</span></div></button>
+      <button type="button" class="package-item" onclick="buyPackage(50,12)">
+        <span class="pkg-icon">💎</span>
+        <div class="pkg-info">
+          <span class="pkg-points">50 نقطة</span>
+          <span class="pkg-price">12 جنيه</span>
+        </div>
+      </button>
+      <button type="button" class="package-item" onclick="buyPackage(120,25)">
+        <span class="pkg-icon">💎💎</span>
+        <div class="pkg-info">
+          <span class="pkg-points">120 نقطة</span>
+          <span class="pkg-price">25 جنيه</span>
+        </div>
+      </button>
+      <button type="button" class="package-item" onclick="buyPackage(250,45)">
+        <span class="pkg-icon">💎💎💎</span>
+        <div class="pkg-info">
+          <span class="pkg-points">250 نقطة</span>
+          <span class="pkg-price">45 جنيه</span>
+        </div>
+      </button>
+      <button type="button" class="package-item special" onclick="buyPackage(400,50)">
+        <span class="pkg-icon">🔥</span>
+        <div class="pkg-info">
+          <span class="pkg-points">400 نقطة</span>
+          <span class="pkg-price">50 جنيه (عرض)</span>
+        </div>
+      </button>
+      <button type="button" class="package-item" onclick="buyPackage(1000,140)">
+        <span class="pkg-icon">💎💎💎💎💎</span>
+        <div class="pkg-info">
+          <span class="pkg-points">1000 نقطة</span>
+          <span class="pkg-price">140 جنيه</span>
+        </div>
+      </button>
     </div>
     <div class="prime-section">
       <h3 class="prime-title">👑 عروض البرايم</h3>
@@ -357,6 +543,7 @@
   </div>
 </div>
 
+<!-- Profile -->
 <div id="profileModal" class="modal">
   <div class="modal-content">
     <button type="button" class="close-modal" onclick="closeModal('profileModal')">&times;</button>
@@ -404,6 +591,7 @@
   </div>
 </div>
 
+<!-- Deposit -->
 <div id="depositModal" class="modal">
   <div class="modal-content">
     <button type="button" class="close-modal" onclick="closeModal('depositModal')">&times;</button>
@@ -413,24 +601,43 @@
       <h3>فودافون كاش</h3>
       <div class="vodafone-number">01091602772</div>
     </div>
-    <div class="input-group"><label>المبلغ (بالجنيه)</label><input type="number" id="depositAmount" placeholder="10" min="10" inputmode="numeric"></div>
-    <div class="input-group"><label>رقم العملية</label><input type="text" id="depositTrans" placeholder="123456789" inputmode="numeric"></div>
+    <div class="input-group">
+      <label>المبلغ (بالجنيه)</label>
+      <input type="number" id="depositAmount" placeholder="10" min="10" inputmode="numeric">
+    </div>
+    <div class="input-group">
+      <label>رقم العملية</label>
+      <input type="text" id="depositTrans" placeholder="123456789" inputmode="numeric">
+    </div>
     <button type="button" class="btn-neon" onclick="submitDeposit()">إرسال طلب الإيداع</button>
   </div>
 </div>
 
+<!-- Withdraw -->
 <div id="withdrawModal" class="modal">
   <div class="modal-content">
     <button type="button" class="close-modal" onclick="closeModal('withdrawModal')">&times;</button>
     <h2 class="neon-title">➖ سحب</h2>
     <p class="small-text">الحد الأدنى 50 جنيه</p>
-    <div class="payment-info"><div class="stat-row"><span>رصيدك المتاح</span><span id="withdrawBalance">0 ج</span></div></div>
-    <div class="input-group"><label>المبلغ</label><input type="number" id="withdrawAmount" placeholder="50" min="50" inputmode="numeric"></div>
-    <div class="input-group"><label>رقم فودافون كاش</label><input type="tel" id="withdrawPhone" placeholder="01xxxxxxxxx" maxlength="11" inputmode="numeric"></div>
+    <div class="payment-info">
+      <div class="stat-row">
+        <span>رصيدك المتاح</span>
+        <span id="withdrawBalance">0 ج</span>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>المبلغ</label>
+      <input type="number" id="withdrawAmount" placeholder="50" min="50" inputmode="numeric">
+    </div>
+    <div class="input-group">
+      <label>رقم فودافون كاش</label>
+      <input type="tel" id="withdrawPhone" placeholder="01xxxxxxxxx" maxlength="11" inputmode="numeric">
+    </div>
     <button type="button" class="btn-neon" onclick="submitWithdraw()">إرسال طلب السحب</button>
   </div>
 </div>
 
+<!-- Milestones -->
 <div id="milestonesModal" class="modal">
   <div class="modal-content milestones-modal">
     <button type="button" class="close-modal" onclick="closeModal('milestonesModal')">&times;</button>
@@ -440,6 +647,7 @@
   </div>
 </div>
 
+<!-- Leaderboard -->
 <div id="leaderboardModal" class="modal">
   <div class="modal-content">
     <button type="button" class="close-modal" onclick="closeModal('leaderboardModal')">&times;</button>
@@ -448,6 +656,7 @@
   </div>
 </div>
 
+<!-- Lucky Wheel -->
 <div id="luckyWheelModal" class="modal">
   <div class="modal-content wheel-modal">
     <button type="button" class="close-modal" onclick="closeModal('luckyWheelModal')">&times;</button>
@@ -464,6 +673,7 @@
   </div>
 </div>
 
+<!-- Special Offer -->
 <div id="specialOfferModal" class="modal">
   <div class="modal-content">
     <button type="button" class="close-modal" onclick="closeModal('specialOfferModal')">&times;</button>
@@ -474,6 +684,7 @@
   </div>
 </div>
 
+<!-- Loss Recovery -->
 <div id="lossRecoveryModal" class="modal">
   <div class="modal-content">
     <button type="button" class="close-modal" onclick="closeModal('lossRecoveryModal')">&times;</button>
@@ -485,12 +696,14 @@
   </div>
 </div>
 
+<!-- Toasts & Overlay -->
 <div id="coinToast" class="coin-toast">
   <div class="coin-toast-content">
     <div class="coin-toast-icon" id="coinToastIcon">💰</div>
     <div class="coin-toast-text" id="coinToastText">+20</div>
   </div>
 </div>
+
 <div id="toast" class="toast">
   <div class="toast-content">
     <span id="toastIcon">ℹ️</span>
