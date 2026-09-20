@@ -70,7 +70,7 @@
     </div>
   </div>
 
-  <!-- How To Play Modal (جديد) -->
+  <!-- How To Play Modal -->
   <div id="howToPlayModal" class="modal">
     <div class="modal-content">
       <button type="button" class="close-modal" onclick="closeHowToPlay()">&times;</button>
@@ -377,6 +377,28 @@
     </div>
     <h3 style="margin-top:20px;color:#f0a0a0;font-size:15px">قائمة أصدقائي</h3>
     <div id="friendsList" class="friends-list"><p class="small-text">جاري التحميل...</p></div>
+  </div>
+</div>
+
+<!-- Chat Modal -->
+<div id="chatModal" class="modal">
+  <div class="modal-content chat-modal-content">
+    <div class="chat-header">
+      <div class="chat-user-info">
+        <div class="chat-user-avatar" id="chatAvatar">?</div>
+        <div>
+          <strong id="chatUserName">...</strong>
+          <span class="chat-status" id="chatStatus">🟢 متصل</span>
+        </div>
+      </div>
+      <button type="button" class="close-modal chat-close" onclick="closeChat()">&times;</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-area">
+      <input type="text" id="chatInput" placeholder="اكتب رسالة..." maxlength="500" 
+             onkeydown="if(event.key==='Enter')sendChatMessage()">
+      <button type="button" class="chat-send-btn" onclick="sendChatMessage()">📤</button>
+    </div>
   </div>
 </div>
 
