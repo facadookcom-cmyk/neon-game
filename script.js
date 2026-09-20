@@ -1,6 +1,9 @@
 /* ============================================
-   Neon Prediction v11.6 + Chat System
-   الكود الكامل المتكامل
+   Neon Prediction v11.7 — Full Version
+   - Free Wheel → Bonus Points
+   - Paid Wheel → Real Money
+   - Multiplier ×2 (70 EGP, standalone)
+   - Prime + Multiplier = ×4
    ============================================ */
 
 var SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -29,7 +32,7 @@ var CONFIG = {
   LOSS_RECOVERY_BONUS: 6,
   PRIME_PRICE: 99,
   PRIME_DAYS: 30,
-  MULTIPLIER_PRICE: 15,
+  MULTIPLIER_PRICE: 70,
   MULTIPLIER_HOURS: 24,
   LEVELS_PER_GAMES: 15,
   ONLINE_ENTRY: 15,
@@ -157,28 +160,41 @@ function cashPoints() { return (App.user.purchased || 0) + (App.user.earned || 0
 function bonusPoints() { return App.user.bonus_points || 0; }
 function totalPoints() { return cashPoints() + bonusPoints(); }
 
+/* حساب مضاعف المكافآت (Prime + Multiplier يتراكموا = ×4) */
+function getRewardMultiplier() {
+  var mult = 1;
+  if (isPrime()) mult *= 2;
+  if (hasMultiplier()) mult *= 2;
+  return mult;
+}
+
 function addBonusPoints(amount, source) {
   if (amount <= 0) return;
-  App.user.bonus_points = (App.user.bonus_points || 0) + amount;
+  var multiplier = getRewardMultiplier();
+  var finalAmount = amount * multiplier;
+  App.user.bonus_points = (App.user.bonus_points || 0) + finalAmount;
   if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
     supabaseClient.from('point_transactions').insert({
-      user_id: App.user.id, amount: amount, type: 'bonus', source: source || 'system'
+      user_id: App.user.id, amount: finalAmount, type: 'bonus', source: source || 'system'
     }).then(function(){});
   }
   checkPeakPoints();
+  return finalAmount;
 }
 
 function addPoints(a, toEarned) {
   if (a <= 0) return;
-  if (isPrime()) a = Math.floor(a * 2);
-  if (toEarned) App.user.earned = (App.user.earned || 0) + a;
-  else App.user.purchased = (App.user.purchased || 0) + a;
+  var multiplier = getRewardMultiplier();
+  var finalAmount = a * multiplier;
+  if (toEarned) App.user.earned = (App.user.earned || 0) + finalAmount;
+  else App.user.purchased = (App.user.purchased || 0) + finalAmount;
   if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
     supabaseClient.from('point_transactions').insert({
-      user_id: App.user.id, amount: a, type: toEarned ? 'earned' : 'purchased', source: 'cash'
+      user_id: App.user.id, amount: finalAmount, type: toEarned ? 'earned' : 'purchased', source: 'cash'
     }).then(function(){});
   }
   checkPeakPoints();
+  return finalAmount;
 }
 
 function spendPoints(amount) {
@@ -394,7 +410,9 @@ function toggleFullscreen() {
     if (document.exitFullscreen) document.exitFullscreen();
     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
   }
-}/* ============ HOW TO PLAY ============ */
+}
+
+/* ============ HOW TO PLAY ============ */
 function openHowToPlay() {
   var modal = document.getElementById('howToPlayModal');
   if (modal) modal.classList.add('active');
@@ -416,9 +434,7 @@ function checkFirstTimeHowToPlay() {
       }, 900);
     }
   } catch(e) {}
-}
-
-/* ============ AUTH ============ */
+}/* ============ AUTH ============ */
 function switchAuthTab(tab) {
   if (tab === 'login') {
     $('tabLogin').classList.add('active');
@@ -702,7 +718,6 @@ function claimDailyLogin() {
   App.user.dailyLoginStreak = Math.min(App.user.dailyLoginStreak + 1, 7);
   var idx = App.user.dailyLoginStreak - 1;
   var reward = CONFIG.DAILY_LOGIN_REWARDS[idx] || 35;
-  if (isPrime()) reward *= 2;
   addBonusPoints(reward, 'daily_login');
   App.user.lastDailyLogin = today;
   saveLocal(); updateAllUI();
@@ -724,7 +739,6 @@ function claimDailyChest() {
   if (App.user.lastDailyChest === today) return showToast('فتحت الصندوق النهاردة', 'error');
   var arr = CONFIG.DAILY_CHEST_REWARDS;
   var reward = arr[Math.floor(Math.random() * arr.length)];
-  if (isPrime()) reward *= 2;
   addBonusPoints(reward, 'daily_chest');
   App.user.lastDailyChest = today;
   saveLocal(); updateAllUI();
@@ -802,6 +816,11 @@ function updateWalletUI() {
 
 async function addEarning(amount, source) {
   if (amount <= 0) return;
+  // المضاعفة تطبق على أرباح العجلة المدفوعة كمان
+  if (source && source.indexOf('wheel_paid') === 0) {
+    var mult = getRewardMultiplier();
+    amount = amount * mult;
+  }
   Wallet.earned += amount;
   saveWallet();
   if (supabaseClient && App.user.id && String(App.user.id).indexOf('local_') !== 0) {
@@ -874,7 +893,7 @@ window.addEventListener('load', function() {
   updateAllUI();
   var ph1 = $('signupPhone'); if (ph1) ph1.addEventListener('input', function(){ this.value = this.value.replace(/\D/g,''); });
   var ph2 = $('loginPhone'); if (ph2) ph2.addEventListener('input', function(){ this.value = this.value.replace(/\D/g,''); });
-  console.log('Neon Prediction v11.6 ready ✅');
+  console.log('Neon Prediction v11.7 ready ✅');
 });
 
 function startTriangleBackground() {
@@ -1061,7 +1080,7 @@ function showResult() {
   $('lossRecoveryBtn').style.display = 'none';
 
   if (won) {
-    addPoints(CONFIG.WIN_REWARD, true);
+    var actualReward = addPoints(CONFIG.WIN_REWARD, true);
     App.user.wins++;
     App.user.streak++;
     if (App.user.streak > App.user.bestStreak) App.user.bestStreak = App.user.streak;
@@ -1071,9 +1090,11 @@ function showResult() {
     else if (App.user.streak >= 5) bonus = 12;
     else if (App.user.streak >= 3) bonus = 6;
 
+    var totalEarned = actualReward;
     if (bonus > 0) {
-      addPoints(bonus, true);
-      $('streakResult').textContent = '🔥 سلسلة ×' + App.user.streak + ' (+' + bonus + ')';
+      var actualBonus = addPoints(bonus, true);
+      totalEarned += actualBonus;
+      $('streakResult').textContent = '🔥 سلسلة ×' + App.user.streak + ' (+' + actualBonus + ')';
     } else {
       $('streakResult').textContent = '🔥 سلسلة ×' + App.user.streak;
     }
@@ -1081,7 +1102,7 @@ function showResult() {
     updateMissionProgress('win', true);
     updateMissionProgress('streak', false);
     checkLevelUp(); checkPrizes();
-    showCoinToast('+' + (CONFIG.WIN_REWARD + bonus) + '💰', '🏆');
+    showCoinToast('+' + totalEarned + '💰', '🏆');
     SoundSystem.playSuccess(); Vibration.onWin();
     showWinOverlay('🏆', 'مبروك! فزت', 1800);
   } else {
@@ -1246,7 +1267,7 @@ function copyRoomCode() {
   var text = '🎮 العب معايا Neon Prediction!\n\n🔒 كود الغرفة: ' + code;
   if (navigator.clipboard) navigator.clipboard.writeText(text).then(function(){ showToast('تم النسخ!', 'success'); }).catch(function(){ showToast('الكود: ' + code, 'info'); });
   else showToast('الكود: ' + code, 'info');
-}/* ============ LUCKY WHEEL v2 ============ */
+}/* ============ LUCKY WHEEL v3 — Free=Bonus / Paid=Money ============ */
 var WHEEL_PRIZES = [
   { value:1,  weight:28,   color:'#1a1010', text:'1 ج',  label:'1 جنيه',      tier:'common'    },
   { value:2,  weight:30,   color:'#2a1a1a', text:'2 ج',  label:'2 جنيه',      tier:'common'    },
@@ -1322,10 +1343,10 @@ function openLuckyWheel() {
   var btn = $('spinBtn'), info = $('wheelInfo');
   if (App.user.lastWheelSpin === today) {
     btn.textContent = 'لف العجلة (' + CONFIG.WHEEL_COST + ' ج)';
-    info.textContent = 'خلصت المرة المجانية';
+    info.textContent = 'اللفة المدفوعة → فلوس حقيقية 💰';
   } else {
     btn.textContent = 'لف العجلة (مجاناً)';
-    info.textContent = 'مرة واحدة مجاناً كل يوم';
+    info.textContent = 'اللفة المجانية → Bonus Points فقط 🎁';
   }
   btn.disabled = false;
   $('wheelResult').textContent = 'اضغط لف العجلة';
@@ -1367,6 +1388,7 @@ function spinWheel() {
   btn.disabled = true;
   $('wheelResult').textContent = 'بلف...';
   var winner = pickWinnerSmart();
+  winner.isFree = isFree;
   var n = WHEEL_PRIZES.length;
   var segAngle = 360 / n;
   var centerAngle = winner.index * segAngle + segAngle / 2;
@@ -1392,34 +1414,59 @@ function spinWheel() {
     if (p < 1) requestAnimationFrame(animate);
     else {
       wheelState.currentAngle = (startAngle + delta) % 360;
-      finishSpin(winner.segment);
+      finishSpin(winner.segment, winner.isFree);
     }
   }
   requestAnimationFrame(animate);
 }
 
-function finishSpin(reward) {
+function finishSpin(reward, isFree) {
   var el = $('wheelResult');
   var val = reward.value;
   var tier = reward.tier || 'common';
-  if (isPrime()) val *= 2;
 
   if (val > 0) {
-    var bonusVal = val * CONFIG.WHEEL_BONUS_MULTIPLIER;
-    addBonusPoints(bonusVal, 'wheel');
-    el.textContent = '🎉 كسبت ' + bonusVal + ' Bonus!';
+    if (isFree) {
+      // 🎁 لفة مجانية → Bonus Points فقط
+      var bonusVal = val * CONFIG.WHEEL_BONUS_MULTIPLIER;
+      addBonusPoints(bonusVal, 'wheel_free');
+      el.textContent = '🎁 كسبت ' + bonusVal + ' Bonus!';
 
-    if (tier === 'jackpot') { triggerJackpotEffect(bonusVal); }
-    else if (tier === 'legendary') { triggerLegendaryEffect(bonusVal); }
-    else if (tier === 'epic') {
-      SoundSystem.playBigWin(); Vibration.onBigPrize();
-      showWinOverlay('💎', '+' + bonusVal + ' Bonus', 2500);
-      triggerGoldenFlash(1200);
+      if (tier === 'jackpot') { triggerJackpotEffect(bonusVal, 'bonus'); }
+      else if (tier === 'legendary') { triggerLegendaryEffect(bonusVal, 'bonus'); }
+      else if (tier === 'epic') {
+        SoundSystem.playBigWin(); Vibration.onBigPrize();
+        showWinOverlay('💎', '+' + bonusVal + ' Bonus', 2500);
+        triggerGoldenFlash(1200);
+      } else {
+        SoundSystem.playReward(); Vibration.onReward();
+        showWinOverlay('🎁', '+' + bonusVal + ' Bonus', 1800);
+      }
+      showCoinToast('+' + bonusVal + ' Bonus 🎁', '🎡');
+
     } else {
-      SoundSystem.playReward(); Vibration.onReward();
-      showWinOverlay('🎉', '+' + bonusVal + ' Bonus', 1800);
+      // 💰 لفة مدفوعة → فلوس حقيقية → الأرباح المكتسبة
+      // addEarning بتضاعف تلقائياً لو Prime أو Multiplier موجودين
+      var displayVal = val;
+      if (isPrime()) displayVal *= 2;
+      if (hasMultiplier()) displayVal *= 2;
+
+      addEarning(val, 'wheel_paid');
+      el.textContent = '💰 كسبت ' + displayVal + ' جنيه!';
+
+      if (tier === 'jackpot') { triggerJackpotEffect(displayVal, 'money'); }
+      else if (tier === 'legendary') { triggerLegendaryEffect(displayVal, 'money'); }
+      else if (tier === 'epic') {
+        SoundSystem.playBigWin(); Vibration.onBigPrize();
+        showWinOverlay('💎', '+' + displayVal + ' جنيه', 2500);
+        triggerGoldenFlash(1200);
+      } else {
+        SoundSystem.playReward(); Vibration.onReward();
+        showWinOverlay('💰', '+' + displayVal + ' جنيه', 1800);
+      }
+      showCoinToast('+' + displayVal + ' ج', '🎡');
     }
-    showCoinToast('+' + bonusVal + ' Bonus 🎁', '🎡');
+
   } else {
     el.textContent = 'حظ أوفر 😢';
     SoundSystem.playLoss(); Vibration.onLoss();
@@ -1443,24 +1490,26 @@ function triggerGoldenFlash(duration) {
   }, duration || 1200);
 }
 
-function triggerLegendaryEffect(val) {
+function triggerLegendaryEffect(val, type) {
   SoundSystem.playBigWin();
   Vibration.vibrate([200, 100, 200, 100, 400]);
   triggerGoldenFlash(1800);
-  showWinOverlay('⭐', '+' + val + ' Bonus', 2800);
-  showCoinToast('⭐ جائزة أسطورية! +' + val + ' Bonus', '⭐');
+  var unit = type === 'money' ? ' جنيه' : ' Bonus';
+  showWinOverlay('⭐', '+' + val + unit, 2800);
+  showCoinToast('⭐ جائزة أسطورية! +' + val + unit, '⭐');
 }
 
-function triggerJackpotEffect(val) {
+function triggerJackpotEffect(val, type) {
   playJackpotSound();
   document.body.classList.add('screen-shake');
   setTimeout(function(){ document.body.classList.remove('screen-shake'); }, 800);
   triggerGoldenFlash(2500);
   triggerConfetti(3500, 180);
-  showJackpotOverlay(val);
+  showJackpotOverlay(val, type);
   Vibration.vibrate([300, 100, 300, 100, 500, 100, 800, 100, 1000]);
-  showCoinToast('💎 JACKPOT! +' + val + ' Bonus', '💎');
-  setTimeout(function(){ showToast('🎊 مبروووك! ربحت ' + val + ' Bonus!', 'success'); }, 1000);
+  var unit = type === 'money' ? ' جنيه' : ' Bonus';
+  showCoinToast('💎 JACKPOT! +' + val + unit, '💎');
+  setTimeout(function(){ showToast('🎊 مبروووك! ربحت ' + val + unit + '!', 'success'); }, 1000);
 }
 
 function playJackpotSound() {
@@ -1530,10 +1579,11 @@ function triggerConfetti(duration, count) {
   draw();
 }
 
-function showJackpotOverlay(val) {
+function showJackpotOverlay(val, type) {
+  var unit = type === 'money' ? ' جنيه' : ' Bonus';
   var overlay = document.createElement('div');
   overlay.className = 'jackpot-overlay';
-  overlay.innerHTML = '<div class="jackpot-inner"><div class="jackpot-crown">👑</div><div class="jackpot-title">JACKPOT!</div><div class="jackpot-diamond">💎</div><div class="jackpot-amount">+' + val + ' Bonus</div><div class="jackpot-sub">جائزة نادرة جداً!</div></div>';
+  overlay.innerHTML = '<div class="jackpot-inner"><div class="jackpot-crown">👑</div><div class="jackpot-title">JACKPOT!</div><div class="jackpot-diamond">💎</div><div class="jackpot-amount">+' + val + unit + '</div><div class="jackpot-sub">جائزة نادرة جداً!</div></div>';
   document.body.appendChild(overlay);
   setTimeout(function(){ overlay.classList.add('show'); }, 50);
   setTimeout(function(){ overlay.classList.remove('show'); setTimeout(function(){ overlay.remove(); }, 700); }, 4500);
@@ -1581,14 +1631,18 @@ async function buyPrime() {
 
 async function buyMultiplier() {
   var price = CONFIG.MULTIPLIER_PRICE;
-  if (Wallet.balance < price) { showToast('❌ رصيدك غير كافي', 'error'); return; }
-  if (!confirm('مضاعفة ×2 لمدة 24 ساعة بـ ' + price + ' جنيه؟')) return;
+  if (Wallet.balance < price) { 
+    showToast('❌ محتاج ' + (price - Wallet.balance).toFixed(2) + ' ج', 'error');
+    return;
+  }
+  if (!confirm('مضاعفة ×2 لمدة 24 ساعة بـ ' + price + ' جنيه؟\n\nهتضاعف:\n• نقاط المكسب\n• Bonus Points\n• أرباح العجلة المدفوعة\n\nوتشتغل مع البرايم (لو عندك) → ×4')) return;
   var ok = await deductFromWallet(price);
   if (!ok) return;
   App.user.multiplier_2x_expires_at = new Date(Date.now() + CONFIG.MULTIPLIER_HOURS * 3600000).toISOString();
   saveLocal(); updateAllUI(); syncUser();
-  SoundSystem.playReward(); Vibration.onReward();
-  showToast('⚡ تم تفعيل المضاعفة', 'success');
+  SoundSystem.playBigWin(); Vibration.onBigPrize();
+  showWinOverlay('⚡', 'تفعيل ×2!', 2500);
+  showToast('⚡ تم تفعيل المضاعفة ×2 لمدة 24 ساعة', 'success');
   closeModal('storeModal');
 }
 
@@ -1657,18 +1711,25 @@ function openProfile() {
   var av = $('profileAvatar');
   av.textContent = App.user.username.charAt(0).toUpperCase();
   if (isPrime()) av.classList.add('prime'); else av.classList.remove('prime');
+  
   var ps = $('primeStatus');
+  var primeHtml = '';
+  var multiHtml = '';
+
   if (isPrime()) {
     var exp = new Date(App.user.prime_expires_at);
     var days = Math.max(0, Math.ceil((exp - new Date()) / 86400000));
-    ps.innerHTML = '<span class="badge-prime">👑 برايم</span> <span style="color:#ffd700;font-size:12px;">متبقي ' + days + ' يوم</span>';
-  } else if (hasMultiplier()) {
+    primeHtml = '<span class="badge-prime">👑 برايم</span> <span style="color:#ffd700;font-size:12px;">متبقي ' + days + ' يوم</span>';
+  }
+
+  if (hasMultiplier()) {
     var exp2 = new Date(App.user.multiplier_2x_expires_at);
     var hrs = Math.max(0, Math.ceil((exp2 - new Date()) / 3600000));
-    ps.innerHTML = '<span class="badge-prime" style="background:linear-gradient(135deg,#00e676,#00a040)">⚡ ×2</span> <span style="color:#00e676;font-size:12px;">متبقي ' + hrs + ' ساعة</span>';
-  } else {
-    ps.innerHTML = '';
+    multiHtml = '<span class="badge-prime" style="background:linear-gradient(135deg,#00e676,#00a040)">⚡ ×2</span> <span style="color:#00e676;font-size:12px;">متبقي ' + hrs + ' ساعة</span>';
   }
+
+  ps.innerHTML = (primeHtml ? primeHtml + '<br>' : '') + (multiHtml ? multiHtml : '');
+
   loadWallet();
   $('profileModal').classList.add('active');
 }
@@ -2919,4 +2980,4 @@ window.getUnreadCounts = getUnreadCounts;
 
 window.closeModal = closeModal;
 
-console.log('✅ Neon Prediction v11.6 + Chat — All Systems Ready!');
+console.log('✅ Neon Prediction v11.7 — All Systems Ready! (Free Wheel→Bonus | Paid Wheel→Money | Multiplier=70 EGP standalone)');
