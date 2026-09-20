@@ -1,6 +1,6 @@
 /* ============================================
-   Neon Prediction v11.6 — النسخة المعدّلة المتوازنة
-   اللاعب بيحس بالفوز + أنت مش بتخسر جنيه
+   Neon Prediction v11.6 + Chat System
+   الكود الكامل المتكامل
    ============================================ */
 
 var SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -394,9 +394,7 @@ function toggleFullscreen() {
     if (document.exitFullscreen) document.exitFullscreen();
     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
   }
-}
-
-/* ============ HOW TO PLAY ============ */
+}/* ============ HOW TO PLAY ============ */
 function openHowToPlay() {
   var modal = document.getElementById('howToPlayModal');
   if (modal) modal.classList.add('active');
@@ -418,7 +416,9 @@ function checkFirstTimeHowToPlay() {
       }, 900);
     }
   } catch(e) {}
-}/* ============ AUTH ============ */
+}
+
+/* ============ AUTH ============ */
 function switchAuthTab(tab) {
   if (tab === 'login') {
     $('tabLogin').classList.add('active');
@@ -1873,6 +1873,325 @@ async function removeFriend(friendId) {
   } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
 }
 
+/* ============================================
+   💬 CHAT SYSTEM
+   ============================================ */
+var Chat = {
+  currentFriend: null,
+  channel: null,
+  messages: [],
+  pollInterval: null,
+  unreadCounts: {},
+  rateLimit: { count: 0, resetAt: 0 }
+};
+
+var BANNED_WORDS = [
+  'sex', 'xxx', 'porn', 'نيك', 'كسم', 'زب', 'طيز',
+  'شرموط', 'عاهرة', 'قحبة', 'منيوك', 'خول'
+];
+
+function containsBannedWords(text) {
+  var lower = text.toLowerCase();
+  for (var i = 0; i < BANNED_WORDS.length; i++) {
+    if (lower.indexOf(BANNED_WORDS[i]) !== -1) return true;
+  }
+  return false;
+}
+
+function checkChatRateLimit() {
+  var now = Date.now();
+  if (now > Chat.rateLimit.resetAt) {
+    Chat.rateLimit = { count: 0, resetAt: now + 60000 };
+  }
+  Chat.rateLimit.count++;
+  if (Chat.rateLimit.count > 20) return false;
+  return true;
+}
+
+async function openChatWithFriend(friendId, friendName, isPrime) {
+  SoundSystem.init();
+  Chat.currentFriend = { id: friendId, name: friendName, isPrime: isPrime };
+
+  var avatarEl = $('chatAvatar');
+  avatarEl.textContent = friendName.charAt(0).toUpperCase();
+  avatarEl.className = 'chat-user-avatar' + (isPrime ? ' prime' : '');
+  $('chatUserName').textContent = friendName;
+  $('chatStatus').textContent = '🟢 متصل';
+  $('chatInput').value = '';
+  $('chatMessages').innerHTML = '<p class="chat-empty">جاري التحميل...</p>';
+
+  $('chatModal').classList.add('active');
+
+  await loadChatMessages(friendId);
+  subscribeToChat(friendId);
+  markMessagesAsRead(friendId);
+
+  setTimeout(function() { 
+    try { $('chatInput').focus(); } catch(e) {}
+  }, 400);
+}
+
+function closeChat() {
+  closeModal('chatModal');
+
+  if (Chat.channel) {
+    try { supabaseClient.removeChannel(Chat.channel); } catch(e) {}
+    Chat.channel = null;
+  }
+  if (Chat.pollInterval) {
+    clearInterval(Chat.pollInterval);
+    Chat.pollInterval = null;
+  }
+  Chat.currentFriend = null;
+  Chat.messages = [];
+}
+
+async function loadChatMessages(friendId) {
+  if (!supabaseClient || !App.user.id) return;
+  try {
+    var res = await supabaseClient
+      .from('messages')
+      .select('*')
+      .or('and(sender_id.eq.' + App.user.id + ',receiver_id.eq.' + friendId + '),and(sender_id.eq.' + friendId + ',receiver_id.eq.' + App.user.id + ')')
+      .order('created_at', { ascending: true })
+      .limit(100);
+
+    if (res.error) throw res.error;
+    Chat.messages = res.data || [];
+    renderChatMessages();
+  } catch(e) {
+    console.error('loadChatMessages:', e);
+    $('chatMessages').innerHTML = '<p class="chat-empty">خطأ في التحميل</p>';
+  }
+}
+
+function renderChatMessages() {
+  var container = $('chatMessages');
+  if (!container) return;
+
+  if (Chat.messages.length === 0) {
+    container.innerHTML = '<p class="chat-empty">💬 ابدأ المحادثة<br><span style="font-size:11px;color:#a08080">ابعت أول رسالة!</span></p>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < Chat.messages.length; i++) {
+    var m = Chat.messages[i];
+    var isMe = m.sender_id === App.user.id;
+    var time = new Date(m.created_at);
+    var hh = time.getHours();
+    var mm = time.getMinutes();
+    var timeStr = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+    var escapedMsg = escapeChatHtml(m.message);
+    html += '<div class="chat-message ' + (isMe ? 'me' : 'them') + '">' + escapedMsg + '<span class="chat-message-time">' + timeStr + '</span></div>';
+  }
+  container.innerHTML = html;
+  container.scrollTop = container.scrollHeight;
+}
+
+function escapeChatHtml(text) {
+  var div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+async function sendChatMessage() {
+  var input = $('chatInput');
+  var text = input.value.trim();
+  if (!text || !Chat.currentFriend) return;
+  if (text.length > 500) return showToast('الرسالة طويلة جداً', 'error');
+  if (containsBannedWords(text)) return showToast('❌ الرسالة فيها كلام ممنوع', 'error');
+  if (!checkChatRateLimit()) return showToast('⏱️ بطّأ شوية!', 'error');
+
+  input.value = '';
+
+  var tempMsg = {
+    id: 'temp_' + Date.now(),
+    sender_id: App.user.id,
+    receiver_id: Chat.currentFriend.id,
+    message: text,
+    created_at: new Date().toISOString()
+  };
+  Chat.messages.push(tempMsg);
+  renderChatMessages();
+
+  try {
+    var res = await supabaseClient.from('messages').insert({
+      sender_id: App.user.id,
+      receiver_id: Chat.currentFriend.id,
+      message: text
+    }).select().single();
+
+    if (res.error) throw res.error;
+
+    var idx = Chat.messages.findIndex(function(m) { return m.id === tempMsg.id; });
+    if (idx !== -1) Chat.messages[idx] = res.data;
+  } catch(e) {
+    console.error('sendChatMessage:', e);
+    showToast('❌ مش قادر أبعت', 'error');
+    Chat.messages = Chat.messages.filter(function(m) { return m.id !== tempMsg.id; });
+    renderChatMessages();
+  }
+}
+
+function subscribeToChat(friendId) {
+  if (Chat.channel) {
+    try { supabaseClient.removeChannel(Chat.channel); } catch(e) {}
+  }
+
+  Chat.channel = supabaseClient
+    .channel('chat_' + App.user.id + '_' + friendId)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: 'receiver_id=eq.' + App.user.id
+    }, function(payload) {
+      if (!payload.new) return;
+      if (payload.new.sender_id !== friendId) return;
+      if (!Chat.messages.find(function(m) { return m.id === payload.new.id; })) {
+        Chat.messages.push(payload.new);
+        renderChatMessages();
+        SoundSystem.playTick();
+        Vibration.vibrate(30);
+        markMessagesAsRead(friendId);
+      }
+    })
+    .subscribe();
+
+  if (Chat.pollInterval) clearInterval(Chat.pollInterval);
+  Chat.pollInterval = setInterval(async function() {
+    if (!Chat.currentFriend) return;
+    try {
+      var lastRealId = 0;
+      for (var i = Chat.messages.length - 1; i >= 0; i--) {
+        if (typeof Chat.messages[i].id === 'number') {
+          lastRealId = Chat.messages[i].id;
+          break;
+        }
+      }
+      var res = await supabaseClient
+        .from('messages')
+        .select('*')
+        .eq('sender_id', friendId)
+        .eq('receiver_id', App.user.id)
+        .gt('id', lastRealId)
+        .order('created_at', { ascending: true });
+      if (res.data && res.data.length > 0) {
+        res.data.forEach(function(m) {
+          if (!Chat.messages.find(function(x) { return x.id === m.id; })) {
+            Chat.messages.push(m);
+          }
+        });
+        renderChatMessages();
+        markMessagesAsRead(friendId);
+      }
+    } catch(e) {}
+  }, 3000);
+}
+
+async function markMessagesAsRead(friendId) {
+  if (!supabaseClient || !App.user.id) return;
+  try {
+    await supabaseClient.from('messages')
+      .update({ is_read: true })
+      .eq('sender_id', friendId)
+      .eq('receiver_id', App.user.id)
+      .eq('is_read', false);
+  } catch(e) {}
+}
+
+async function getUnreadCounts() {
+  if (!supabaseClient || !App.user.id) return {};
+  try {
+    var res = await supabaseClient.from('messages')
+      .select('sender_id')
+      .eq('receiver_id', App.user.id)
+      .eq('is_read', false);
+    if (res.data) {
+      var counts = {};
+      res.data.forEach(function(m) {
+        counts[m.sender_id] = (counts[m.sender_id] || 0) + 1;
+      });
+      Chat.unreadCounts = counts;
+      return counts;
+    }
+  } catch(e) {}
+  return {};
+}
+
+/* Override loadFriendsList to add chat buttons */
+var _originalLoadFriendsList = loadFriendsList;
+loadFriendsList = async function() {
+  await _originalLoadFriendsList();
+  var counts = await getUnreadCounts();
+  var container = $('friendsList');
+  if (!container) return;
+
+  container.querySelectorAll('.friend-item').forEach(function(el) {
+    var actions = el.querySelector('.friend-actions');
+    if (!actions) return;
+    if (actions.querySelector('.friend-btn.chat')) return;
+
+    var removeBtn = actions.querySelector('.friend-btn');
+    if (!removeBtn) return;
+
+    var onclickStr = removeBtn.getAttribute('onclick') || '';
+    var match = onclickStr.match(/removeFriend\('([^']+)'\)/);
+    if (!match) return;
+
+    var friendId = match[1];
+    var nameEl = el.querySelector('.friend-name');
+    var userName = nameEl ? nameEl.textContent.replace('👑','').trim() : 'صديق';
+    var avatarEl = el.querySelector('.friend-avatar');
+    var isPrime = avatarEl ? avatarEl.classList.contains('prime') : false;
+    var unread = counts[friendId] || 0;
+    var badge = unread > 0 ? '<span class="unread-badge">' + (unread > 99 ? '99+' : unread) + '</span>' : '';
+
+    var chatBtn = document.createElement('button');
+    chatBtn.type = 'button';
+    chatBtn.className = 'friend-btn chat';
+    chatBtn.innerHTML = badge + '💬 شات';
+
+    (function(fid, fname, fprime) {
+      chatBtn.onclick = function() { 
+        closeModal('friendsModal');
+        openChatWithFriend(fid, fname, fprime); 
+      };
+    })(friendId, userName, isPrime);
+
+    actions.insertBefore(chatBtn, removeBtn);
+  });
+};
+
+async function updateFriendsBadge() {
+  var counts = await getUnreadCounts();
+  var total = 0;
+  for (var k in counts) total += counts[k];
+  
+  var btn = document.querySelector('button[onclick="openFriendsModal()"]');
+  if (!btn) return;
+  var existing = btn.querySelector('.unread-badge');
+  if (existing) existing.remove();
+  if (total > 0) {
+    var badge = document.createElement('span');
+    badge.className = 'unread-badge';
+    badge.textContent = total > 99 ? '99+' : total;
+    badge.style.position = 'absolute';
+    badge.style.top = '-6px';
+    badge.style.right = '-6px';
+    badge.style.margin = '0';
+    btn.style.position = 'relative';
+    btn.appendChild(badge);
+  }
+}
+
+setInterval(function() {
+  if (App.user && App.user.id && document.getElementById('mainScreen').classList.contains('active')) {
+    updateFriendsBadge();
+  }
+}, 30000);
+
 /* ============ SHARE ============ */
 function openShareModal() {
   var today = new Date().toDateString();
@@ -1937,9 +2256,7 @@ async function registerReferral(refCode) {
     App.user.referred_by = refCode;
     saveLocal();
   } catch(e) { console.error('registerReferral:', e); }
-}
-
-/* ============================================
+}/* ============================================
    ONLINE GAME
    ============================================ */
 var Online = {
@@ -2594,6 +2911,12 @@ window.toggleReady = toggleReady;
 window.leaveOnlineRoom = leaveOnlineRoom;
 window.playAgainOnline = playAgainOnline;
 
+/* 💬 CHAT EXPORTS */
+window.openChatWithFriend = openChatWithFriend;
+window.closeChat = closeChat;
+window.sendChatMessage = sendChatMessage;
+window.getUnreadCounts = getUnreadCounts;
+
 window.closeModal = closeModal;
 
-console.log('✅ Neon Prediction v11.6 — Balanced Economy Ready');
+console.log('✅ Neon Prediction v11.6 + Chat — All Systems Ready!');
