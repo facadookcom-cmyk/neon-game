@@ -4,7 +4,8 @@
    - Paid Wheel (7 EGP) → Real Money
    - Milestones → Real Money
    - No Multiplier
-   - Match Predictions (Parimutuel 80/20)
+   - Match Predictions (11 options + Custom)
+   - Voting Timer System
    - Admin Panel
    - Chat System
    ============================================ */
@@ -90,18 +91,19 @@ var CONFIG = {
   DAILY_LOGIN_REWARDS: [6, 9, 13, 16, 22, 28, 35],
   DAILY_CHEST_REWARDS: [4, 6, 9, 12, 16],
 
-  // الاحتمالات الـ 10 للماتشات
+  // الاحتمالات الـ 11
   MATCH_PREDICTIONS: [
-    {id: 'A1', text: 'الفريق الأول يفوز بفارق هدف' },
-    {id: 'A2', text: 'الفريق الأول يفوز بفارق هدفين' },
-    {id: 'A3', text: 'الفريق الأول يفوز بفارق 3 أهداف' },
-    {id: 'A4', text: 'الفريق الأول يفوز بفارق 4+ أهداف' },
-    {id: 'A5', text: 'الفريق الأول يفوز (بأي نتيجة)' },
-    {id: 'B1', text: 'الفريق الثاني يفوز بفارق هدف' },
-    {id: 'B2', text: 'الفريق الثاني يفوز بفارق هدفين' },
-    {id: 'B3', text: 'الفريق الثاني يفوز بفارق 3 أهداف' },
-    {id: 'B4', text: 'الفريق الثاني يفوز بفارق 4+ أهداف' },
-    {id: 'B5', text: 'الفريق الثاني يفوز (بأي نتيجة)' }
+    {id: 'A1', text: 'الفريق الأول يفوز بفارق هدف', shortText: 'الفريق الأول +1' },
+    {id: 'A2', text: 'الفريق الأول يفوز بفارق هدفين', shortText: 'الفريق الأول +2' },
+    {id: 'A3', text: 'الفريق الأول يفوز بفارق 3 أهداف', shortText: 'الفريق الأول +3' },
+    {id: 'A4', text: 'الفريق الأول يفوز بفارق 4+ أهداف', shortText: 'الفريق الأول +4' },
+    {id: 'B1', text: 'الفريق الثاني يفوز بفارق هدف', shortText: 'الفريق الثاني +1' },
+    {id: 'B2', text: 'الفريق الثاني يفوز بفارق هدفين', shortText: 'الفريق الثاني +2' },
+    {id: 'B3', text: 'الفريق الثاني يفوز بفارق 3 أهداف', shortText: 'الفريق الثاني +3' },
+    {id: 'B4', text: 'الفريق الثاني يفوز بفارق 4+ أهداف', shortText: 'الفريق الثاني +4' },
+    {id: 'Draw', text: 'تعادل إيجابي (1-1, 2-2, 3-3...)', shortText: 'تعادل إيجابي' },
+    {id: 'Draw0', text: 'تعادل سلبي (0-0)', shortText: 'تعادل 0-0' },
+    {id: 'Custom', text: 'نتيجة مخصصة (اكتبها بنفسك)', shortText: 'مخصص' }
   ],
 
   MISSION_POOL: [
@@ -151,7 +153,9 @@ var App = {
   specialOfferTimeout: null,
   busy: false,
   currentMatch: null,
-  selectedPrediction: null
+  selectedPrediction: null,
+  customTeam: null,
+  votingTimerInterval: null
 };
 
 var Wallet = { balance: 0, earned: 0, totalDeposited: 0, totalWon: 0, totalWithdrawn: 0 };
@@ -406,6 +410,11 @@ function showView(viewId) {
   var nav = $('bottomNav');
   if (nav) nav.classList.toggle('hidden', viewId !== 'categoryView');
   window.scrollTo(0, 0);
+  // أوقف عداد التصويت لما نخرج من شاشة التوقع
+  if (viewId !== 'matchPredictView' && App.votingTimerInterval) {
+    clearInterval(App.votingTimerInterval);
+    App.votingTimerInterval = null;
+  }
 }
 
 function toggleFullscreen() {
@@ -607,7 +616,6 @@ function enterGame() {
   updateAllUI(); loadWallet();
   if (!App.user.adShown) $('welcomeAd').classList.remove('hidden');
   checkFirstTimeHowToPlay();
-  // فعّل زر Admin لو المستخدم أدمن
   var adminBtn = $('adminPanelBtn');
   if (adminBtn) adminBtn.style.display = isAdmin() ? 'block' : 'none';
 }
@@ -824,9 +832,10 @@ function updateWalletUI() {
   var tsb = $('ticketStoreBalance'); if (tsb) tsb.textContent = Wallet.balance.toFixed(2) + ' ج';
   var tb = document.querySelector('.wallet-btn.transfer');
   if (tb) { tb.disabled = Wallet.earned <= 0; tb.style.opacity = Wallet.earned > 0 ? '1' : '0.5'; }
+  var pwb = $('predictWalletBalance'); if (pwb) pwb.textContent = Wallet.balance.toFixed(2) + ' ج';
 }
 
-// إضافة فلوس للمحفظة مباشرة (للجوايز المادية والعجلة المدفوعة)
+// إضافة فلوس للمحفظة مباشرة (للجوايز المادية والعجلة المدفوعة والماتشات)
 async function addMoneyToWallet(amount, source) {
   if (amount <= 0) return;
   Wallet.balance += amount;
@@ -851,7 +860,6 @@ async function addMoneyToWallet(amount, source) {
   showWinOverlay('💰', '+' + amount.toFixed(2) + ' جنيه', 2500);
 }
 
-// إضافة أرباح مؤقتة (للتحويل اليدوي)
 async function addEarning(amount, source) {
   if (amount <= 0) return;
   Wallet.earned += amount;
@@ -1013,7 +1021,6 @@ function checkMilestones() {
     var m = CONFIG.MILESTONES[i];
     if (peak >= m.points && App.user.claimed_milestones.indexOf(m.points) === -1) {
       App.user.claimed_milestones.push(m.points);
-      // فلوس حقيقية → المحفظة مباشرة
       addMoneyToWallet(m.money, 'milestone_' + m.points);
       showToast('🏆 وصلت ' + m.points + ' نقطة! +' + m.money + ' جنيه', 'success');
     }
@@ -1398,7 +1405,6 @@ function finishSpin(reward, isFree) {
 
   if (val > 0) {
     if (isFree) {
-      // 🎁 لفة مجانية → Bonus Points
       var bonusVal = val * CONFIG.WHEEL_BONUS_MULTIPLIER;
       addBonusPoints(bonusVal, 'wheel_free');
       el.textContent = '🎁 كسبت ' + bonusVal + ' Bonus!';
@@ -1410,7 +1416,6 @@ function finishSpin(reward, isFree) {
       }
       showCoinToast('+' + bonusVal + ' Bonus 🎁', '🎡');
     } else {
-      // 💰 لفة مدفوعة → فلوس حقيقية للمحفظة
       addMoneyToWallet(val, 'wheel_paid');
       el.textContent = '💰 كسبت ' + val + ' جنيه!';
       if (tier === 'jackpot') { triggerJackpotEffect(val, 'money'); }
@@ -1647,10 +1652,8 @@ function openProfile() {
   } else {
     ps.innerHTML = '';
   }
-  // زر Admin
   var adminBtn = $('adminPanelBtn');
   if (adminBtn) adminBtn.style.display = isAdmin() ? 'block' : 'none';
-  
   loadWallet();
   $('profileModal').classList.add('active');
 }
@@ -1718,7 +1721,7 @@ async function acceptSpecialOffer() {
   showCoinToast('+300 💰', '💰');
 }
 
-/* ============ متجر التذاكر ============ */
+/* ============ التذاكر ============ */
 var TICKETS = [
   {id:'daily', name:'تذكرة يومية', icon:'🎫', price:15, durationHours:24, uses:10, features:['10 مرات لعب في 24 ساعة','تدخل الغرف العادية','مفيش خصم من النقاط']},
   {id:'weekly', name:'تذكرة أسبوعية', icon:'🎫🎫', price:79, durationHours:24*7, uses:75, popular:true, features:['75 مرة لعب في 7 أيام','تدخل الغرف العادية + 1v1','خصم 10% على العجلة','شارة أسبوعية']},
@@ -1773,29 +1776,8 @@ async function buyTicket(ticketId) {
   renderTickets();
 }
 
-/* ============ الأصدقاء والشات ============ */
+/* ============ الأصدقاء ============ */
 var Friends = { list: [], searchDebounce: null };
-var Chat = {
-  currentFriend: null, channel: null, messages: [], pollInterval: null,
-  unreadCounts: {}, rateLimit: { count: 0, resetAt: 0 }
-};
-
-var BANNED_WORDS = ['sex','xxx','porn','نيك','كسم','زب','طيز','شرموط','عاهرة','قحبة','منيوك','خول'];
-
-function containsBannedWords(text) {
-  var lower = text.toLowerCase();
-  for (var i = 0; i < BANNED_WORDS.length; i++) {
-    if (lower.indexOf(BANNED_WORDS[i]) !== -1) return true;
-  }
-  return false;
-}
-
-function checkChatRateLimit() {
-  var now = Date.now();
-  if (now > Chat.rateLimit.resetAt) Chat.rateLimit = { count: 0, resetAt: now + 60000 };
-  Chat.rateLimit.count++;
-  return Chat.rateLimit.count <= 20;
-}
 
 async function openFriendsModal() {
   $('friendsModal').classList.add('active');
@@ -1877,6 +1859,29 @@ async function removeFriend(friendId) {
     showToast('تم إزالة الصديق', 'success');
     await loadFriendsList();
   } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
+}
+
+/* ============ الشات ============ */
+var Chat = {
+  currentFriend: null, channel: null, messages: [], pollInterval: null,
+  unreadCounts: {}, rateLimit: { count: 0, resetAt: 0 }
+};
+
+var BANNED_WORDS = ['sex','xxx','porn','نيك','كسم','زب','طيز','شرموط','عاهرة','قحبة','منيوك','خول'];
+
+function containsBannedWords(text) {
+  var lower = text.toLowerCase();
+  for (var i = 0; i < BANNED_WORDS.length; i++) {
+    if (lower.indexOf(BANNED_WORDS[i]) !== -1) return true;
+  }
+  return false;
+}
+
+function checkChatRateLimit() {
+  var now = Date.now();
+  if (now > Chat.rateLimit.resetAt) Chat.rateLimit = { count: 0, resetAt: now + 60000 };
+  Chat.rateLimit.count++;
+  return Chat.rateLimit.count <= 20;
 }
 
 async function openChatWithFriend(friendId, friendName, isPrime) {
@@ -2083,10 +2088,34 @@ async function registerReferral(refCode) {
    ⚽ نظام توقعات الماتشات — Parimutuel 80/20
    ============================================ */
 
-// فتح قايمة الماتشات
 function openMatchesList() {
   showView('matchesView');
   loadMatchesList();
+}
+
+function openMyPredictions() {
+  showView('myPredictionsView');
+  loadMyPredictions();
+}
+
+function getVotingStatus(m) {
+  var now = Date.now();
+  var start = m.voting_start ? new Date(m.voting_start).getTime() : 0;
+  var end = m.voting_end ? new Date(m.voting_end).getTime() : 0;
+  if (m.status === 'finished') return 'finished';
+  if (m.status === 'cancelled') return 'cancelled';
+  if (!start || now < start) return 'not_started';
+  if (!end || now > end) return 'closed';
+  return 'open';
+}
+
+function getStatusText(status) {
+  if (status === 'not_started') return '⏳ قريباً';
+  if (status === 'open') return '🟢 التصويت شغال';
+  if (status === 'closed') return '🔒 التصويت انتهى';
+  if (status === 'finished') return '✅ انتهى';
+  if (status === 'cancelled') return '❌ ملغي';
+  return '—';
 }
 
 async function loadMatchesList() {
@@ -2109,10 +2138,11 @@ async function loadMatchesList() {
       return;
     }
     
-    // احسب عدد اللاعبين لكل ماتش
     var html = '';
     for (var i = 0; i < res.data.length; i++) {
       var m = res.data[i];
+      var status = getVotingStatus(m);
+      var statusText = getStatusText(status);
       
       // عدد المشاركين
       var predRes = await supabaseClient.from('match_predictions').select('id', { count: 'exact', head: true }).eq('match_id', m.id);
@@ -2120,44 +2150,59 @@ async function loadMatchesList() {
       
       // المكافأة المتوقعة
       var expectedPrize = '—';
-      if (participants > 0 && m.status !== 'finished') {
+      if (participants > 0 && status !== 'finished') {
         var pool = participants * m.entry_fee;
         var afterCut = Math.floor(pool * 0.8);
-        // افترض إن عدد الفايزين ~ 20% من المشاركين (10 احتمالات)
-        var estimatedWinners = Math.max(1, Math.round(participants * 0.2));
+        var estimatedWinners = Math.max(1, Math.round(participants * 0.15));
         expectedPrize = Math.floor(afterCut / estimatedWinners) + ' ج';
       }
       
       var time = new Date(m.match_time);
-      var timeStr = time.toLocaleString('ar-EG', { 
-        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
-      });
+      var timeStr = time.toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       
-      var statusClass = m.status;
-      var statusText = m.status === 'upcoming' ? '⏳ قادم' : 
-                       (m.status === 'live' ? '🔴 جارية' : '✅ انتهت');
+      // لو المستخدم توقع قبل كده
+      var userPredRes = await supabaseClient.from('match_predictions').select('*').eq('match_id', m.id).eq('user_id', App.user.id).maybeSingle();
+      var userPred = userPredRes.data;
       
-      var resultHtml = '';
-      if (m.status === 'finished' && m.result) {
-        var resultText = getResultText(m.result);
-        resultHtml = '<div class="match-result">النتيجة: ' + resultText + '</div>';
-      }
+      var cardClass = 'match-card';
+      var clickable = '';
+      if (status === 'finished') cardClass += ' finished';
+      else if (status === 'not_started' || status === 'closed') cardClass += ' locked';
+      else if (status === 'open' && !userPred) clickable = 'onclick="openMatchPredict(' + m.id + ')"';
       
-      html += '<div class="match-card' + (m.status === 'finished' ? ' finished' : '') + '" onclick="' + (m.status !== 'finished' ? 'openMatchPredict(' + m.id + ')' : '') + '">';
+      html += '<div class="' + cardClass + '" ' + clickable + '>';
       html += '<div class="match-teams">';
-      html += '<div class="match-team">' + m.team_a + '</div>';
+      html += '<div class="match-team-wrapper"><div class="match-team-label">الفريق الأول</div><div class="match-team">' + m.team_a + '</div></div>';
       html += '<div class="match-vs">VS</div>';
-      html += '<div class="match-team">' + m.team_b + '</div>';
+      html += '<div class="match-team-wrapper"><div class="match-team-label">الفريق الثاني</div><div class="match-team">' + m.team_b + '</div></div>';
       html += '</div>';
       html += '<div class="match-info">';
       html += '<span class="match-time">🕐 ' + timeStr + '</span>';
-      html += '<span class="match-status ' + statusClass + '">' + statusText + '</span>';
+      html += '<span class="match-status ' + status + '">' + statusText + '</span>';
       html += '</div>';
       html += '<div class="match-actions">';
       html += '<span class="match-prize">💰 ' + expectedPrize + '</span>';
       html += '<span class="match-players">👥 ' + participants + ' مشارك</span>';
       html += '</div>';
-      if (resultHtml) html += resultHtml;
+      
+      // لو المستخدم توقع
+      if (userPred) {
+        var predText = getPredictionText(userPred, m);
+        if (status === 'finished') {
+          if (userPred.status === 'won') {
+            html += '<div class="match-result">🎉 فزت! +' + userPred.prize + ' ج (توقعك: ' + predText + ')</div>';
+          } else if (userPred.status === 'lost') {
+            html += '<div class="match-result lost">😢 خسرت (توقعك: ' + predText + ')</div>';
+          } else if (userPred.status === 'refunded') {
+            html += '<div class="match-result pending">💸 تم استرجاع ' + userPred.amount + ' ج</div>';
+          }
+        } else if (status === 'closed') {
+          html += '<div class="match-result pending">⏳ توقعك: ' + predText + ' — النتيجة تعلن قريباً</div>';
+        } else if (status === 'open') {
+          html += '<div class="match-result pending">✅ توقعت: ' + predText + '</div>';
+        }
+      }
+      
       html += '</div>';
     }
     
@@ -2168,27 +2213,36 @@ async function loadMatchesList() {
   }
 }
 
-function getResultText(resultId) {
-  for (var i = 0; i < CONFIG.MATCH_PREDICTIONS.length; i++) {
-    if (CONFIG.MATCH_PREDICTIONS[i].id === resultId) return CONFIG.MATCH_PREDICTIONS[i].text;
+function getPredictionText(pred, match) {
+  if (pred.prediction === 'Custom') {
+    var teamName = pred.custom_team === 'A' ? match.team_a : match.team_b;
+    return teamName + ' ' + pred.custom_score_a + '-' + pred.custom_score_b;
   }
-  return resultId;
+  for (var i = 0; i < CONFIG.MATCH_PREDICTIONS.length; i++) {
+    if (CONFIG.MATCH_PREDICTIONS[i].id === pred.prediction) {
+      return CONFIG.MATCH_PREDICTIONS[i].shortText;
+    }
+  }
+  return pred.prediction;
 }
 
-// فتح شاشة التوقع
+/* ============ شاشة توقع الماتش ============ */
 async function openMatchPredict(matchId) {
   try {
     var res = await supabaseClient.from('matches').select('*').eq('id', matchId).maybeSingle();
     if (!res.data) return showToast('الماتش مش موجود', 'error');
     var m = res.data;
     
-    // تأكد من الرصيد
+    var status = getVotingStatus(m);
+    if (status !== 'open') {
+      return showToast('التصويت مش متاح دلوقتي', 'error');
+    }
+    
     if (Wallet.balance < m.entry_fee) {
       showToast('محتاج ' + m.entry_fee + ' جنيه في محفظتك', 'error');
       return;
     }
     
-    // تأكد إنه مش توقع قبل كده
     var checkRes = await supabaseClient.from('match_predictions').select('id').eq('match_id', matchId).eq('user_id', App.user.id).maybeSingle();
     if (checkRes.data) {
       return showToast('إنت توقعت الماتش ده خلاص', 'info');
@@ -2196,41 +2250,68 @@ async function openMatchPredict(matchId) {
     
     App.currentMatch = m;
     App.selectedPrediction = null;
+    App.customTeam = null;
     
     // هيدر الماتش
     var header = $('matchHeaderCard');
     var time = new Date(m.match_time);
     var timeStr = time.toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-    header.innerHTML = '<div class="match-teams"><div class="match-team">' + m.team_a + '</div><div class="match-vs">VS</div><div class="match-team">' + m.team_b + '</div></div><div class="match-time" style="text-align:center;margin-top:8px">🕐 ' + timeStr + '</div>';
+    header.innerHTML = '<div class="match-teams">' +
+      '<div class="match-team-wrapper"><div class="match-team-label">الفريق الأول</div><div class="match-team">' + m.team_a + '</div></div>' +
+      '<div class="match-vs">VS</div>' +
+      '<div class="match-team-wrapper"><div class="match-team-label">الفريق الثاني</div><div class="match-team">' + m.team_b + '</div></div>' +
+      '</div><div class="match-time" style="text-align:center;margin-top:8px">🕐 ' + timeStr + '</div>';
     
     // الاحتمالات
     var grid = $('predictionsGrid');
     var html = '';
-    CONFIG.MATCH_PREDICTIONS.forEach(function(p) {
-      html += '<button type="button" class="prediction-btn" data-pred="' + p.id + '" onclick="selectPrediction(\'' + p.id + '\')">' + p.text + '</button>';
-    });
+    for (var i = 0; i < CONFIG.MATCH_PREDICTIONS.length; i++) {
+      var p = CONFIG.MATCH_PREDICTIONS[i];
+      var isCustom = p.id === 'Custom';
+      var customClass = isCustom ? ' custom' : '';
+      var displayText = p.text;
+      if (isCustom) displayText = '🎯 ' + p.text;
+      // استبدل "الفريق الأول/الثاني" بأسماء الفرق
+      displayText = displayText.replace('الفريق الأول', m.team_a).replace('الفريق الثاني', m.team_b);
+      html += '<button type="button" class="prediction-btn' + customClass + '" data-pred="' + p.id + '" onclick="selectPrediction(\'' + p.id + '\')">' +
+        '<span class="pred-num">' + (isCustom ? '🎯' : (i+1)) + '</span>' +
+        '<span>' + displayText + '</span></button>';
+    }
     grid.innerHTML = html;
     
-    // تحديث المعلومات
+    // قسم النتيجة المخصصة — إخفاء افتراضي
+    $('customResultSection').style.display = 'none';
+    
+    // تحديث أسماء الفرق في قسم Custom
+    $('customTeamALabel').textContent = m.team_a;
+    $('customTeamBLabel').textContent = m.team_b;
+    $('customScoreA').value = '0';
+    $('customScoreB').value = '0';
+    $('customTeamA').classList.remove('selected');
+    $('customTeamB').classList.remove('selected');
+    
+    // معلومات التوقع
     $('predictEntryFee').textContent = m.entry_fee + ' ج';
     
-    // عدد المشاركين
     var predRes = await supabaseClient.from('match_predictions').select('id', { count: 'exact', head: true }).eq('match_id', m.id);
     var participants = predRes.count || 0;
     $('predictParticipants').textContent = participants;
     
-    // المكافأة المتوقعة
     var estimated = '—';
     if (participants > 0) {
       var pool = participants * m.entry_fee;
       var afterCut = Math.floor(pool * 0.8);
-      var estimatedWinners = Math.max(1, Math.round(participants * 0.2));
+      var estimatedWinners = Math.max(1, Math.round(participants * 0.15));
       estimated = Math.floor(afterCut / estimatedWinners) + ' ج';
     }
     $('predictExpectedPrize').textContent = estimated;
+    $('predictWalletBalance').textContent = Wallet.balance.toFixed(2) + ' ج';
     
     $('confirmPredictBtn').disabled = true;
     $('confirmPredictBtn').textContent = 'اختر توقعك أولاً';
+    
+    // ابدأ عداد التصويت
+    startVotingTimer(m);
     
     showView('matchPredictView');
   } catch(e) {
@@ -2239,15 +2320,99 @@ async function openMatchPredict(matchId) {
   }
 }
 
+function startVotingTimer(match) {
+  if (App.votingTimerInterval) { clearInterval(App.votingTimerInterval); App.votingTimerInterval = null; }
+  var box = $('votingTimerBox');
+  var valEl = $('votingTimerValue');
+  if (!box || !valEl) return;
+  
+  var endTime = new Date(match.voting_end).getTime();
+  
+  function update() {
+    var now = Date.now();
+    var diff = Math.max(0, endTime - now);
+    if (diff <= 0) {
+      valEl.textContent = 'انتهى';
+      box.classList.add('closed');
+      box.classList.remove('urgent');
+      clearInterval(App.votingTimerInterval);
+      App.votingTimerInterval = null;
+      // عطّل زر التأكيد
+      $('confirmPredictBtn').disabled = true;
+      $('confirmPredictBtn').textContent = 'التصويت انتهى';
+      return;
+    }
+    var h = Math.floor(diff / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    var s = Math.floor((diff % 60000) / 1000);
+    valEl.textContent = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    if (diff < 5 * 60000) box.classList.add('urgent'); // أقل من 5 دقايق
+  }
+  update();
+  App.votingTimerInterval = setInterval(update, 1000);
+}
+
 function selectPrediction(predId) {
   App.selectedPrediction = predId;
   document.querySelectorAll('.prediction-btn').forEach(function(b) {
     b.classList.toggle('selected', b.getAttribute('data-pred') === predId);
   });
-  var btn = $('confirmPredictBtn');
-  btn.disabled = false;
-  btn.textContent = 'تأكيد التوقع (' + App.currentMatch.entry_fee + ' ج)';
+  
+  if (predId === 'Custom') {
+    $('customResultSection').style.display = 'block';
+    $('confirmPredictBtn').disabled = true;
+    $('confirmPredictBtn').textContent = 'اكتب نتيجتك';
+    setTimeout(function() {
+      try { $('customTeamA').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
+    }, 200);
+  } else {
+    $('customResultSection').style.display = 'none';
+    var btn = $('confirmPredictBtn');
+    btn.disabled = false;
+    btn.textContent = 'تأكيد التوقع (' + App.currentMatch.entry_fee + ' ج)';
+  }
 }
+
+function selectCustomTeam(team) {
+  App.customTeam = team;
+  $('customTeamA').classList.toggle('selected', team === 'A');
+  $('customTeamB').classList.toggle('selected', team === 'B');
+  checkCustomPrediction();
+}
+
+function checkCustomPrediction() {
+  if (App.selectedPrediction !== 'Custom') return;
+  var scoreA = parseInt($('customScoreA').value) || 0;
+  var scoreB = parseInt($('customScoreB').value) || 0;
+  var team = App.customTeam;
+  
+  if (!team) {
+    $('confirmPredictBtn').disabled = true;
+    $('confirmPredictBtn').textContent = 'اختار الفريق الفايز';
+    return;
+  }
+  
+  // تأكد إن الفريق المختار فعلاً فايز
+  if (team === 'A' && scoreA <= scoreB) {
+    $('confirmPredictBtn').disabled = true;
+    $('confirmPredictBtn').textContent = 'النتيجة مش منطقية (الفريق A لازم يفوز)';
+    return;
+  }
+  if (team === 'B' && scoreB <= scoreA) {
+    $('confirmPredictBtn').disabled = true;
+    $('confirmPredictBtn').textContent = 'النتيجة مش منطقية (الفريق B لازم يفوز)';
+    return;
+  }
+  
+  $('confirmPredictBtn').disabled = false;
+  $('confirmPredictBtn').textContent = 'تأكيد التوقع (' + App.currentMatch.entry_fee + ' ج)';
+}
+
+// Event listeners لحقول النتيجة المخصصة
+document.addEventListener('DOMContentLoaded', function() {
+  var ca = $('customScoreA'); if (ca) ca.addEventListener('input', checkCustomPrediction);
+  var cb = $('customScoreB'); if (cb) cb.addEventListener('input', checkCustomPrediction);
+});
 
 async function confirmPrediction() {
   if (!App.currentMatch || !App.selectedPrediction) return showToast('اختر توقعك', 'error');
@@ -2255,25 +2420,39 @@ async function confirmPrediction() {
   
   var m = App.currentMatch;
   var pred = App.selectedPrediction;
+  var customTeam = null, customSA = null, customSB = null;
+  
+  if (pred === 'Custom') {
+    if (!App.customTeam) return showToast('اختار الفريق الفايز', 'error');
+    customTeam = App.customTeam;
+    customSA = parseInt($('customScoreA').value) || 0;
+    customSB = parseInt($('customScoreB').value) || 0;
+    if (customTeam === 'A' && customSA <= customSB) return showToast('النتيجة مش منطقية', 'error');
+    if (customTeam === 'B' && customSB <= customSA) return showToast('النتيجة مش منطقية', 'error');
+  }
   
   if (Wallet.balance < m.entry_fee) return showToast('رصيدك غير كافٍ', 'error');
   if (!confirm('تأكيد التوقع بـ ' + m.entry_fee + ' جنيه؟')) return;
   
   App.busy = true;
   try {
-    // اخصم الفلوس
     var ok = await deductFromWallet(m.entry_fee);
     if (!ok) { App.busy = false; return; }
     
-    // سجل التوقع
-    var res = await supabaseClient.from('match_predictions').insert({
+    var insertData = {
       user_id: App.user.id,
       match_id: m.id,
       prediction: pred,
       amount: m.entry_fee,
       status: 'pending'
-    });
+    };
+    if (pred === 'Custom') {
+      insertData.custom_team = customTeam;
+      insertData.custom_score_a = customSA;
+      insertData.custom_score_b = customSB;
+    }
     
+    var res = await supabaseClient.from('match_predictions').insert(insertData);
     if (res.error) throw res.error;
     
     // حدّث الـ pool
@@ -2281,7 +2460,6 @@ async function confirmPrediction() {
     var newPool = (matchUpdate.data.total_pool || 0) + m.entry_fee;
     await supabaseClient.from('matches').update({ total_pool: newPool }).eq('id', m.id);
     
-    // مهمة
     updateMissionProgress('match');
     
     SoundSystem.playSuccess(); Vibration.onWin();
@@ -2290,15 +2468,76 @@ async function confirmPrediction() {
     
     App.currentMatch = null;
     App.selectedPrediction = null;
+    App.customTeam = null;
     App.busy = false;
+    
+    if (App.votingTimerInterval) { clearInterval(App.votingTimerInterval); App.votingTimerInterval = null; }
     
     setTimeout(function() { openMatchesList(); }, 1500);
   } catch(e) {
     console.error('confirmPrediction:', e);
-    // ارجع الفلوس
     addMoneyToWallet(m.entry_fee, 'refund_error');
     showToast('خطأ: ' + e.message, 'error');
     App.busy = false;
+  }
+}
+
+/* ============ توقعاتي ============ */
+async function loadMyPredictions() {
+  var container = $('myPredictionsList'); if (!container) return;
+  container.innerHTML = '<p class="small-text" style="text-align:center">جاري التحميل...</p>';
+  
+  try {
+    var res = await supabaseClient.from('match_predictions').select('*, matches(*)').eq('user_id', App.user.id).order('created_at', { ascending: false }).limit(50);
+    if (res.error) throw res.error;
+    
+    if (!res.data || res.data.length === 0) {
+      container.innerHTML = '<p class="small-text" style="text-align:center">مفيش توقعات لسه<br><span style="font-size:11px">روح "توقعات الماتشات" وابدأ توقع</span></p>';
+      return;
+    }
+    
+    var html = '';
+    res.data.forEach(function(p) {
+      var m = p.matches;
+      if (!m) return;
+      
+      var predText = getPredictionText(p, m);
+      var status = p.status;
+      var resultHtml = '';
+      var resultClass = '';
+      
+      if (status === 'won') {
+        resultHtml = '🎉 فزت! +' + p.prize + ' ج';
+        resultClass = '';
+      } else if (status === 'lost') {
+        resultHtml = '😢 خسرت';
+        resultClass = 'lost';
+      } else if (status === 'refunded') {
+        resultHtml = '💸 تم استرجاع ' + p.amount + ' ج';
+        resultClass = 'pending';
+      } else {
+        resultHtml = '⏳ في انتظار النتيجة';
+        resultClass = 'pending';
+      }
+      
+      var matchTime = new Date(m.match_time);
+      var timeStr = matchTime.toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      
+      html += '<div class="match-card finished">';
+      html += '<div class="match-teams">';
+      html += '<div class="match-team-wrapper"><div class="match-team">' + m.team_a + '</div></div>';
+      html += '<div class="match-vs">VS</div>';
+      html += '<div class="match-team-wrapper"><div class="match-team">' + m.team_b + '</div></div>';
+      html += '</div>';
+      html += '<div class="match-info"><span class="match-time">🕐 ' + timeStr + '</span></div>';
+      html += '<div class="match-actions"><span class="match-prize">توقعك: ' + predText + '</span><span class="match-players">' + p.amount + ' ج</span></div>';
+      html += '<div class="match-result ' + resultClass + '">' + resultHtml + '</div>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  } catch(e) {
+    console.error('loadMyPredictions:', e);
+    container.innerHTML = '<p class="small-text" style="text-align:center">خطأ</p>';
   }
 }
 
@@ -2311,7 +2550,6 @@ function openAdminPanel() {
   closeModal('profileModal');
   showView('adminPanelView');
   switchAdminTab('add');
-  loadAdminMatches();
 }
 
 function switchAdminTab(tab) {
@@ -2331,10 +2569,15 @@ async function adminAddMatch() {
   var teamA = $('adminTeamA').value.trim();
   var teamB = $('adminTeamB').value.trim();
   var matchTime = $('adminMatchTime').value;
+  var votingStart = $('adminVotingStart').value;
+  var votingEnd = $('adminVotingEnd').value;
   var entryFee = parseInt($('adminEntryFee').value) || 10;
   
   if (!teamA || !teamB) return showToast('اكتب أسماء الفريقين', 'error');
   if (!matchTime) return showToast('حدد وقت الماتش', 'error');
+  if (!votingStart) return showToast('حدد وقت بدء التصويت', 'error');
+  if (!votingEnd) return showToast('حدد وقت انتهاء التصويت', 'error');
+  if (new Date(votingEnd) <= new Date(votingStart)) return showToast('وقت الانتهاء لازم يكون بعد البداية', 'error');
   if (entryFee < 5) return showToast('رسوم الدخول 5 على الأقل', 'error');
   
   try {
@@ -2342,7 +2585,10 @@ async function adminAddMatch() {
       team_a: teamA,
       team_b: teamB,
       match_time: new Date(matchTime).toISOString(),
+      voting_start: new Date(votingStart).toISOString(),
+      voting_end: new Date(votingEnd).toISOString(),
       status: 'upcoming',
+      voting_status: 'not_started',
       entry_fee: entryFee,
       house_cut: CONFIG.HOUSE_CUT_PERCENT
     }).select().single();
@@ -2354,6 +2600,8 @@ async function adminAddMatch() {
     $('adminTeamA').value = '';
     $('adminTeamB').value = '';
     $('adminMatchTime').value = '';
+    $('adminVotingStart').value = '';
+    $('adminVotingEnd').value = '';
     $('adminEntryFee').value = '10';
     
     loadAdminMatches();
@@ -2369,19 +2617,19 @@ async function loadAdminMatches() {
   container.innerHTML = '<p class="small-text" style="text-align:center">جاري التحميل...</p>';
   
   try {
-    var res = await supabaseClient.from('matches').select('*').in('status', ['upcoming', 'live']).order('match_time', { ascending: true });
+    var res = await supabaseClient.from('matches').select('*').order('match_time', { ascending: false }).limit(30);
     if (res.error) throw res.error;
     
     if (!res.data || res.data.length === 0) {
-      container.innerHTML = '<p class="small-text" style="text-align:center">مفيش ماتشات قادمة</p>';
+      container.innerHTML = '<p class="small-text" style="text-align:center">مفيش ماتشات</p>';
       return;
     }
     
     var html = '';
     for (var i = 0; i < res.data.length; i++) {
       var m = res.data[i];
+      var status = getVotingStatus(m);
       
-      // عدد المشاركين
       var predRes = await supabaseClient.from('match_predictions').select('id', { count: 'exact', head: true }).eq('match_id', m.id);
       var participants = predRes.count || 0;
       
@@ -2390,51 +2638,49 @@ async function loadAdminMatches() {
       
       html += '<div class="admin-match-item">';
       html += '<div class="admin-match-teams">' + m.team_a + ' vs ' + m.team_b + '</div>';
-      html += '<div class="admin-match-time">🕐 ' + timeStr + ' • 👥 ' + participants + ' مشارك • 💰 pool: ' + ((m.total_pool || 0) + ' ج') + '</div>';
-      html += '<div style="font-size:12px;color:#a08080;text-align:center">اختار النتيجة الصح:</div>';
-      html += '<div class="admin-result-btns">';
-      CONFIG.MATCH_PREDICTIONS.forEach(function(p) {
-        html += '<button type="button" class="admin-result-btn" data-match="' + m.id + '" data-result="' + p.id + '" onclick="selectAdminResult(' + m.id + ',\'' + p.id + '\')">' + p.id + '</button>';
-      });
-      html += '</div>';
-      html += '<button type="button" class="admin-finalize-btn" id="finalizeBtn_' + m.id + '" disabled onclick="finalizeMatch(' + m.id + ')">إعلان النتيجة وتوزيع الجوايز</button>';
+      html += '<div class="admin-match-time">🕐 ' + timeStr + ' • 👥 ' + participants + ' • 💰 ' + ((m.total_pool || 0)) + ' ج • ' + getStatusText(status) + '</div>';
+      
+      if (m.status === 'finished') {
+        // عرض النتيجة
+        var winnerName = '';
+        if (m.result_team_a !== null && m.result_team_b !== null) {
+          winnerName = 'النتيجة: ' + m.team_a + ' ' + m.result_team_a + ' - ' + m.result_team_b + ' ' + m.team_b;
+        }
+        html += '<div class="match-result">✅ ' + winnerName + '<br>فايزين: ' + (m.total_winners || 0) + ' × ' + (m.prize_per_winner || 0) + ' ج</div>';
+      } else if (status === 'closed' || status === 'open') {
+        // إدخال النتيجة
+        html += '<div class="admin-result-input">';
+        html += '<span class="admin-team-name">' + m.team_a + '</span>';
+        html += '<input type="number" id="adminA_' + m.id + '" min="0" max="30" value="' + (m.result_team_a || 0) + '">';
+        html += '<span class="dash">-</span>';
+        html += '<input type="number" id="adminB_' + m.id + '" min="0" max="30" value="' + (m.result_team_b || 0) + '">';
+        html += '<span class="admin-team-name">' + m.team_b + '</span>';
+        html += '</div>';
+        html += '<button type="button" class="admin-finalize-btn" onclick="finalizeMatch(' + m.id + ')">🎯 إعلان النتيجة وتوزيع الجوايز</button>';
+      } else if (status === 'not_started') {
+        html += '<div class="small-text" style="text-align:center;padding:8px">التصويت لسه مفتحش</div>';
+      }
+      
       html += '</div>';
     }
     
     container.innerHTML = html;
-    
-    // استرجاع النتائج المحفوظة
-    res.data.forEach(function(m) {
-      if (m.result) selectAdminResult(m.id, m.result, true);
-    });
   } catch(e) {
     console.error('loadAdminMatches:', e);
-    container.innerHTML = '<p class="small-text" style="text-align:center">خطأ في التحميل</p>';
+    container.innerHTML = '<p class="small-text" style="text-align:center">خطأ</p>';
   }
-}
-
-var adminSelectedResults = {};
-
-function selectAdminResult(matchId, result, silent) {
-  if (!isAdmin()) return;
-  adminSelectedResults[matchId] = result;
-  
-  document.querySelectorAll('.admin-result-btn[data-match="' + matchId + '"]').forEach(function(b) {
-    b.classList.toggle('selected', b.getAttribute('data-result') === result);
-  });
-  
-  var btn = $('finalizeBtn_' + matchId);
-  if (btn) btn.disabled = false;
-  
-  if (!silent) showToast('اختارت: ' + result, 'info');
 }
 
 async function finalizeMatch(matchId) {
   if (!isAdmin()) return;
-  var result = adminSelectedResults[matchId];
-  if (!result) return showToast('اختار النتيجة الأول', 'error');
+  var scoreA = parseInt($('adminA_' + matchId).value);
+  var scoreB = parseInt($('adminB_' + matchId).value);
+  if (isNaN(scoreA) || isNaN(scoreB)) return showToast('اكتب النتيجة صح', 'error');
   
-  if (!confirm('متأكد من النتيجة؟ هيتم توزيع الجوايز فوراً')) return;
+  // احسب الاحتمال الفايز
+  var winningPred = calculateWinningPrediction(scoreA, scoreB);
+  
+  if (!confirm('النتيجة: ' + scoreA + ' - ' + scoreB + '\nالفايز: ' + winningPred + '\n\nمتأكد؟')) return;
   
   try {
     // هات كل التوقعات
@@ -2442,20 +2688,18 @@ async function finalizeMatch(matchId) {
     if (predRes.error) throw predRes.error;
     
     var allPreds = predRes.data || [];
-    if (allPreds.length === 0) {
-      // مفيش توقعات — اقفل الماتش بس
-      await supabaseClient.from('matches').update({ status: 'finished', result: result, finished_at: new Date().toISOString() }).eq('id', matchId);
-      showToast('✅ تم إنهاء الماتش (مفيش توقعات)', 'success');
-      loadAdminMatches();
-      return;
-    }
-    
     var totalPool = allPreds.reduce(function(s, p) { return s + p.amount; }, 0);
     var houseProfit = Math.floor(totalPool * CONFIG.HOUSE_CUT_PERCENT / 100);
     var winnersPool = totalPool - houseProfit;
     
-    // الفايزين
-    var winners = allPreds.filter(function(p) { return p.prediction === result; });
+    // الفايزين — لازم نتحقق من كل توقع
+    var winners = [];
+    for (var i = 0; i < allPreds.length; i++) {
+      var p = allPreds[i];
+      if (checkIfWinner(p, scoreA, scoreB, winningPred)) {
+        winners.push(p);
+      }
+    }
     var winnersCount = winners.length;
     
     var prizePerWinner = 0;
@@ -2464,43 +2708,37 @@ async function finalizeMatch(matchId) {
     }
     
     // وزّع الجوايز
-    for (var i = 0; i < winners.length; i++) {
-      var w = winners[i];
-      // سجل التوقع إنه فاز
-      await supabaseClient.from('match_predictions').update({ status: 'won', prize: prizePerWinner }).eq('id', w.id);
-      
-      // ضيف الفلوس لمحفظة الفايز
-      var wRes = await supabaseClient.from('wallets').select('*').eq('user_id', w.user_id).maybeSingle();
-      if (wRes.data) {
-        await supabaseClient.from('wallets').update({ 
-          balance: (parseFloat(wRes.data.balance) || 0) + prizePerWinner,
-          total_won: (parseFloat(wRes.data.total_won) || 0) + prizePerWinner,
-          updated_at: new Date().toISOString()
-        }).eq('user_id', w.user_id);
-      }
-      
-      // سجل earning
-      await supabaseClient.from('earnings').insert({
-        user_id: w.user_id,
-        amount: prizePerWinner,
-        source: 'match_win_' + matchId,
-        transferred: true
-      });
-      
-      // لو اللاعب الحالي هو الفايز، حدّث محفظته
-      if (w.user_id === App.user.id) {
-        Wallet.balance += prizePerWinner;
-        saveWallet();
-        updateMissionProgress('match_win', true);
-        showWinOverlay('🏆', 'ربحت ' + prizePerWinner + ' ج من الماتش!', 4000);
-      }
-    }
-    
-    // خلي الخاسرين lost
     for (var j = 0; j < allPreds.length; j++) {
-      var p = allPreds[j];
-      if (p.prediction !== result) {
-        await supabaseClient.from('match_predictions').update({ status: 'lost' }).eq('id', p.id);
+      var pred = allPreds[j];
+      var isWinner = winners.indexOf(pred) !== -1;
+      
+      if (isWinner) {
+        await supabaseClient.from('match_predictions').update({ status: 'won', prize: prizePerWinner }).eq('id', pred.id);
+        
+        var wRes = await supabaseClient.from('wallets').select('*').eq('user_id', pred.user_id).maybeSingle();
+        if (wRes.data) {
+          await supabaseClient.from('wallets').update({ 
+            balance: (parseFloat(wRes.data.balance) || 0) + prizePerWinner,
+            total_won: (parseFloat(wRes.data.total_won) || 0) + prizePerWinner,
+            updated_at: new Date().toISOString()
+          }).eq('user_id', pred.user_id);
+        }
+        
+        await supabaseClient.from('earnings').insert({
+          user_id: pred.user_id,
+          amount: prizePerWinner,
+          source: 'match_win_' + matchId,
+          transferred: true
+        });
+        
+        if (pred.user_id === App.user.id) {
+          Wallet.balance += prizePerWinner;
+          saveWallet();
+          updateMissionProgress('match_win', true);
+          showWinOverlay('🏆', 'ربحت ' + prizePerWinner + ' ج!', 4000);
+        }
+      } else {
+        await supabaseClient.from('match_predictions').update({ status: 'lost' }).eq('id', pred.id);
       }
     }
     
@@ -2516,14 +2754,17 @@ async function finalizeMatch(matchId) {
     // حدّث الماتش
     await supabaseClient.from('matches').update({
       status: 'finished',
-      result: result,
+      voting_status: 'finished',
+      result: winningPred,
+      result_team_a: scoreA,
+      result_team_b: scoreB,
       total_pool: totalPool,
       total_winners: winnersCount,
       prize_per_winner: prizePerWinner,
       finished_at: new Date().toISOString()
     }).eq('id', matchId);
     
-    // حدّث محفظة الأدمن (إنت)
+    // حدّث محفظة الأدمن
     if (App.user.id) {
       var myW = await supabaseClient.from('wallets').select('*').eq('user_id', App.user.id).maybeSingle();
       if (myW.data) {
@@ -2535,15 +2776,39 @@ async function finalizeMatch(matchId) {
     }
     
     SoundSystem.playBigWin(); Vibration.onBigPrize();
-    showWinOverlay('💰', 'ربحت ' + houseProfit + ' ج من الماتش!', 3500);
-    showToast('✅ تم توزيع الجوايز — ربحك: ' + houseProfit + ' ج', 'success');
+    showWinOverlay('💰', 'ربحت ' + houseProfit + ' ج!', 3500);
+    showToast('✅ النتيجة اتعلنت — ربحك: ' + houseProfit + ' ج — فايزين: ' + winnersCount, 'success');
     
-    delete adminSelectedResults[matchId];
     loadAdminMatches();
   } catch(e) {
     console.error('finalizeMatch:', e);
     showToast('خطأ: ' + e.message, 'error');
   }
+}
+
+function calculateWinningPrediction(scoreA, scoreB) {
+  if (scoreA === scoreB) {
+    if (scoreA === 0) return 'Draw0';
+    return 'Draw';
+  }
+  var diff = Math.abs(scoreA - scoreB);
+  var teamWon = scoreA > scoreB ? 'A' : 'B';
+  if (diff === 1) return teamWon + '1';
+  if (diff === 2) return teamWon + '2';
+  if (diff === 3) return teamWon + '3';
+  return teamWon + '4';
+}
+
+function checkIfWinner(pred, scoreA, scoreB, winningPred) {
+  // النتيجة المخصصة — مطابقة تامة
+  if (pred.prediction === 'Custom') {
+    var predA = pred.custom_team === 'A' ? pred.custom_score_a : pred.custom_score_b;
+    var predB = pred.custom_team === 'A' ? pred.custom_score_b : pred.custom_score_a;
+    // لو الفريق المختار A، نتوقعه إن A ياخد custom_score_a
+    // لازم نرتب: custom_score_a هو للفريق الأول، custom_score_b للفريق التاني
+    return pred.custom_score_a === scoreA && pred.custom_score_b === scoreB;
+  }
+  return pred.prediction === winningPred;
 }
 
 async function loadAdminEarnings() {
@@ -2567,7 +2832,7 @@ async function loadAdminEarnings() {
       total += e.house_profit;
       var matchName = e.matches ? (e.matches.team_a + ' vs ' + e.matches.team_b) : '—';
       html += '<div class="admin-earning-row">';
-      html += '<div><strong>' + matchName + '</strong><br><span style="font-size:11px;color:#a08080">pool: ' + e.total_pool + ' ج • فايزين: ' + e.winners_count + '</span></div>';
+      html += '<div><strong>' + matchName + '</strong><br><span style="font-size:11px;color:#a08080">pool: ' + e.total_pool + ' ج • فايزين: ' + e.winners_count + ' • جائزة: ' + e.prize_per_winner + ' ج</span></div>';
       html += '<span>+' + e.house_profit + ' ج</span>';
       html += '</div>';
     });
@@ -2582,7 +2847,7 @@ async function loadAdminEarnings() {
 }
 
 /* ============================================
-   Online Game — الجزء الأونلاين
+   Online Game
    ============================================ */
 var Online = {
   room: null, players: [], answers: [], roundData: null,
@@ -2753,15 +3018,6 @@ function subscribeToRoom(roomId) {
       });
     }
   }, 2000);
-
-  if (Online.roundPollInterval) clearInterval(Online.roundPollInterval);
-  Online.roundPollInterval = setInterval(async function() {
-    if (!Online.playing || !Online.room) return;
-    try {
-      var r = await supabaseClient.from('room_rounds').select('*').eq('room_id', Online.room.id).order('round_number', { ascending: false }).limit(1).maybeSingle();
-      if (r.data && r.data.round_number > 0 && r.data.round_number !== Online.currentRound) startOnlineRound(r.data);
-    } catch(e) {}
-  }, 1500);
 }
 
 async function refreshOnlinePlayers() {
@@ -2993,7 +3249,6 @@ async function endOnlineGame() {
 async function leaveOnlineRoom() {
   if (Online.channel) { try { supabaseClient.removeChannel(Online.channel); } catch(e) {} Online.channel = null; }
   if (Online.pollInterval) { clearInterval(Online.pollInterval); Online.pollInterval = null; }
-  if (Online.roundPollInterval) { clearInterval(Online.roundPollInterval); Online.roundPollInterval = null; }
   if (Online.room) {
     try {
       await supabaseClient.from('room_players').delete().eq('room_id', Online.room.id).eq('user_id', App.user.id);
@@ -3080,16 +3335,17 @@ window.closeModal = closeModal;
 
 /* ⚽ MATCH EXPORTS */
 window.openMatchesList = openMatchesList;
+window.openMyPredictions = openMyPredictions;
 window.openMatchPredict = openMatchPredict;
 window.selectPrediction = selectPrediction;
+window.selectCustomTeam = selectCustomTeam;
 window.confirmPrediction = confirmPrediction;
 
 /* 👑 ADMIN EXPORTS */
 window.openAdminPanel = openAdminPanel;
 window.switchAdminTab = switchAdminTab;
 window.adminAddMatch = adminAddMatch;
-window.selectAdminResult = selectAdminResult;
 window.finalizeMatch = finalizeMatch;
 
 console.log('✅ Neon Prediction v12.0 — All Systems Ready!');
-console.log('⚽ Match Predictions | 👑 Admin Panel | 🎡 Wheel (Free→Bonus / Paid→Money) | 🏆 Milestones→Money');
+console.log('⚽ Match Predictions | 👑 Admin Panel | 🎡 Wheel | 🏆 Milestones→Money | 💰 Parimutuel 80/20');
