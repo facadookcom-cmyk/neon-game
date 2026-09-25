@@ -1,13 +1,6 @@
 /* ============================================
-   Neon Prediction v13.0 — Premium Neon
-   - Free Wheel → Bonus Points
-   - Paid Wheel (7 EGP) → Real Money
-   - Milestones → Real Money
-   - Match Predictions (11 options + Custom)
-   - Voting Timer System
-   - Admin Panel
-   - Chat System
-   - Music System 🎵
+   Neon Prediction v14.0 — Final Version
+   + Music System with Welcome Prompt
    ============================================ */
 
 var SUPABASE_URL = 'https://qejudsvdtdbbmxlvymiw.supabase.co';
@@ -50,38 +43,24 @@ var CONFIG = {
   HOUSE_CUT_PERCENT: 20,
 
   LEVEL_NAMES: {
-    1: 'مبتدئ 🌱',
-    2: 'هاوي 🥉',
-    3: 'محترف 🥈',
-    4: 'خبير 🥇',
-    5: 'أسطورة 💎',
-    6: 'نخبة 👑',
-    7: 'أسطوري 🏆'
+    1: 'مبتدئ 🌱', 2: 'هاوي 🥉', 3: 'محترف 🥈', 4: 'خبير 🥇',
+    5: 'أسطورة 💎', 6: 'نخبة 👑', 7: 'أسطوري 🏆'
   },
 
   PRIZES: [
-    {threshold: 200, money: 15},
-    {threshold: 400, money: 40},
-    {threshold: 700, money: 90},
-    {threshold: 1100, money: 200},
+    {threshold: 200, money: 15}, {threshold: 400, money: 40},
+    {threshold: 700, money: 90}, {threshold: 1100, money: 200},
     {threshold: 1600, money: 400}
   ],
 
   MILESTONES: [
-    {points: 150, money: 5},
-    {points: 300, money: 10},
-    {points: 500, money: 20},
-    {points: 800, money: 35},
-    {points: 1200, money: 55},
-    {points: 1800, money: 85},
-    {points: 2500, money: 120},
-    {points: 3500, money: 170},
-    {points: 5000, money: 240},
-    {points: 7000, money: 330},
-    {points: 10000, money: 470},
-    {points: 15000, money: 700},
-    {points: 22000, money: 1000},
-    {points: 30000, money: 1350},
+    {points: 150, money: 5}, {points: 300, money: 10},
+    {points: 500, money: 20}, {points: 800, money: 35},
+    {points: 1200, money: 55}, {points: 1800, money: 85},
+    {points: 2500, money: 120}, {points: 3500, money: 170},
+    {points: 5000, money: 240}, {points: 7000, money: 330},
+    {points: 10000, money: 470}, {points: 15000, money: 700},
+    {points: 22000, money: 1000}, {points: 30000, money: 1350},
     {points: 45000, money: 2000}
   ],
 
@@ -89,17 +68,17 @@ var CONFIG = {
   DAILY_CHEST_REWARDS: [4, 6, 9, 12, 16],
 
   MATCH_PREDICTIONS: [
-    {id: 'A1', text: 'الفريق الأول يفوز بفارق هدف', shortText: 'الفريق الأول +1' },
-    {id: 'A2', text: 'الفريق الأول يفوز بفارق هدفين', shortText: 'الفريق الأول +2' },
-    {id: 'A3', text: 'الفريق الأول يفوز بفارق 3 أهداف', shortText: 'الفريق الأول +3' },
-    {id: 'A4', text: 'الفريق الأول يفوز بفارق 4+ أهداف', shortText: 'الفريق الأول +4' },
-    {id: 'B1', text: 'الفريق الثاني يفوز بفارق هدف', shortText: 'الفريق الثاني +1' },
-    {id: 'B2', text: 'الفريق الثاني يفوز بفارق هدفين', shortText: 'الفريق الثاني +2' },
-    {id: 'B3', text: 'الفريق الثاني يفوز بفارق 3 أهداف', shortText: 'الفريق الثاني +3' },
-    {id: 'B4', text: 'الفريق الثاني يفوز بفارق 4+ أهداف', shortText: 'الفريق الثاني +4' },
-    {id: 'Draw', text: 'تعادل إيجابي (1-1, 2-2, 3-3...)', shortText: 'تعادل إيجابي' },
-    {id: 'Draw0', text: 'تعادل سلبي (0-0)', shortText: 'تعادل 0-0' },
-    {id: 'Custom', text: 'نتيجة مخصصة (اكتبها بنفسك)', shortText: 'مخصص' }
+    {id: 'A1', text: 'الفريق الأول يفوز بفارق هدف', shortText: 'الفريق الأول +1'},
+    {id: 'A2', text: 'الفريق الأول يفوز بفارق هدفين', shortText: 'الفريق الأول +2'},
+    {id: 'A3', text: 'الفريق الأول يفوز بفارق 3 أهداف', shortText: 'الفريق الأول +3'},
+    {id: 'A4', text: 'الفريق الأول يفوز بفارق 4+ أهداف', shortText: 'الفريق الأول +4'},
+    {id: 'B1', text: 'الفريق الثاني يفوز بفارق هدف', shortText: 'الفريق الثاني +1'},
+    {id: 'B2', text: 'الفريق الثاني يفوز بفارق هدفين', shortText: 'الفريق الثاني +2'},
+    {id: 'B3', text: 'الفريق الثاني يفوز بفارق 3 أهداف', shortText: 'الفريق الثاني +3'},
+    {id: 'B4', text: 'الفريق الثاني يفوز بفارق 4+ أهداف', shortText: 'الفريق الثاني +4'},
+    {id: 'Draw', text: 'تعادل إيجابي (1-1, 2-2, 3-3...)', shortText: 'تعادل إيجابي'},
+    {id: 'Draw0', text: 'تعادل سلبي (0-0)', shortText: 'تعادل 0-0'},
+    {id: 'Custom', text: 'نتيجة مخصصة (اكتبها بنفسك)', shortText: 'مخصص'}
   ],
 
   MISSION_POOL: [
@@ -136,8 +115,8 @@ var CATEGORIES = {
 };
 
 var BOT_NAMES = ['أحمد','محمود','سارة','ياسين','نور','عمر','لينا','كريم','هدى','يوسف','مريم','علي'];
-var STORAGE_KEY = 'neon_user_v13';
-var WALLET_KEY_PREFIX = 'neon_wallet_v13_';
+var STORAGE_KEY = 'neon_user_v14';
+var WALLET_KEY_PREFIX = 'neon_wallet_v14_';
 
 var App = {
   user: createDefaultUser(),
@@ -268,8 +247,10 @@ var MusicSystem = {
   volume: 0.35,
   fadeInterval: null,
   isPlaying: false,
+  autoStarted: false,
   
   init: function() {
+    if (this.audio) return; // متهيأش مرتين
     this.audio = $('bgMusic');
     if (!this.audio) {
       console.warn('⚠️ Music element not found');
@@ -288,36 +269,41 @@ var MusicSystem = {
     this.updateButton();
     
     var self = this;
-    var startMusic = function() {
+    var autoStart = function() {
       if (self.enabled && !self.isPlaying) self.play();
-      document.removeEventListener('click', startMusic);
-      document.removeEventListener('touchstart', startMusic);
     };
-    document.addEventListener('click', startMusic, { once: false });
-    document.addEventListener('touchstart', startMusic, { once: false });
+    document.addEventListener('click', autoStart);
+    document.addEventListener('touchstart', autoStart);
     
     console.log('🎵 Music system initialized');
   },
   
   play: function() {
-    if (!this.enabled || this.isPlaying) return;
+    if (!this.enabled) return;
+    if (this.isPlaying) return;
+    if (!this.audio) this.audio = $('bgMusic');
+    if (!this.audio) return;
+    
     var self = this;
     this.audio.play().then(function() {
       self.isPlaying = true;
       self.fadeTo(self.volume, 2000);
-      console.log('🎵 Music started');
+      console.log('🎵 Music playing');
     }).catch(function(e) {
-      console.log('🔇 Autoplay blocked');
+      console.log('🔇 Autoplay blocked — will retry on user click');
       self.isPlaying = false;
     });
   },
   
   pause: function() {
     var self = this;
+    if (!this.audio) return;
     this.fadeTo(0, 500);
     setTimeout(function() {
-      self.audio.pause();
-      self.isPlaying = false;
+      if (self.audio) {
+        self.audio.pause();
+        self.isPlaying = false;
+      }
     }, 550);
   },
   
@@ -335,6 +321,7 @@ var MusicSystem = {
   },
   
   fadeTo: function(targetVolume, duration) {
+    if (!this.audio) return;
     if (this.fadeInterval) clearInterval(this.fadeInterval);
     var startVolume = this.audio.volume;
     var diff = targetVolume - startVolume;
@@ -347,11 +334,11 @@ var MusicSystem = {
       currentStep++;
       var newVol = startVolume + (stepSize * currentStep);
       if (currentStep >= steps) {
-        self.audio.volume = Math.max(0, Math.min(1, targetVolume));
+        if (self.audio) self.audio.volume = Math.max(0, Math.min(1, targetVolume));
         clearInterval(self.fadeInterval);
         self.fadeInterval = null;
       } else {
-        self.audio.volume = Math.max(0, Math.min(1, newVol));
+        if (self.audio) self.audio.volume = Math.max(0, Math.min(1, newVol));
       }
     }, 50);
   },
@@ -384,9 +371,33 @@ var MusicSystem = {
   }
 };
 
-window.toggleMusic = function() { MusicSystem.toggle(); };
+function toggleMusic() { MusicSystem.toggle(); }
 
-/* ============ الصوت ============ */
+function startMusicAndClose() {
+  closeModal('musicPromptModal');
+  MusicSystem.enabled = true;
+  MusicSystem.init();
+  setTimeout(function() { MusicSystem.play(); }, 100);
+  localStorage.setItem('neon_music_enabled', 'true');
+  MusicSystem.updateButton();
+  console.log('✅ Music started from prompt');
+}
+
+function skipMusicAndClose() {
+  closeModal('musicPromptModal');
+  MusicSystem.enabled = false;
+  localStorage.setItem('neon_music_enabled', 'false');
+  MusicSystem.updateButton();
+  console.log('🔇 Music skipped');
+}
+
+function showMusicPrompt() {
+  var seen = localStorage.getItem('neon_music_prompt_seen');
+  if (seen) return;
+  var m = $('musicPromptModal');
+  if (m) m.classList.add('active');
+  localStorage.setItem('neon_music_prompt_seen', '1');
+}/* ============ الصوت ============ */
 var SoundSystem = {
   ctx: null, enabled: true,
   init: function() {
@@ -568,7 +579,9 @@ function checkFirstTimeHowToPlay() {
       setTimeout(function() { openHowToPlay(); }, 900);
     }
   } catch(e) {}
-}/* ============ تسجيل / دخول ============ */
+}
+
+/* ============ تسجيل / دخول ============ */
 function switchAuthTab(tab) {
   if (tab === 'login') {
     $('tabLogin').classList.add('active');
@@ -1045,19 +1058,31 @@ function syncUser() {
 /* ============ الخلفية والبداية ============ */
 window.addEventListener('load', function() {
   startTriangleBackground();
+  
+  // 🎵 تهيئة نظام الموسيقى
+  MusicSystem.init();
+  
   restoreSession();
   buildPrizeTables();
   checkDailyResets();
   regenTickets();
   setInterval(regenTickets, 60000);
   updateAllUI();
+  
+  // 🎵 محاولة تشغيل الموسيقى بعد ثانية
+  setTimeout(function() {
+    if (MusicSystem.enabled) MusicSystem.play();
+  }, 1000);
+  
+  // 🎵 إظهار مودال الموسيقى لو أول مرة
+  setTimeout(function() {
+    showMusicPrompt();
+  }, 1500);
+  
   var ph1 = $('signupPhone'); if (ph1) ph1.addEventListener('input', function(){ this.value = this.value.replace(/\D/g,''); });
   var ph2 = $('loginPhone'); if (ph2) ph2.addEventListener('input', function(){ this.value = this.value.replace(/\D/g,''); });
   
-  // 🎵 تشغيل نظام الموسيقى
-  setTimeout(function() { MusicSystem.init(); }, 500);
-  
-  console.log('Neon Prediction v13.0 ready ✅');
+  console.log('Neon Prediction v14.0 ready ✅');
 });
 
 function startTriangleBackground() {
@@ -1308,7 +1333,7 @@ function showResult() {
     checkLevelUp(); checkPrizes();
     showCoinToast('+' + (CONFIG.WIN_REWARD + bonus) + '💰', '🏆');
     SoundSystem.playSuccess(); Vibration.onWin();
-    MusicSystem.boost(); // 🎵
+    MusicSystem.boost();
     showWinOverlay('🏆', 'مبروك! فزت', 1800);
   } else {
     App.user.streak = 0;
@@ -1317,7 +1342,7 @@ function showResult() {
     $('lossRecoveryBtn').style.display = 'block';
     showCoinToast('-' + cost, '💸');
     SoundSystem.playLoss(); Vibration.onLoss();
-    MusicSystem.soften(); // 🎵
+    MusicSystem.soften();
   }
   saveLocal(); updateAllUI(); syncUser();
   checkMilestones();
@@ -1370,7 +1395,7 @@ function leaveRoom() {
   if (App.room.status === 'waiting' && !isPrime()) { App.user.tickets = Math.min(CONFIG.MAX_TICKETS, App.user.tickets + 1); saveLocal(); updateAllUI(); }
   playAgain();
   showToast('غادرت الغرفة', 'info');
-}/* ============ عجلة الحظ (Free→Bonus / Paid→Money) ============ */
+}/* ============ عجلة الحظ ============ */
 var WHEEL_PRIZES = [
   { value:1,  weight:20,   color:'#1a1010', text:'1 ج',  label:'1 جنيه',      tier:'common'    },
   { value:2,  weight:26,   color:'#2a1a1a', text:'2 ج',  label:'2 جنيه',      tier:'common'    },
@@ -2626,7 +2651,11 @@ async function leaveOnlineRoom() {
   if (Online.timer) clearInterval(Online.timer);
   $('readyBtn').textContent = '✋ جاهز';
   $('readyBtn').classList.remove('ready');
-  showView('onlineLobbyView');/* ============================================
+  showView('onlineLobbyView');
+  showToast('غادرت الغرفة', 'info');
+}
+
+function playAgainOnline() { leaveOnlineRoom(); setTimeout(function() { openOnlineLobby(); }, 300); }/* ============================================
    ⚽ نظام توقعات الماتشات — Parimutuel 80/20
    ============================================ */
 
@@ -3436,10 +3465,8 @@ window.finalizeMatch = finalizeMatch;
 
 /* 🎵 MUSIC EXPORTS */
 window.toggleMusic = toggleMusic;
+window.startMusicAndClose = startMusicAndClose;
+window.skipMusicAndClose = skipMusicAndClose;
 
-console.log('✅ Neon Prediction v13.0 — Premium Neon Ready!');
+console.log('✅ Neon Prediction v14.0 — Music + Matches + Admin Ready!');
 console.log('🎵 Music | ⚽ Matches | 👑 Admin | 🎡 Wheel | 🏆 Milestones→Money');
-  showToast('غادرت الغرفة', 'info');
-}
-
-function playAgainOnline() { leaveOnlineRoom(); setTimeout(function() { openOnlineLobby(); }, 300); }
