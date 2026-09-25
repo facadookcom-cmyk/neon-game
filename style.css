@@ -1,5 +1,5 @@
 /* ============================================
-   Neon Prediction — Redesign 180° (Premium Neon)
+   Neon Prediction v13.0 — Premium Neon Redesign
    ============================================ */
 
 :root {
@@ -56,7 +56,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ========== خلفية متحركة قوية ========== */
+/* ========== خلفية متحركة ========== */
 #bgCanvas {
   position: fixed;
   inset: 0;
@@ -65,7 +65,6 @@ body {
   pointer-events: none;
 }
 
-/* طبقة تدرج إضافية فوق الكانفاس */
 body::before {
   content: '';
   position: fixed;
@@ -137,9 +136,9 @@ body::before {
   0%, 100% { filter: drop-shadow(0 0 8px rgba(232, 90, 90, 0.5)); }
   50% { filter: drop-shadow(0 0 18px rgba(232, 90, 90, 0.85)); }
 }
-@keyframes borderGlow {
-  0%, 100% { border-color: rgba(232, 90, 90, 0.25); }
-  50% { border-color: rgba(232, 90, 90, 0.55); }
+@keyframes musicPulse {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.08); }
 }
 
 /* ============ شاشة الدخول ============ */
@@ -238,13 +237,10 @@ body::before {
 }
 .input-group input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(232, 90, 90, 0.15),
-              0 0 20px rgba(232, 90, 90, 0.12);
+  box-shadow: 0 0 0 4px rgba(232, 90, 90, 0.15), 0 0 20px rgba(232, 90, 90, 0.12);
   background: rgba(28, 18, 18, 0.85);
 }
-.input-group input::placeholder {
-  color: #7a5a5a;
-}
+.input-group input::placeholder { color: #7a5a5a; }
 .input-group .hint {
   font-size: 11px;
   color: var(--muted);
@@ -264,8 +260,7 @@ body::before {
   font-weight: 800;
   font-family: 'Cairo', sans-serif;
   cursor: pointer;
-  box-shadow: 0 6px 24px var(--accent-glow),
-              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 6px 24px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
@@ -282,9 +277,7 @@ body::before {
   transform: scale(0.97);
   box-shadow: 0 3px 14px var(--accent-glow);
 }
-.btn-neon:active::before {
-  opacity: 1;
-}
+.btn-neon:active::before { opacity: 1; }
 .btn-neon:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -324,9 +317,7 @@ body::before {
   cursor: pointer;
   transition: all 0.2s;
 }
-.btn-cancel:active {
-  background: rgba(232, 90, 90, 0.12);
-}
+.btn-cancel:active { background: rgba(232, 90, 90, 0.12); }
 
 .btn-close-ad {
   margin-top: 22px;
@@ -459,8 +450,7 @@ body::before {
   border: 1.5px solid rgba(232, 90, 90, 0.4);
   border-radius: 20px;
   text-align: center;
-  box-shadow: 0 0 50px rgba(232, 60, 60, 0.25),
-              var(--shadow-md);
+  box-shadow: 0 0 50px rgba(232, 60, 60, 0.25), var(--shadow-md);
   animation: slideUp 0.4s ease;
   margin: auto;
   backdrop-filter: blur(16px);
@@ -579,7 +569,7 @@ body::before {
 .header-info {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
 }
 
 .ticket-badge,
@@ -588,7 +578,7 @@ body::before {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 10px;
+  padding: 6px 9px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 800;
@@ -609,6 +599,39 @@ body::before {
   background: rgba(232, 90, 90, 0.14);
   border-color: #e85a5a;
   color: #ffc0c0;
+}
+
+.music-btn {
+  background: rgba(28, 21, 21, 0.6);
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  color: var(--text);
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  position: relative;
+}
+.music-btn:active {
+  background: rgba(232, 90, 90, 0.18);
+  border-color: var(--accent);
+  transform: scale(0.95);
+}
+.music-btn.muted {
+  opacity: 0.6;
+}
+.music-btn:not(.muted)::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 13px;
+  border: 1.5px solid var(--accent);
+  opacity: 0;
+  animation: musicPulse 2s ease-in-out infinite;
 }
 
 .fs-btn {
@@ -862,9 +885,7 @@ body::before {
   flex-direction: column;
   flex: 1;
 }
-.mission-info strong {
-  font-size: 13px;
-}
+.mission-info strong { font-size: 13px; }
 .mission-info span {
   font-size: 11px;
   color: var(--muted);
@@ -873,9 +894,7 @@ body::before {
   font-weight: 800;
   color: #ffb0b0;
   font-size: 14px;
-}
-
-/* ============ شاشة الماتشات ============ */
+}/* ============ شاشة الماتشات ============ */
 .matches-list {
   display: flex;
   flex-direction: column;
@@ -1049,7 +1068,6 @@ body::before {
   color: #ffb080;
 }
 
-/* شاشة توقع الماتش */
 .match-header-card {
   padding: 22px;
   background: linear-gradient(135deg, rgba(232, 90, 90, 0.13), rgba(180, 50, 50, 0.05));
@@ -1059,16 +1077,9 @@ body::before {
   text-align: center;
   backdrop-filter: blur(8px);
 }
-.match-header-card .match-teams {
-  margin-bottom: 12px;
-}
-.match-header-card .match-team {
-  font-size: 16px;
-  padding: 13px;
-}
-.match-header-card .match-vs {
-  font-size: 16px;
-}
+.match-header-card .match-teams { margin-bottom: 12px; }
+.match-header-card .match-team { font-size: 16px; padding: 13px; }
+.match-header-card .match-vs { font-size: 16px; }
 
 .voting-timer-box {
   display: flex;
@@ -1225,9 +1236,7 @@ body::before {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.custom-team-btn:active {
-  transform: scale(0.97);
-}
+.custom-team-btn:active { transform: scale(0.97); }
 .custom-team-btn.selected {
   background: linear-gradient(135deg, #ffd700, #ff8c00);
   color: #000;
@@ -1302,9 +1311,7 @@ body::before {
   cursor: pointer;
   box-shadow: 0 0 24px rgba(255, 215, 0, 0.45);
 }
-.btn-admin-panel:active {
-  transform: scale(0.97);
-}
+.btn-admin-panel:active { transform: scale(0.97); }
 
 .admin-tabs {
   display: flex;
@@ -1425,9 +1432,7 @@ body::before {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.admin-finalize-btn:active:not(:disabled) {
-  transform: scale(0.98);
-}
+.admin-finalize-btn:active:not(:disabled) { transform: scale(0.98); }
 
 .admin-earning-row {
   display: flex;
@@ -1440,9 +1445,7 @@ body::before {
   margin-bottom: 8px;
   font-size: 13px;
 }
-.admin-earning-row strong {
-  color: #ffd700;
-}
+.admin-earning-row strong { color: #ffd700; }
 .admin-earning-row span {
   color: var(--text);
   font-weight: 700;
@@ -1546,9 +1549,7 @@ body::before {
   box-shadow: none;
   color: #a0a0a0;
 }
-.ready-btn:active {
-  transform: scale(0.97);
-}
+.ready-btn:active { transform: scale(0.97); }
 
 /* ============ المؤقت ============ */
 .timer-display {
@@ -1581,10 +1582,7 @@ body::before {
 }
 
 /* ============ الاختيارات ============ */
-.choices-grid {
-  display: grid;
-  gap: 11px;
-}
+.choices-grid { display: grid; gap: 11px; }
 .choice-btn {
   display: flex;
   align-items: center;
@@ -1632,10 +1630,7 @@ body::before {
   color: #c43a3a;
   border-color: #fff;
 }
-.choice-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
+.choice-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .choice-btn.correct {
   background: linear-gradient(135deg, #00c853, #00a040);
   border-color: #00c853;
@@ -1684,21 +1679,15 @@ body::before {
   margin-bottom: 10px;
   color: var(--text);
 }
-.result-container.winner .result-title {
-  color: #ffb0b0;
-}
-.result-container.loser .result-title {
-  color: #ff6b6b;
-}
+.result-container.winner .result-title { color: #ffb0b0; }
+.result-container.loser .result-title { color: #ff6b6b; }
 .result-text {
   color: var(--text-secondary);
   margin-bottom: 12px;
   font-size: 15px;
   font-weight: 600;
 }
-.result-text strong {
-  color: var(--text);
-}
+.result-text strong { color: var(--text); }
 .result-reward {
   font-size: 19px;
   font-weight: 900;
@@ -1790,9 +1779,7 @@ body::before {
   border-top: 1px solid var(--border);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
 }
-.bottom-nav.hidden {
-  display: none;
-}
+.bottom-nav.hidden { display: none; }
 .nav-btn {
   background: none;
   border: none;
@@ -1809,9 +1796,7 @@ body::before {
   position: relative;
   transition: color 0.2s;
 }
-.nav-btn.active {
-  color: #ffb0b0;
-}
+.nav-btn.active { color: #ffb0b0; }
 .nav-btn.active::before {
   content: '';
   position: absolute;
@@ -1855,13 +1840,10 @@ body::before {
   background: rgba(22, 16, 16, 0.88);
   border: 1.5px solid var(--border-strong);
   border-radius: 20px;
-  box-shadow: 0 0 40px rgba(200, 50, 50, 0.2),
-              var(--shadow-md);
+  box-shadow: 0 0 40px rgba(200, 50, 50, 0.2), var(--shadow-md);
   backdrop-filter: blur(16px);
 }
-.modal-content.wide {
-  max-width: 480px;
-}
+.modal-content.wide { max-width: 480px; }
 .close-modal {
   position: absolute;
   top: 14px;
@@ -1875,9 +1857,7 @@ body::before {
   line-height: 1;
   transition: transform 0.15s;
 }
-.close-modal:active {
-  transform: scale(0.9);
-}
+.close-modal:active { transform: scale(0.9); }
 
 /* ============ المتجر ============ */
 .packages-list {
@@ -1970,9 +1950,7 @@ body::before {
   transform: scale(0.97);
   box-shadow: 0 0 30px rgba(255, 215, 0, 0.45);
 }
-.prime-icon {
-  font-size: 34px;
-}
+.prime-icon { font-size: 34px; }
 .prime-info {
   display: flex;
   flex-direction: column;
@@ -2028,9 +2006,7 @@ body::before {
   font-weight: 700;
   text-decoration: underline;
   cursor: pointer;
-}
-
-/* ============ التذاكر ============ */
+}/* ============ التذاكر ============ */
 .ticket-item {
   display: flex;
   flex-direction: column;
@@ -2109,9 +2085,7 @@ body::before {
   margin-top: 6px;
   box-shadow: 0 4px 16px var(--accent-glow);
 }
-.ticket-buy-btn:active {
-  transform: scale(0.98);
-}
+.ticket-buy-btn:active { transform: scale(0.98); }
 .ticket-buy-btn.legendary-btn {
   background: linear-gradient(135deg, #ffd700, #ff8c00);
   color: #000;
@@ -2134,10 +2108,7 @@ body::before {
 }
 
 /* ============ عجلة الحظ ============ */
-.wheel-modal {
-  text-align: center;
-  max-width: 420px;
-}
+.wheel-modal { text-align: center; max-width: 420px; }
 .wheel-wrapper {
   position: relative;
   width: 320px;
@@ -2198,9 +2169,7 @@ body::before {
   margin: 16px 0 12px;
   min-height: 32px;
 }
-.wheel-result.reveal {
-  animation: prizePop 0.6s ease;
-}
+.wheel-result.reveal { animation: prizePop 0.6s ease; }
 .wheel-legend {
   display: flex;
   flex-wrap: wrap;
@@ -2364,9 +2333,7 @@ body::before {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(232, 90, 90, 0.12);
 }
-.chat-input-area input::placeholder {
-  color: #7a5a5a;
-}
+.chat-input-area input::placeholder { color: #7a5a5a; }
 .chat-send-btn {
   width: 48px;
   height: 48px;
@@ -2383,9 +2350,7 @@ body::before {
   flex-shrink: 0;
   box-shadow: 0 3px 14px rgba(232, 90, 90, 0.4);
 }
-.chat-send-btn:active {
-  transform: scale(0.9);
-}
+.chat-send-btn:active { transform: scale(0.9); }
 .chat-empty {
   text-align: center;
   color: var(--muted);
@@ -2437,9 +2402,7 @@ body::before {
   font-weight: 900;
   color: #ffb0b0;
 }
-.wallet-value.earned {
-  color: #00e676;
-}
+.wallet-value.earned { color: #00e676; }
 .wallet-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2477,9 +2440,7 @@ body::before {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.wallet-btn:active {
-  transform: scale(0.97);
-}
+.wallet-btn:active { transform: scale(0.97); }
 
 .profile-info {
   text-align: center;
@@ -2580,9 +2541,7 @@ body::before {
   margin-top: 20px;
   box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
 }
-.btn-logout:active {
-  transform: scale(0.97);
-}
+.btn-logout:active { transform: scale(0.97); }
 
 /* ============ المتصدرين ============ */
 .leaderboard-list {
@@ -2610,19 +2569,14 @@ body::before {
   color: #ffb0b0;
   min-width: 32px;
 }
-.leaderboard-item .name {
-  flex: 1;
-  font-weight: 700;
-}
+.leaderboard-item .name { flex: 1; font-weight: 700; }
 .leaderboard-item .points {
   font-weight: 800;
   color: #ffc0c0;
 }
 
 /* ============ الدفع ============ */
-.payment-info {
-  margin: 16px 0;
-}
+.payment-info { margin: 16px 0; }
 .payment-instructions {
   margin: 16px 0;
   padding: 17px;
@@ -2654,9 +2608,7 @@ body::before {
 }
 
 /* ============ الجوائز المادية ============ */
-.milestones-modal {
-  max-width: 480px;
-}
+.milestones-modal { max-width: 480px; }
 .milestones-list {
   display: flex;
   flex-direction: column;
@@ -2684,14 +2636,8 @@ body::before {
   border-color: rgba(16, 185, 129, 0.4);
   opacity: 0.7;
 }
-.ms-icon {
-  font-size: 26px;
-  flex-shrink: 0;
-}
-.ms-info {
-  flex: 1;
-  text-align: right;
-}
+.ms-icon { font-size: 26px; flex-shrink: 0; }
+.ms-info { flex: 1; text-align: right; }
 .ms-points {
   font-size: 14px;
   font-weight: 800;
@@ -2710,18 +2656,9 @@ body::before {
   padding: 5px 12px;
   border-radius: 20px;
 }
-.ms-status.done {
-  background: rgba(16, 185, 129, 0.2);
-  color: #00e676;
-}
-.ms-status.ready {
-  background: rgba(240, 176, 80, 0.25);
-  color: #f0b050;
-}
-.ms-status.locked {
-  background: rgba(160, 128, 128, 0.2);
-  color: #a08080;
-}
+.ms-status.done { background: rgba(16, 185, 129, 0.2); color: #00e676; }
+.ms-status.ready { background: rgba(240, 176, 80, 0.25); color: #f0b050; }
+.ms-status.locked { background: rgba(160, 128, 128, 0.2); color: #a08080; }
 
 /* ============ الأصدقاء ============ */
 .friends-list {
@@ -2760,20 +2697,14 @@ body::before {
   border: 2px solid #ffd700;
   box-shadow: 0 0 14px rgba(255, 215, 0, 0.55);
 }
-.friend-info {
-  flex: 1;
-  min-width: 0;
-}
+.friend-info { flex: 1; min-width: 0; }
 .friend-name {
   font-weight: 800;
   font-size: 14px;
   color: var(--text);
   margin-bottom: 2px;
 }
-.friend-status {
-  font-size: 11px;
-  color: var(--muted);
-}
+.friend-status { font-size: 11px; color: var(--muted); }
 .friend-actions {
   display: flex;
   gap: 6px;
@@ -2807,10 +2738,7 @@ body::before {
   border-color: #3b82f6;
   position: relative;
 }
-.friend-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.friend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .status-dot {
   position: absolute;
   bottom: -2px;
@@ -2921,9 +2849,7 @@ body::before {
   border-color: var(--accent);
   box-shadow: 0 4px 16px var(--accent-glow);
 }
-.setting-option:active {
-  transform: scale(0.97);
-}
+.setting-option:active { transform: scale(0.97); }
 
 /* ============ العروض ============ */
 .offer-text {
@@ -2992,12 +2918,8 @@ body::before {
   color: var(--text);
   backdrop-filter: blur(10px);
 }
-.coin-toast-icon {
-  font-size: 22px;
-}
-.coin-toast-text {
-  font-weight: 800;
-}
+.coin-toast-icon { font-size: 22px; }
+.coin-toast-text { font-weight: 800; }
 
 /* ============ طبقة الفوز ============ */
 .win-overlay {
@@ -3042,9 +2964,7 @@ body::before {
   opacity: 0;
   transition: opacity 0.3s ease;
 }
-.golden-flash.show {
-  opacity: 1;
-}
+.golden-flash.show { opacity: 1; }
 
 .confetti-canvas {
   position: fixed;
@@ -3058,9 +2978,7 @@ body::before {
   10%, 30%, 50%, 70%, 90% { transform: translate(-4px, -4px); }
   20%, 40%, 60%, 80% { transform: translate(4px, 4px); }
 }
-.screen-shake {
-  animation: screenShake 0.5s ease;
-}
+.screen-shake { animation: screenShake 0.5s ease; }
 
 .jackpot-overlay {
   position: fixed;
@@ -3074,13 +2992,8 @@ body::before {
   transition: opacity 0.5s ease;
   background: radial-gradient(circle, rgba(255, 0, 255, 0.22), rgba(0, 0, 0, 0.88));
 }
-.jackpot-overlay.show {
-  opacity: 1;
-}
-.jackpot-inner {
-  text-align: center;
-  animation: prizePop 0.8s ease;
-}
+.jackpot-overlay.show { opacity: 1; }
+.jackpot-inner { text-align: center; animation: prizePop 0.8s ease; }
 .jackpot-crown {
   font-size: 60px;
   filter: drop-shadow(0 0 24px rgba(255, 215, 0, 0.85));
@@ -3094,10 +3007,7 @@ body::before {
   margin: 10px 0;
   letter-spacing: 3px;
 }
-.jackpot-diamond {
-  font-size: 60px;
-  filter: drop-shadow(0 0 28px #ff00ff);
-}
+.jackpot-diamond { font-size: 60px; filter: drop-shadow(0 0 28px #ff00ff); }
 .jackpot-amount {
   font-family: 'Orbitron', sans-serif;
   font-size: 36px;
@@ -3115,9 +3025,7 @@ body::before {
 
 /* ============ Responsive ============ */
 @media (max-width: 400px) {
-  .header-info {
-    gap: 5px;
-  }
+  .header-info { gap: 5px; }
   .ticket-badge,
   .streak-badge,
   .points-badge {
@@ -3133,15 +3041,9 @@ body::before {
     width: 280px;
     height: 280px;
   }
-  .predictions-grid {
-    grid-template-columns: 1fr;
-  }
-  .prediction-btn.custom {
-    grid-column: span 1;
-  }
-  .voting-timer-value {
-    font-size: 22px;
-  }
+  .predictions-grid { grid-template-columns: 1fr; }
+  .prediction-btn.custom { grid-column: span 1; }
+  .voting-timer-value { font-size: 22px; }
   .admin-result-input input {
     width: 52px;
     font-size: 18px;
@@ -3150,7 +3052,5 @@ body::before {
     max-width: 80px;
     font-size: 10px;
   }
-  .neon-title {
-    font-size: 24px;
-  }
+  .neon-title { font-size: 24px; }
 }
